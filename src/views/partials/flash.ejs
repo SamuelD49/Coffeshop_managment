@@ -1,0 +1,12 @@
+<% if (flash && flash.length) { %>
+  <div class="space-y-2 mb-gutter-lg">
+    <% flash.forEach(f => { %>
+      <div class="border-l-2 pl-gutter py-gutter-tight font-sans text-[14px] text-coal
+        <%= f.type === 'success' ? 'border-leaf'    : '' %>
+        <%= f.type === 'error'   ? 'border-crimson' : '' %>
+        <%= f.type === 'info'    ? 'border-ember'   : '' %>">
+        <%= f.text %>
+      </div>
+    <% }) %>
+  </div>
+<% } %>

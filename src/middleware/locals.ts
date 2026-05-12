@@ -13,5 +13,6 @@ export function localsMiddleware(req: Request, res: Response, next: NextFunction
       res.locals.currentRole = u.role;
     }
   }
+  res.locals.currentPath = req.path;
   next();
 }

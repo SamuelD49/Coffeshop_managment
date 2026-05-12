@@ -1,0 +1,60 @@
+<aside class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex flex-col">
+  <a href="/" class="wordmark text-[28px] leading-[32px] mb-air block">
+    <%= shopName %>
+  </a>
+
+  <%
+    function initials(name){ return name.split(/\s+/).filter(Boolean).slice(0,2).map(s => s[0].toUpperCase()).join(""); }
+    function navClass(href, current){
+      const active = href === '/' ? current === '/' : (current === href || current.startsWith(href + '/'));
+      return 'nav-link' + (active ? ' is-active' : '');
+    }
+  %>
+
+  <% if (currentRole === 'owner') { %>
+    <p class="nav-section">Operations</p>
+    <nav class="space-y-1 mb-gutter-lg">
+      <a href="/"           class="<%= navClass('/',           currentPath) %>">Dashboard</a>
+      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>">Sales</a>
+      <a href="/menu"       class="<%= navClass('/menu',       currentPath) %>">Menu</a>
+      <a href="/employees"  class="<%= navClass('/employees',  currentPath) %>">Employees</a>
+      <a href="/purchases"  class="<%= navClass('/purchases',  currentPath) %>">Purchases</a>
+      <a href="/petty-cash" class="<%= navClass('/petty-cash', currentPath) %>">Petty cash</a>
+      <a href="/payroll"    class="<%= navClass('/payroll',    currentPath) %>">Payroll</a>
+    </nav>
+
+    <p class="nav-section">Owner</p>
+    <nav class="space-y-1 mb-air">
+      <a href="/reports"  class="<%= navClass('/reports',  currentPath) %>">Reports</a>
+      <a href="/settings" class="<%= navClass('/settings', currentPath) %>">Settings</a>
+    </nav>
+  <% } else { %>
+    <nav class="space-y-1 mb-air">
+      <a href="/"           class="<%= navClass('/',           currentPath) %>">Dashboard</a>
+      <a href="/sales/new"  class="<%= navClass('/sales/new',  currentPath) %>">Start new shift</a>
+      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>">My past shifts</a>
+    </nav>
+  <% } %>
+
+  <% if (currentUser) { %>
+    <div class="mt-auto pt-gutter-lg border-t border-rule">
+      <div class="flex items-center gap-gutter">
+        <div class="w-9 h-9 border border-rule-strong flex items-center justify-center wordmark text-[16px]">
+          <%= initials(currentUser.full_name) %>
+        </div>
+        <div>
+          <div class="font-sans text-[14px] text-ink leading-tight"><%= currentUser.full_name %></div>
+          <div class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke leading-tight mt-0.5"><%= currentUser.role %></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-gutter mt-gutter font-sans text-[12px]">
+        <a href="/account" class="text-smoke hover:text-ink transition-colors">Account</a>
+        <span class="text-mist">·</span>
+        <form action="/logout" method="POST" class="inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="text-smoke hover:text-ink transition-colors">Log out</button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+</aside>
