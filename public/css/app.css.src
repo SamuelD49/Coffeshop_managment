@@ -1,0 +1,150 @@
+/* Fonts are self-hosted from /public/fonts/ — see Task 2a */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces-VariableFont_SOFT,WONK,opsz,wght.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces-Italic-VariableFont_SOFT,WONK,opsz,wght.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-feature-settings: "tnum" 1, "ss01" 1; }
+  body {
+    background-color: #F4ECDF;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.6 0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.04'/></svg>");
+    background-repeat: repeat;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-5 h-10 rounded-soft bg-ink text-cream
+           font-sans font-semibold text-[13px] tracking-button uppercase
+           transition-colors duration-200 hover:bg-coal
+           focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 focus:ring-offset-cream;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-5 h-10 rounded-soft border border-rule-strong text-ink
+           font-sans font-semibold text-[13px] tracking-button uppercase
+           transition-colors duration-200 hover:bg-paper
+           focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 focus:ring-offset-cream;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-5 h-10 rounded-soft border border-crimson text-crimson
+           font-sans font-semibold text-[13px] tracking-button uppercase
+           transition-colors duration-200 hover:bg-crimson hover:text-cream
+           focus:outline-none focus:ring-2 focus:ring-crimson focus:ring-offset-2 focus:ring-offset-cream;
+  }
+  .link {
+    @apply text-ember underline decoration-from-font underline-offset-4 hover:text-ember-deep transition-colors;
+  }
+
+  /* Fields */
+  .field-label {
+    @apply block font-sans font-medium text-[12px] tracking-smallcaps uppercase text-smoke mb-2;
+  }
+  .field-input {
+    @apply block w-full bg-transparent border-0 border-b border-rule-strong px-0 py-2
+           font-sans text-[15px] text-ink placeholder:text-mist
+           focus:outline-none focus:border-b-2 focus:border-ember focus:pb-[7px]
+           transition-colors;
+  }
+  .field-input.field-mono { @apply font-mono; }
+  .field-hint  { @apply block font-sans text-[12px] text-smoke mt-2; }
+  .field-error { @apply block font-sans text-[12px] text-crimson mt-2; }
+
+  /* Cards */
+  .card        { @apply bg-parchment border border-rule rounded-soft; }
+  .card-header { @apply px-gutter-lg pt-gutter-lg pb-gutter border-b border-rule; }
+  .card-title  {
+    @apply font-display text-[24px] leading-[30px] text-ink;
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+  }
+  .card-meta   { @apply font-mono text-[12px] text-smoke mt-1; }
+  .card-body   { @apply p-gutter-lg; }
+
+  /* Status pips */
+  .pip {
+    @apply inline-flex items-center gap-2 font-sans font-medium text-[12px] tracking-button uppercase text-smoke;
+  }
+  .pip::before { content: ""; @apply inline-block w-2 h-2; }
+  .pip-open::before    { @apply rounded-pill border border-ember; }
+  .pip-closed::before  { @apply rounded-pill bg-smoke; }
+  .pip-approved::before{ @apply bg-leaf; }
+  .pip-draft::before   { @apply border border-smoke; }
+
+  /* Sidebar — see §5.1 of design system */
+  .nav-section { @apply font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-1 mb-2; }
+  .nav-link {
+    @apply relative block font-sans text-[14px] text-coal py-2 px-3
+           transition-colors hover:text-ink;
+  }
+  .nav-link.is-active::before {
+    content: "";
+    @apply absolute left-[-24px] top-0 bottom-0 w-[3px] bg-ember;
+  }
+  .nav-link.is-active { @apply text-ink; }
+
+  /* Page reveal animation */
+  .reveal { opacity: 0; transform: translateY(8px); animation: reveal 320ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards; }
+  .reveal-1 { animation-delay: 0ms; }
+  .reveal-2 { animation-delay: 80ms; }
+  .reveal-3 { animation-delay: 160ms; }
+  @keyframes reveal { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal-1, .reveal-2, .reveal-3 { animation: none; opacity: 1; transform: none; }
+  }
+
+  /* Number flash for HTMX swaps */
+  .num-flash { animation: num-flash 600ms ease-out; }
+  @keyframes num-flash {
+    0%   { background-color: rgba(199, 93, 52, 0.18); }
+    100% { background-color: transparent; }
+  }
+
+  /* Wordmark helper */
+  .wordmark {
+    @apply font-display italic text-ink;
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+  }
+  .wordmark-lg {
+    font-variation-settings: "opsz" 144, "SOFT" 80;
+  }
+}
