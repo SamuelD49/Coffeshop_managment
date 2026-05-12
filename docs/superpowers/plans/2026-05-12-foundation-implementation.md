@@ -13,6 +13,12 @@
 - All DB access goes through `/src/models/*`.
 - Every state-changing write should call `audit.write()` (the helper from `lib/audit.ts`).
 
+**Design system — REQUIRED READING for every view task:**
+
+Before implementing any task that touches `.ejs`, `.css`, or `tailwind.config.js`, read the **Buna Ledger** design system at [`docs/superpowers/specs/2026-05-12-design-system.md`](../specs/2026-05-12-design-system.md). All EJS markup in this plan shows the **structure** of each page (which fields, which sections). Translate the example Tailwind classes into the design-system primitives (`.btn-primary`, `.field-input`, `.card`, etc.) before committing. Tasks 2 and 2a establish the tokens and assets; subsequent view tasks consume them.
+
+Anti-patterns to refuse: dark slate sidebars, drop-shadowed cards, purple/blue gradients, `font-family: Inter`, rounded-2xl, emoji status indicators, coffee-bean illustrations. The aesthetic is paper-warm editorial, not generic admin.
+
 ---
 
 ## Project file structure (created by this plan)
@@ -223,10 +229,12 @@ git commit -m "chore: initialize TypeScript Express project"
 
 ---
 
-## Task 2: Set up Tailwind via standalone CLI
+## Task 2: Set up Tailwind with Buna Ledger design tokens
 
 **Files:**
 - Create: `tailwind.config.js`, `public/css/app.css.src`
+
+> **Read first:** [`docs/superpowers/specs/2026-05-12-design-system.md`](../specs/2026-05-12-design-system.md) §1 (colors), §2 (typography), §3 (spacing), §4 (component recipes), §6 (motion).
 
 - [ ] **Step 1: Install Tailwind (PostCSS-free standalone)**
 
@@ -234,24 +242,211 @@ git commit -m "chore: initialize TypeScript Express project"
 npm install -D tailwindcss
 ```
 
-- [ ] **Step 2: Create `tailwind.config.js`**
+- [ ] **Step 2: Create `tailwind.config.js` with the full token set**
 
 ```js
 module.exports = {
   content: ["./src/views/**/*.ejs"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        ink:        "#1A1410",
+        coal:       "#2B221C",
+        smoke:      "#7A6E62",
+        mist:       "#A89889",
+        cream:      "#F4ECDF",
+        parchment:  "#EBE0CC",
+        paper:      "#FAF6EE",
+        ember:      "#C75D34",
+        "ember-deep": "#9E4524",
+        leaf:       "#5C7558",
+        clay:       "#B68A3C",
+        crimson:    "#8B2A26",
+      },
+      borderColor: {
+        rule:          "rgba(26, 20, 16, 0.12)",
+        "rule-strong": "rgba(26, 20, 16, 0.24)",
+      },
+      fontFamily: {
+        display: ['"Fraunces"', 'Georgia', 'serif'],
+        sans:    ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+        mono:    ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+      },
+      letterSpacing: {
+        smallcaps: "0.12em",
+        button:    "0.06em",
+      },
+      borderRadius: {
+        sharp: "0",
+        soft:  "2px",
+        pill:  "9999px",
+      },
+      spacing: {
+        "gutter-tight": "8px",
+        "gutter":       "16px",
+        "gutter-lg":    "24px",
+        "air":          "40px",
+        "air-lg":       "64px",
+        "chapter":      "96px",
+      },
+    },
   },
-  plugins: [],
 };
 ```
 
-- [ ] **Step 3: Create `public/css/app.css.src`**
+- [ ] **Step 3: Create `public/css/app.css.src` with @font-face, paper texture, and component layer**
 
 ```css
+/* Fonts are self-hosted from /public/fonts/ — see Task 2a */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces-VariableFont_SOFT,WONK,opsz,wght.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces-Italic-VariableFont_SOFT,WONK,opsz,wght.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html { font-feature-settings: "tnum" 1, "ss01" 1; }
+  body {
+    background-color: #F4ECDF;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.6 0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.04'/></svg>");
+    background-repeat: repeat;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-5 h-10 rounded-soft bg-ink text-cream
+           font-sans font-semibold text-[13px] tracking-button uppercase
+           transition-colors duration-200 hover:bg-coal
+           focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 focus:ring-offset-cream;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-5 h-10 rounded-soft border border-rule-strong text-ink
+           font-sans font-semibold text-[13px] tracking-button uppercase
+           transition-colors duration-200 hover:bg-paper
+           focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 focus:ring-offset-cream;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-5 h-10 rounded-soft border border-crimson text-crimson
+           font-sans font-semibold text-[13px] tracking-button uppercase
+           transition-colors duration-200 hover:bg-crimson hover:text-cream
+           focus:outline-none focus:ring-2 focus:ring-crimson focus:ring-offset-2 focus:ring-offset-cream;
+  }
+  .link {
+    @apply text-ember underline decoration-from-font underline-offset-4 hover:text-ember-deep transition-colors;
+  }
+
+  /* Fields */
+  .field-label {
+    @apply block font-sans font-medium text-[12px] tracking-smallcaps uppercase text-smoke mb-2;
+  }
+  .field-input {
+    @apply block w-full bg-transparent border-0 border-b border-rule-strong px-0 py-2
+           font-sans text-[15px] text-ink placeholder:text-mist
+           focus:outline-none focus:border-b-2 focus:border-ember focus:pb-[7px]
+           transition-colors;
+  }
+  .field-input.field-mono { @apply font-mono; }
+  .field-hint  { @apply block font-sans text-[12px] text-smoke mt-2; }
+  .field-error { @apply block font-sans text-[12px] text-crimson mt-2; }
+
+  /* Cards */
+  .card        { @apply bg-parchment border border-rule rounded-soft; }
+  .card-header { @apply px-gutter-lg pt-gutter-lg pb-gutter border-b border-rule; }
+  .card-title  {
+    @apply font-display text-[24px] leading-[30px] text-ink;
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+  }
+  .card-meta   { @apply font-mono text-[12px] text-smoke mt-1; }
+  .card-body   { @apply p-gutter-lg; }
+
+  /* Status pips */
+  .pip {
+    @apply inline-flex items-center gap-2 font-sans font-medium text-[12px] tracking-button uppercase text-smoke;
+  }
+  .pip::before { content: ""; @apply inline-block w-2 h-2; }
+  .pip-open::before    { @apply rounded-pill border border-ember; }
+  .pip-closed::before  { @apply rounded-pill bg-smoke; }
+  .pip-approved::before{ @apply bg-leaf; }
+  .pip-draft::before   { @apply border border-smoke; }
+
+  /* Sidebar — see §5.1 of design system */
+  .nav-section { @apply font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-1 mb-2; }
+  .nav-link {
+    @apply relative block font-sans text-[14px] text-coal py-2 px-3
+           transition-colors hover:text-ink;
+  }
+  .nav-link.is-active::before {
+    content: "";
+    @apply absolute left-[-24px] top-0 bottom-0 w-[3px] bg-ember;
+  }
+  .nav-link.is-active { @apply text-ink; }
+
+  /* Page reveal animation */
+  .reveal { opacity: 0; transform: translateY(8px); animation: reveal 320ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards; }
+  .reveal-1 { animation-delay: 0ms; }
+  .reveal-2 { animation-delay: 80ms; }
+  .reveal-3 { animation-delay: 160ms; }
+  @keyframes reveal { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal-1, .reveal-2, .reveal-3 { animation: none; opacity: 1; transform: none; }
+  }
+
+  /* Number flash for HTMX swaps */
+  .num-flash { animation: num-flash 600ms ease-out; }
+  @keyframes num-flash {
+    0%   { background-color: rgba(199, 93, 52, 0.18); }
+    100% { background-color: transparent; }
+  }
+
+  /* Wordmark helper */
+  .wordmark {
+    @apply font-display italic text-ink;
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+  }
+  .wordmark-lg {
+    font-variation-settings: "opsz" 144, "SOFT" 80;
+  }
+}
 ```
 
 - [ ] **Step 4: Build CSS and verify output exists**
@@ -267,7 +462,96 @@ Expected: `public/css/app.css` exists and is non-empty.
 
 ```bash
 git add tailwind.config.js public/css/app.css.src package.json package-lock.json
-git commit -m "chore: add Tailwind via standalone CLI"
+git commit -m "feat(design): Buna Ledger tokens, components, motion in Tailwind"
+```
+
+---
+
+## Task 2a: Vendor font files and the ornament SVG
+
+**Files:**
+- Create: `public/fonts/*.woff2` (7 files), `public/img/ornament.svg`, `public/js/htmx.min.js`
+
+> **Read:** Design system §2 (typography), §4.1 (ornament).
+
+- [ ] **Step 1: Create the asset directories**
+
+```bash
+mkdir -p public/fonts public/img public/js
+```
+
+- [ ] **Step 2: Download Fraunces variable font (Google Fonts GitHub)**
+
+```bash
+curl -L -o public/fonts/Fraunces-VariableFont_SOFT,WONK,opsz,wght.woff2 \
+  "https://github.com/undercasetype/Fraunces/raw/main/fonts/variable/Fraunces[SOFT,WONK,opsz,wght].ttf"
+curl -L -o public/fonts/Fraunces-Italic-VariableFont_SOFT,WONK,opsz,wght.woff2 \
+  "https://github.com/undercasetype/Fraunces/raw/main/fonts/variable/Fraunces-Italic[SOFT,WONK,opsz,wght].ttf"
+```
+
+If the upstream repo serves `.ttf` rather than `.woff2`, convert locally:
+
+```bash
+npx ttf2woff2 public/fonts/*.ttf
+rm public/fonts/*.ttf
+```
+
+(Install `ttf2woff2` with `npm install -D ttf2woff2` if needed.)
+
+- [ ] **Step 3: Download IBM Plex Sans + Mono weights from the official IBM Plex release**
+
+```bash
+BASE="https://github.com/IBM/plex/raw/master/packages/plex-sans/fonts/complete/woff2"
+curl -L -o public/fonts/IBMPlexSans-Regular.woff2  "$BASE/IBMPlexSans-Regular.woff2"
+curl -L -o public/fonts/IBMPlexSans-Medium.woff2   "$BASE/IBMPlexSans-Medium.woff2"
+curl -L -o public/fonts/IBMPlexSans-SemiBold.woff2 "$BASE/IBMPlexSans-SemiBold.woff2"
+
+BASE_MONO="https://github.com/IBM/plex/raw/master/packages/plex-mono/fonts/complete/woff2"
+curl -L -o public/fonts/IBMPlexMono-Regular.woff2 "$BASE_MONO/IBMPlexMono-Regular.woff2"
+curl -L -o public/fonts/IBMPlexMono-Medium.woff2  "$BASE_MONO/IBMPlexMono-Medium.woff2"
+```
+
+(If the IBM repo path has changed, search "IBM Plex woff2 github" and update the URLs. We need: Sans Regular, Sans Medium, Sans SemiBold, Mono Regular, Mono Medium.)
+
+- [ ] **Step 4: Verify font files exist and are non-trivial**
+
+```bash
+ls -la public/fonts/
+```
+
+Expected: 7 `.woff2` files, each > 20KB.
+
+- [ ] **Step 5: Create `public/img/ornament.svg`**
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="8" viewBox="0 0 56 8" fill="currentColor">
+  <rect x="2"  y="2" width="4" height="4" transform="rotate(45 4 4)"/>
+  <rect x="26" y="2" width="4" height="4" transform="rotate(45 28 4)"/>
+  <rect x="50" y="2" width="4" height="4" transform="rotate(45 52 4)"/>
+</svg>
+```
+
+- [ ] **Step 6: Vendor HTMX**
+
+```bash
+curl -L -o public/js/htmx.min.js "https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"
+```
+
+Expected: `public/js/htmx.min.js` is ~50KB.
+
+- [ ] **Step 7: Update `.gitignore`** to *not* exclude fonts/img/js (they're vendored, should be committed)
+
+Open `.gitignore` and confirm it only excludes `node_modules/`, `dist/`, `data/`, `.env`, `public/css/app.css`. Fonts and images **should** be committed.
+
+- [ ] **Step 8: Update `src/app.ts` to serve `/fonts` and `/img`**
+
+(Plan 1 Task 12 wires this — for now just note that `app.use("/fonts", express.static(...))` and `app.use("/img", express.static(...))` need to be added there.)
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add public/fonts/ public/img/ public/js/htmx.min.js
+git commit -m "chore(assets): vendor Fraunces, IBM Plex, HTMX, ornament"
 ```
 
 ---
@@ -1499,12 +1783,15 @@ git commit -m "feat(middleware): auth, owner, setup, locals, error handlers"
 
 ---
 
-## Task 11: EJS layout + partials + error pages
+## Task 11: EJS partials + error pages (Buna Ledger styling)
 
 **Files:**
-- Create: `src/views/layouts/main.ejs`, `src/views/partials/head.ejs`, `src/views/partials/sidebar.ejs`, `src/views/partials/flash.ejs`, `src/views/errors/404.ejs`, `src/views/errors/403.ejs`, `src/views/errors/500.ejs`
+- Create: `src/views/partials/head.ejs`, `src/views/partials/sidebar.ejs`, `src/views/partials/flash.ejs`, `src/views/partials/ornament.ejs`, `src/views/errors/404.ejs`, `src/views/errors/403.ejs`, `src/views/errors/500.ejs`
+- Modify: `src/middleware/locals.ts` (add `currentPath`)
 
-EJS does not have native layouts — we use an include-from-the-bottom pattern: every page renders its own `<%- include('layouts/main', { body: ... }) %>` via a small helper, or just renders a page that itself includes head + sidebar + flash + content. Simplest pattern: each page is a self-contained template that includes partials. No layout indirection.
+> **Read first:** Design system §4 (components), §5.1 (sidebar layout), §6 (motion).
+
+EJS has no native layouts — each page is a self-contained template that includes partials. No layout indirection.
 
 - [ ] **Step 1: Create `src/views/partials/head.ejs`**
 
@@ -1514,7 +1801,9 @@ EJS does not have native layouts — we use an include-from-the-bottom pattern: 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= title || shopName %></title>
+  <title><%= typeof title !== 'undefined' ? title + ' · ' : '' %><%= shopName %></title>
+  <link rel="preload" href="/fonts/Fraunces-VariableFont_SOFT,WONK,opsz,wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/IBMPlexSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/app.css" />
   <script src="/js/htmx.min.js" defer></script>
 </head>
@@ -1524,12 +1813,12 @@ EJS does not have native layouts — we use an include-from-the-bottom pattern: 
 
 ```ejs
 <% if (flash && flash.length) { %>
-  <div class="space-y-2 mb-4">
+  <div class="space-y-2 mb-gutter-lg">
     <% flash.forEach(f => { %>
-      <div class="px-4 py-2 rounded
-        <%= f.type === 'success' ? 'bg-green-100 text-green-800' : '' %>
-        <%= f.type === 'error'   ? 'bg-red-100 text-red-800'   : '' %>
-        <%= f.type === 'info'    ? 'bg-blue-100 text-blue-800' : '' %>">
+      <div class="border-l-2 pl-gutter py-gutter-tight font-sans text-[14px] text-coal
+        <%= f.type === 'success' ? 'border-leaf'    : '' %>
+        <%= f.type === 'error'   ? 'border-crimson' : '' %>
+        <%= f.type === 'info'    ? 'border-ember'   : '' %>">
         <%= f.text %>
       </div>
     <% }) %>
@@ -1537,86 +1826,140 @@ EJS does not have native layouts — we use an include-from-the-bottom pattern: 
 <% } %>
 ```
 
-- [ ] **Step 3: Create `src/views/partials/sidebar.ejs`**
+- [ ] **Step 3: Create `src/views/partials/ornament.ejs`**
 
 ```ejs
-<aside class="w-56 bg-slate-900 text-slate-100 min-h-screen p-4 relative">
-  <h1 class="text-lg font-semibold mb-6"><%= shopName %></h1>
-  <nav class="space-y-1 text-sm">
-    <a href="/" class="block px-2 py-1 rounded hover:bg-slate-800">Dashboard</a>
-    <% if (currentRole === 'owner') { %>
-      <a href="/sales" class="block px-2 py-1 rounded hover:bg-slate-800">Sales</a>
-      <a href="/menu" class="block px-2 py-1 rounded hover:bg-slate-800">Menu</a>
-      <a href="/employees" class="block px-2 py-1 rounded hover:bg-slate-800">Employees</a>
-      <a href="/purchases" class="block px-2 py-1 rounded hover:bg-slate-800">Purchases</a>
-      <a href="/petty-cash" class="block px-2 py-1 rounded hover:bg-slate-800">Petty Cash</a>
-      <a href="/payroll" class="block px-2 py-1 rounded hover:bg-slate-800">Payroll</a>
-      <a href="/reports" class="block px-2 py-1 rounded hover:bg-slate-800">Reports</a>
-      <a href="/settings" class="block px-2 py-1 rounded hover:bg-slate-800">Settings</a>
-    <% } else { %>
-      <a href="/sales/new" class="block px-2 py-1 rounded hover:bg-slate-800">Start new shift</a>
-      <a href="/sales" class="block px-2 py-1 rounded hover:bg-slate-800">My past shifts</a>
-    <% } %>
-  </nav>
-  <div class="absolute bottom-4 left-4 right-4 text-xs text-slate-400">
-    <% if (currentUser) { %>
-      <div class="mb-2">Signed in as <strong class="text-slate-200"><%= currentUser.full_name %></strong></div>
-      <a href="/account" class="hover:text-slate-200">Account</a>
-      <form action="/logout" method="POST" class="inline">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <button class="ml-2 hover:text-slate-200">Logout</button>
-      </form>
-    <% } %>
-  </div>
+<div class="flex items-center gap-3 text-smoke my-air">
+  <span class="h-px bg-rule flex-1"></span>
+  <svg viewBox="0 0 56 8" class="w-14 h-2" fill="currentColor" aria-hidden="true">
+    <rect x="2"  y="2" width="4" height="4" transform="rotate(45 4 4)"/>
+    <rect x="26" y="2" width="4" height="4" transform="rotate(45 28 4)"/>
+    <rect x="50" y="2" width="4" height="4" transform="rotate(45 52 4)"/>
+  </svg>
+  <span class="h-px bg-rule flex-1"></span>
+</div>
+```
+
+- [ ] **Step 4: Create `src/views/partials/sidebar.ejs`**
+
+The sidebar is the spine of a notebook — cream background, hairline divider on the right, ember bookmark on the active link, user block at the bottom with initials in a Fraunces-italic square. The `currentPath` local (set in Step 8) selects which link gets the bookmark.
+
+```ejs
+<aside class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex flex-col">
+  <a href="/" class="wordmark text-[28px] leading-[32px] mb-air block">
+    <%= shopName %>
+  </a>
+
+  <%
+    function initials(name){ return name.split(/\s+/).filter(Boolean).slice(0,2).map(s => s[0].toUpperCase()).join(""); }
+    function navClass(href, current){
+      const active = href === '/' ? current === '/' : (current === href || current.startsWith(href + '/'));
+      return 'nav-link' + (active ? ' is-active' : '');
+    }
+  %>
+
+  <% if (currentRole === 'owner') { %>
+    <p class="nav-section">Operations</p>
+    <nav class="space-y-1 mb-gutter-lg">
+      <a href="/"           class="<%= navClass('/',           currentPath) %>">Dashboard</a>
+      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>">Sales</a>
+      <a href="/menu"       class="<%= navClass('/menu',       currentPath) %>">Menu</a>
+      <a href="/employees"  class="<%= navClass('/employees',  currentPath) %>">Employees</a>
+      <a href="/purchases"  class="<%= navClass('/purchases',  currentPath) %>">Purchases</a>
+      <a href="/petty-cash" class="<%= navClass('/petty-cash', currentPath) %>">Petty cash</a>
+      <a href="/payroll"    class="<%= navClass('/payroll',    currentPath) %>">Payroll</a>
+    </nav>
+
+    <p class="nav-section">Owner</p>
+    <nav class="space-y-1 mb-air">
+      <a href="/reports"  class="<%= navClass('/reports',  currentPath) %>">Reports</a>
+      <a href="/settings" class="<%= navClass('/settings', currentPath) %>">Settings</a>
+    </nav>
+  <% } else { %>
+    <nav class="space-y-1 mb-air">
+      <a href="/"           class="<%= navClass('/',           currentPath) %>">Dashboard</a>
+      <a href="/sales/new"  class="<%= navClass('/sales/new',  currentPath) %>">Start new shift</a>
+      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>">My past shifts</a>
+    </nav>
+  <% } %>
+
+  <% if (currentUser) { %>
+    <div class="mt-auto pt-gutter-lg border-t border-rule">
+      <div class="flex items-center gap-gutter">
+        <div class="w-9 h-9 border border-rule-strong flex items-center justify-center wordmark text-[16px]">
+          <%= initials(currentUser.full_name) %>
+        </div>
+        <div>
+          <div class="font-sans text-[14px] text-ink leading-tight"><%= currentUser.full_name %></div>
+          <div class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke leading-tight mt-0.5"><%= currentUser.role %></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-gutter mt-gutter font-sans text-[12px]">
+        <a href="/account" class="text-smoke hover:text-ink transition-colors">Account</a>
+        <span class="text-mist">·</span>
+        <form action="/logout" method="POST" class="inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="text-smoke hover:text-ink transition-colors">Log out</button>
+        </form>
+      </div>
+    </div>
+  <% } %>
 </aside>
 ```
 
-- [ ] **Step 4: Create `src/views/errors/404.ejs`**
+- [ ] **Step 5: Create `src/views/errors/404.ejs`**
 
 ```ejs
 <%- include('../partials/head', { title: 'Not found', shopName }) %>
-<body class="bg-slate-50 text-slate-900">
-  <main class="max-w-lg mx-auto py-20 text-center">
-    <h1 class="text-3xl font-semibold">404</h1>
-    <p class="mt-2 text-slate-600">Page not found.</p>
-    <a href="/" class="mt-6 inline-block text-blue-600 hover:underline">Go home</a>
+<body class="text-ink font-sans antialiased">
+  <main class="max-w-lg mx-auto px-gutter-lg py-chapter text-center">
+    <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Chapter not found</p>
+    <h1 class="font-display text-[56px] leading-[60px] mt-gutter" style="font-variation-settings:'opsz' 144,'SOFT' 80">404</h1>
+    <p class="font-sans text-coal mt-gutter">This page isn't in the ledger.</p>
+    <a href="/" class="link mt-air-lg inline-block">Return to the counter</a>
   </main>
 </body>
 </html>
 ```
 
-- [ ] **Step 5: Create `src/views/errors/403.ejs`**
+- [ ] **Step 6: Create `src/views/errors/403.ejs`**
 
 ```ejs
 <%- include('../partials/head', { title: 'Forbidden', shopName }) %>
-<body class="bg-slate-50 text-slate-900">
-  <main class="max-w-lg mx-auto py-20 text-center">
-    <h1 class="text-3xl font-semibold">403</h1>
-    <p class="mt-2 text-slate-600"><%= typeof message !== 'undefined' ? message : 'Forbidden.' %></p>
-    <a href="/" class="mt-6 inline-block text-blue-600 hover:underline">Go home</a>
+<body class="text-ink font-sans antialiased">
+  <main class="max-w-lg mx-auto px-gutter-lg py-chapter text-center">
+    <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Not yours to read</p>
+    <h1 class="font-display text-[56px] leading-[60px] mt-gutter" style="font-variation-settings:'opsz' 144,'SOFT' 80">403</h1>
+    <p class="font-sans text-coal mt-gutter"><%= typeof message !== 'undefined' ? message : 'You do not have access to this page.' %></p>
+    <a href="/" class="link mt-air-lg inline-block">Go home</a>
   </main>
 </body>
 </html>
 ```
 
-- [ ] **Step 6: Create `src/views/errors/500.ejs`**
+- [ ] **Step 7: Create `src/views/errors/500.ejs`**
 
 ```ejs
-<%- include('../partials/head', { title: 'Server error', shopName }) %>
-<body class="bg-slate-50 text-slate-900">
-  <main class="max-w-lg mx-auto py-20 text-center">
-    <h1 class="text-3xl font-semibold">500</h1>
-    <p class="mt-2 text-slate-600"><%= typeof message !== 'undefined' ? message : 'Something went wrong.' %></p>
+<%- include('../partials/head', { title: 'Something went wrong', shopName }) %>
+<body class="text-ink font-sans antialiased">
+  <main class="max-w-lg mx-auto px-gutter-lg py-chapter text-center">
+    <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">An ink smudge</p>
+    <h1 class="font-display text-[56px] leading-[60px] mt-gutter" style="font-variation-settings:'opsz' 144,'SOFT' 80">500</h1>
+    <p class="font-sans text-coal mt-gutter"><%= typeof message !== 'undefined' ? message : 'Something went wrong on our end.' %></p>
   </main>
 </body>
 </html>
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Update `src/middleware/locals.ts` to expose `currentPath`**
+
+Open `src/middleware/locals.ts` (created in Task 10) and add `res.locals.currentPath = req.path;` before `next()`. The sidebar uses this to mark the active link.
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/views/partials/ src/views/errors/
-git commit -m "feat(views): base partials and error pages"
+git add src/views/partials/ src/views/errors/ src/middleware/locals.ts
+git commit -m "feat(views): Buna Ledger partials, sidebar-as-spine, error pages"
 ```
 
 ---
@@ -1649,6 +1992,8 @@ app.set("views", resolve(__dirname, "views"));
 
 app.use("/css", express.static(resolve(process.cwd(), "public/css")));
 app.use("/js", express.static(resolve(process.cwd(), "public/js")));
+app.use("/fonts", express.static(resolve(process.cwd(), "public/fonts"), { maxAge: "1y", immutable: true }));
+app.use("/img", express.static(resolve(process.cwd(), "public/img")));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -1760,7 +2105,7 @@ describe("First-run setup", () => {
   it("shows the setup form on GET /setup", async () => {
     const { app } = await import("../../src/app");
     const res = await request(app).get("/setup").expect(200);
-    expect(res.text).toContain("Create owner account");
+    expect(res.text).toContain("Open the ledger");
   });
 
   it("creates owner on POST /setup and redirects to /", async () => {
@@ -1802,31 +2147,42 @@ describe("First-run setup", () => {
 npm test -- setup
 ```
 
-- [ ] **Step 3: Implement `src/views/setup.ejs`**
+- [ ] **Step 3: Implement `src/views/setup.ejs`** *(see design system §5.3)*
 
 ```ejs
-<%- include('partials/head', { title: 'Set up owner account', shopName }) %>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center">
-  <main class="bg-white rounded-lg shadow p-8 w-full max-w-md">
-    <h1 class="text-xl font-semibold mb-1">Create owner account</h1>
-    <p class="text-sm text-slate-600 mb-6">This is the first account — it will have full access.</p>
-    <%- include('partials/flash', { flash }) %>
-    <form method="POST" action="/setup" class="space-y-4">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <label class="block">
-        <span class="text-sm text-slate-700">Full name</span>
-        <input name="full_name" required class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-slate-700">Username</span>
-        <input name="username" required class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-slate-700">Password</span>
-        <input name="password" type="password" required minlength="6" class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <button class="w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800">Create account</button>
-    </form>
+<%- include('partials/head', { title: 'Open the ledger', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex items-center justify-center">
+  <main class="w-full max-w-md px-gutter-lg">
+    <div class="text-center reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">First-run setup</p>
+      <h1 class="font-display text-[48px] leading-[52px] text-ink mt-gutter" style="font-variation-settings:'opsz' 96,'SOFT' 70">Open the ledger</h1>
+      <p class="font-sans text-coal mt-gutter">This is the first account — it has full access. Choose your owner name and credentials.</p>
+    </div>
+
+    <div class="reveal reveal-2"><%- include('partials/ornament') %></div>
+
+    <div class="reveal reveal-3">
+      <%- include('partials/flash', { flash }) %>
+      <form method="POST" action="/setup" class="space-y-air">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label class="block">
+          <span class="field-label">Full name</span>
+          <input name="full_name" required autofocus class="field-input" />
+        </label>
+        <label class="block">
+          <span class="field-label">Username</span>
+          <input name="username" required class="field-input" />
+        </label>
+        <label class="block">
+          <span class="field-label">Password</span>
+          <input name="password" type="password" required minlength="6" class="field-input" />
+          <span class="field-hint">At least six characters</span>
+        </label>
+        <div class="pt-gutter">
+          <button class="btn-primary w-full">Begin keeping →</button>
+        </div>
+      </form>
+    </div>
   </main>
 </body>
 </html>
@@ -1982,26 +2338,36 @@ describe("Auth", () => {
 npm test -- auth
 ```
 
-- [ ] **Step 3: Implement `src/views/login.ejs`**
+- [ ] **Step 3: Implement `src/views/login.ejs`** *(see design system §5.2)*
 
 ```ejs
 <%- include('partials/head', { title: 'Sign in', shopName }) %>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center">
-  <main class="bg-white rounded-lg shadow p-8 w-full max-w-sm">
-    <h1 class="text-xl font-semibold mb-6">Sign in to <%= shopName %></h1>
-    <%- include('partials/flash', { flash }) %>
-    <form method="POST" action="/login" class="space-y-4">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <label class="block">
-        <span class="text-sm text-slate-700">Username</span>
-        <input name="username" required autofocus class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-slate-700">Password</span>
-        <input name="password" type="password" required class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <button class="w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800">Sign in</button>
-    </form>
+<body class="text-ink font-sans antialiased min-h-screen flex items-center justify-center">
+  <main class="w-full max-w-sm px-gutter-lg">
+    <div class="text-center reveal reveal-1">
+      <h1 class="wordmark wordmark-lg text-[56px] leading-[60px]"><%= shopName %></h1>
+      <p class="font-display italic text-[20px] text-coal mt-gutter" style="font-variation-settings:'opsz' 24,'SOFT' 50">Welcome back to the counter</p>
+    </div>
+
+    <div class="reveal reveal-2"><%- include('partials/ornament') %></div>
+
+    <div class="reveal reveal-3">
+      <%- include('partials/flash', { flash }) %>
+      <form method="POST" action="/login" class="space-y-air">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label class="block">
+          <span class="field-label">Username</span>
+          <input name="username" required autofocus class="field-input" />
+        </label>
+        <label class="block">
+          <span class="field-label">Password</span>
+          <input name="password" type="password" required class="field-input" />
+        </label>
+        <div class="pt-gutter">
+          <button class="btn-primary w-full">Sign in →</button>
+        </div>
+      </form>
+    </div>
   </main>
 </body>
 </html>
@@ -2070,36 +2436,70 @@ git commit -m "feat(auth): login/logout flow with bcrypt + sessions"
 
 The dashboard cards (today's sales, etc.) come in Plan 6 — for now, render a placeholder so the app is navigable end-to-end.
 
-- [ ] **Step 1: Implement `src/views/dashboard.ejs`**
+- [ ] **Step 1: Implement `src/views/dashboard.ejs`** *(see design system §5.4)*
+
+The dashboard is the first daily impression. Time-aware greeting in Fraunces italic. Today's date in mono. The cards are placeholders for Plan 6; render them with the figures grayed and a small "Coming soon" meta so they still feel finished, not broken.
 
 ```ejs
 <%- include('partials/head', { title: 'Dashboard', shopName }) %>
-<body class="bg-slate-50 min-h-screen flex">
-  <%- include('partials/sidebar', { shopName, currentRole, currentUser, csrfToken }) %>
-  <main class="flex-1 p-8">
-    <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
+    <%
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Selam' : (hour < 18 ? 'Good afternoon' : 'Good evening');
+      const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    %>
+
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke"><%= today %></p>
+      <h1 class="font-display italic text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
+        <%= greet %>, <%= currentUser.full_name.split(' ')[0] %>.
+      </h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('partials/ornament') %></div>
+
     <%- include('partials/flash', { flash }) %>
+
     <% if (currentRole === 'owner') { %>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-sm text-slate-500">Today's sales</div>
-          <div class="text-2xl font-semibold mt-1 text-slate-400">—</div>
-          <div class="text-xs text-slate-400 mt-2">Coming in Sales module</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-sm text-slate-500">Purchases today</div>
-          <div class="text-2xl font-semibold mt-1 text-slate-400">—</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-sm text-slate-500">Petty cash spent</div>
-          <div class="text-2xl font-semibold mt-1 text-slate-400">—</div>
-        </div>
-      </div>
+      <section class="reveal reveal-3 grid grid-cols-1 md:grid-cols-3 gap-air">
+        <article class="card">
+          <header class="card-header">
+            <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Today's sales</p>
+            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+          </header>
+          <div class="card-body">
+            <p class="font-sans text-[13px] text-smoke">Coming with the Sales module.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <header class="card-header">
+            <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Purchases today</p>
+            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+          </header>
+          <div class="card-body">
+            <p class="font-sans text-[13px] text-smoke">Coming with the Purchases module.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <header class="card-header">
+            <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Petty cash spent</p>
+            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+          </header>
+          <div class="card-body">
+            <p class="font-sans text-[13px] text-smoke">Coming with the Petty Cash module.</p>
+          </div>
+        </article>
+      </section>
     <% } else { %>
-      <div class="space-y-3 max-w-sm">
-        <a href="/sales/new" class="block bg-slate-900 text-white rounded px-4 py-3 text-center hover:bg-slate-800">Start new shift</a>
-        <a href="/sales" class="block bg-white border rounded px-4 py-3 text-center hover:bg-slate-50">My past shifts</a>
-      </div>
+      <section class="reveal reveal-3 space-y-gutter max-w-md">
+        <a href="/sales/new" class="btn-primary w-full h-14 text-[14px]">Start new shift →</a>
+        <a href="/sales" class="btn-secondary w-full h-14 text-[14px]">My past shifts →</a>
+      </section>
     <% } %>
   </main>
 </body>
@@ -2138,77 +2538,125 @@ git commit -m "feat(dashboard): skeleton dashboard with role-aware shell"
 **Files:**
 - Create: `src/controllers/settingsController.ts`, `src/views/settings/index.ejs`
 
-- [ ] **Step 1: Implement `src/views/settings/index.ejs`**
+- [ ] **Step 1: Implement `src/views/settings/index.ejs`** *(see design system §5.5)*
+
+A single column. Each section is a `card`, preceded by a small-caps section heading. The save button sits inside the form footer — no sticky save bar in v1 (it's a polish-pass item for Plan 6).
 
 ```ejs
 <%- include('../partials/head', { title: 'Settings', shopName }) %>
-<body class="bg-slate-50 min-h-screen flex">
-  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken }) %>
-  <main class="flex-1 p-8 max-w-3xl">
-    <h1 class="text-2xl font-semibold mb-6">Settings</h1>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-3xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Configuration</p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Settings</h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
     <%- include('../partials/flash', { flash }) %>
-    <form method="POST" action="/settings" class="space-y-8 bg-white rounded-lg shadow p-6">
+
+    <form method="POST" action="/settings" class="reveal reveal-3 space-y-air">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
-      <section>
-        <h2 class="text-lg font-medium mb-3">Shop</h2>
-        <% ['shop_name','shop_address','shop_phone'].forEach(k => { %>
-          <label class="block mb-3">
-            <span class="text-sm text-slate-700"><%= k.replace('_',' ') %></span>
-            <input name="<%= k %>" value="<%= settings[k] || '' %>" class="mt-1 w-full border rounded px-3 py-2" />
-          </label>
-        <% }) %>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-medium mb-3">Money</h2>
-        <div class="grid grid-cols-2 gap-4">
-          <% ['currency_code','currency_symbol','decimal_places','thousand_separator','decimal_separator'].forEach(k => { %>
-            <label class="block">
-              <span class="text-sm text-slate-700"><%= k.replace(/_/g,' ') %></span>
-              <input name="<%= k %>" value="<%= settings[k] || '' %>" class="mt-1 w-full border rounded px-3 py-2" />
-            </label>
-          <% }) %>
-        </div>
-      </section>
-
-      <section>
-        <h2 class="text-lg font-medium mb-3">Payroll defaults</h2>
-        <div class="grid grid-cols-2 gap-4">
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Shop</h2>
+          <p class="card-meta">Used on receipts and printed payslips</p>
+        </header>
+        <div class="card-body space-y-gutter-lg">
           <label class="block">
-            <span class="text-sm text-slate-700">Employer pension %</span>
-            <input name="pension_employer_default_pct" value="<%= settings.pension_employer_default_pct %>" class="mt-1 w-full border rounded px-3 py-2" />
+            <span class="field-label">Shop name</span>
+            <input name="shop_name" value="<%= settings.shop_name || '' %>" class="field-input" />
           </label>
           <label class="block">
-            <span class="text-sm text-slate-700">Employee pension %</span>
-            <input name="pension_employee_default_pct" value="<%= settings.pension_employee_default_pct %>" class="mt-1 w-full border rounded px-3 py-2" />
+            <span class="field-label">Address</span>
+            <input name="shop_address" value="<%= settings.shop_address || '' %>" class="field-input" />
           </label>
           <label class="block">
-            <span class="text-sm text-slate-700">Standard days / month</span>
-            <input name="standard_days_in_month" value="<%= settings.standard_days_in_month %>" class="mt-1 w-full border rounded px-3 py-2" />
-          </label>
-          <label class="block flex items-center gap-2 mt-6">
-            <input type="checkbox" name="require_complete_hr_before_payroll" value="true" <%= settings.require_complete_hr_before_payroll === 'true' ? 'checked' : '' %> />
-            <span class="text-sm text-slate-700">Require complete HR record before payroll</span>
+            <span class="field-label">Phone</span>
+            <input name="shop_phone" value="<%= settings.shop_phone || '' %>" class="field-input field-mono" />
           </label>
         </div>
-      </section>
+      </article>
 
-      <section>
-        <h2 class="text-lg font-medium mb-3">System</h2>
-        <div class="grid grid-cols-2 gap-4">
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Money</h2>
+          <p class="card-meta">How figures are displayed across the app</p>
+        </header>
+        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
           <label class="block">
-            <span class="text-sm text-slate-700">Business-day cutoff (HH:MM)</span>
-            <input name="business_day_cutoff" value="<%= settings.business_day_cutoff %>" class="mt-1 w-full border rounded px-3 py-2" />
+            <span class="field-label">Currency code</span>
+            <input name="currency_code" value="<%= settings.currency_code || '' %>" class="field-input field-mono" />
           </label>
           <label class="block">
-            <span class="text-sm text-slate-700">Timezone</span>
-            <input name="timezone" value="<%= settings.timezone %>" class="mt-1 w-full border rounded px-3 py-2" />
+            <span class="field-label">Currency symbol</span>
+            <input name="currency_symbol" value="<%= settings.currency_symbol || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Decimal places</span>
+            <input name="decimal_places" value="<%= settings.decimal_places || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Thousand separator</span>
+            <input name="thousand_separator" value="<%= settings.thousand_separator || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Decimal separator</span>
+            <input name="decimal_separator" value="<%= settings.decimal_separator || '' %>" class="field-input field-mono" />
           </label>
         </div>
-      </section>
+      </article>
 
-      <button class="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800">Save</button>
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Payroll defaults</h2>
+          <p class="card-meta">Snapshotted into each payroll run at creation</p>
+        </header>
+        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+          <label class="block">
+            <span class="field-label">Employer pension %</span>
+            <input name="pension_employer_default_pct" value="<%= settings.pension_employer_default_pct %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Employee pension %</span>
+            <input name="pension_employee_default_pct" value="<%= settings.pension_employee_default_pct %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Standard days / month</span>
+            <input name="standard_days_in_month" value="<%= settings.standard_days_in_month %>" class="field-input field-mono" />
+          </label>
+          <label class="flex items-start gap-gutter-tight mt-air pt-1">
+            <input type="checkbox" name="require_complete_hr_before_payroll" value="true" <%= settings.require_complete_hr_before_payroll === 'true' ? 'checked' : '' %> class="mt-1 w-4 h-4 accent-ember" />
+            <span class="font-sans text-[14px] text-coal">Require complete HR record before adding an employee to payroll</span>
+          </label>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">System</h2>
+          <p class="card-meta">Time and business-day handling</p>
+        </header>
+        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+          <label class="block">
+            <span class="field-label">Business-day cutoff</span>
+            <input name="business_day_cutoff" value="<%= settings.business_day_cutoff %>" class="field-input field-mono" placeholder="HH:MM" />
+            <span class="field-hint">Sales logged before this hour file under yesterday</span>
+          </label>
+          <label class="block">
+            <span class="field-label">Timezone</span>
+            <input name="timezone" value="<%= settings.timezone %>" class="field-input field-mono" />
+          </label>
+        </div>
+      </article>
+
+      <div class="flex items-center justify-end gap-gutter pt-gutter">
+        <a href="/" class="btn-secondary">Cancel</a>
+        <button class="btn-primary">Save settings</button>
+      </div>
     </form>
   </main>
 </body>
@@ -2268,35 +2716,66 @@ git commit -m "feat(settings): editable settings page with allowlisted keys"
 **Files:**
 - Create: `src/controllers/accountController.ts`, `src/views/account.ejs`
 
-- [ ] **Step 1: Implement `src/views/account.ejs`**
+- [ ] **Step 1: Implement `src/views/account.ejs`** *(see design system §5.6)*
 
 ```ejs
 <%- include('partials/head', { title: 'My account', shopName }) %>
-<body class="bg-slate-50 min-h-screen flex">
-  <%- include('partials/sidebar', { shopName, currentRole, currentUser, csrfToken }) %>
-  <main class="flex-1 p-8 max-w-lg">
-    <h1 class="text-2xl font-semibold mb-6">My account</h1>
-    <%- include('partials/flash', { flash }) %>
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="text-sm text-slate-500">Full name</div>
-      <div class="text-lg"><%= currentUser.full_name %></div>
-      <div class="text-sm text-slate-500 mt-3">Role</div>
-      <div class="text-lg capitalize"><%= currentUser.role %></div>
-    </div>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
-    <form method="POST" action="/account/password" class="bg-white rounded-lg shadow p-6 space-y-4">
-      <h2 class="text-lg font-medium">Change password</h2>
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <label class="block">
-        <span class="text-sm text-slate-700">Current password</span>
-        <input name="current" type="password" required class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <label class="block">
-        <span class="text-sm text-slate-700">New password (≥ 6 chars)</span>
-        <input name="next" type="password" minlength="6" required class="mt-1 w-full border rounded px-3 py-2" />
-      </label>
-      <button class="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800">Update password</button>
-    </form>
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Profile</p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">My account</h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('partials/ornament') %></div>
+
+    <%- include('partials/flash', { flash }) %>
+
+    <div class="reveal reveal-3 space-y-air">
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Who you are</h2>
+        </header>
+        <div class="card-body space-y-gutter-lg">
+          <div>
+            <p class="field-label">Full name</p>
+            <p class="font-sans text-[17px] text-ink mt-1"><%= currentUser.full_name %></p>
+          </div>
+          <div>
+            <p class="field-label">Username</p>
+            <p class="font-mono text-[15px] text-ink mt-1"><%= currentUser.username %></p>
+          </div>
+          <div>
+            <p class="field-label">Role</p>
+            <p class="font-sans text-[15px] text-ink mt-1 capitalize"><%= currentUser.role %></p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Change password</h2>
+          <p class="card-meta">Keep your account secure</p>
+        </header>
+        <form method="POST" action="/account/password" class="card-body space-y-gutter-lg">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <label class="block">
+            <span class="field-label">Current password</span>
+            <input name="current" type="password" required class="field-input" />
+          </label>
+          <label class="block">
+            <span class="field-label">New password</span>
+            <input name="next" type="password" minlength="6" required class="field-input" />
+            <span class="field-hint">At least six characters</span>
+          </label>
+          <div class="flex items-center justify-end pt-gutter">
+            <button class="btn-primary">Update password</button>
+          </div>
+        </form>
+      </article>
+    </div>
   </main>
 </body>
 </html>
