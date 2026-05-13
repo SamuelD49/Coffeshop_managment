@@ -8,6 +8,7 @@ import { requireAuth } from "../middleware/requireAuth";
 import { requireOwner } from "../middleware/requireOwner";
 import { employeesRouter } from "./employees";
 import { menuRouter } from "./menu";
+import { salesRouter } from "./sales";
 
 export const router = Router();
 
@@ -33,3 +34,4 @@ router.post("/settings", requireAuth, requireOwner, Settings.update);
 
 router.use("/employees", employeesRouter);
 router.use("/menu", menuRouter);
+router.use("/sales", salesRouter);
