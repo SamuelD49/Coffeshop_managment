@@ -113,6 +113,47 @@
         <button class="btn-primary">Save settings</button>
       </div>
     </form>
+
+    <article class="card mt-air">
+      <header class="card-header">
+        <h2 class="card-title">Backups</h2>
+        <p class="card-meta">Stored in <span class="font-mono"><%= backupDir %></span></p>
+      </header>
+      <div class="card-body">
+        <form method="POST" action="/settings/backup" class="flex items-center justify-between mb-gutter-lg">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <p class="font-sans text-[13px] text-coal">Automatic backups run nightly at 02:30 and are kept for 30 days.</p>
+          <button class="btn-secondary">Back up now</button>
+        </form>
+
+        <% if (backups.length === 0) { %>
+          <p class="font-sans text-[13px] text-smoke italic">No backups yet — run one to create the first.</p>
+        <% } else { %>
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-rule">
+                <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">File</th>
+                <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Size</th>
+                <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% backups.slice(0, 10).forEach(b => { %>
+                <tr class="border-b border-rule last:border-0">
+                  <td class="py-gutter font-mono text-[12px] text-coal"><%= b.name %></td>
+                  <td class="py-gutter text-right font-mono text-[12px] text-coal"><%= (b.size / 1024).toFixed(1) %> KB</td>
+                  <td class="py-gutter text-right font-mono text-[12px] text-coal"><%= b.mtime.toISOString().replace('T', ' ').substring(0, 16) %></td>
+                  <td class="py-gutter text-right">
+                    <a href="/settings/backup/<%= b.name %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Download</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </article>
   </main>
 </body>
 </html>
