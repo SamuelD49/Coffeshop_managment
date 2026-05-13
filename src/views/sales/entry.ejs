@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Shift · ' + session.business_date, shopName }) %>
+<%- include('../partials/head', { title: 'Sales · ' + session.business_date, shopName }) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -6,10 +6,10 @@
     <header class="reveal reveal-1 flex items-end justify-between">
       <div>
         <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
-          <a href="/sales" class="hover:text-ink transition-colors">Sales</a> · Shift
+          <a href="/sales" class="hover:text-ink transition-colors">Sales</a>
         </p>
         <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
-          <%= session.business_date %> · <span class="italic"><%= session.shift || '—' %></span>
+          <%= session.business_date %><% if (session.shift) { %> · <span class="italic"><%= session.shift %></span><% } %>
         </h1>
         <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
           <% if (employee) { %>Cashier: <%= employee.full_name %> · <% } %>
@@ -17,14 +17,14 @@
         </p>
       </div>
       <% if (editable) { %>
-        <form method="POST" action="/sales/<%= session.id %>/close" onsubmit="return confirm('Close this shift? You will not be able to edit it after.')">
+        <form method="POST" action="/sales/<%= session.id %>/close" onsubmit="return confirm('Close this entry? You will not be able to edit it after.')">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-          <button class="btn-primary">Close shift →</button>
+          <button class="btn-primary">Close entry →</button>
         </form>
       <% } else if (currentRole === 'owner') { %>
         <form method="POST" action="/sales/<%= session.id %>/reopen">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-          <button class="btn-secondary">Reopen shift</button>
+          <button class="btn-secondary">Reopen entry</button>
         </form>
       <% } %>
     </header>
