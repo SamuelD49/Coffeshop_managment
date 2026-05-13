@@ -1,0 +1,98 @@
+<%- include('../partials/head', { title: 'Shift · ' + session.business_date, shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
+    <header class="reveal reveal-1 flex items-end justify-between">
+      <div>
+        <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
+          <a href="/sales" class="hover:text-ink transition-colors">Sales</a> · Shift
+        </p>
+        <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
+          <%= session.business_date %> · <span class="italic"><%= session.shift || '—' %></span>
+        </h1>
+        <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
+          <% if (employee) { %>Cashier: <%= employee.full_name %> · <% } %>
+          <span class="pip pip-<%= session.status === 'open' ? 'open' : 'closed' %>"><%= session.status %></span>
+        </p>
+      </div>
+      <% if (editable) { %>
+        <form method="POST" action="/sales/<%= session.id %>/close" onsubmit="return confirm('Close this shift? You will not be able to edit it after.')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="btn-primary">Close shift →</button>
+        </form>
+      <% } else if (currentRole === 'owner') { %>
+        <form method="POST" action="/sales/<%= session.id %>/reopen">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="btn-secondary">Reopen shift</button>
+        </form>
+      <% } %>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <div class="reveal reveal-3 card overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-rule-strong">
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Qty</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach(item => {
+               const line = lines[item.id] || null;
+          %>
+            <%- include('_row', { item, line, session, csrfToken, totals }) %>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <%- include('_totals', { totals }) %>
+
+      <% if (editable) { %>
+        <form
+          class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-3 gap-air items-end"
+          hx-post="/sales/<%= session.id %>/header"
+          hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
+          hx-target="#totals"
+          hx-swap="outerHTML"
+          hx-trigger="change from:input, change from:textarea, change delay:200ms"
+        >
+          <label class="block">
+            <span class="field-label">Cash collected</span>
+            <input name="cash_amount" value="<%= (session.cash_amount / 100).toFixed(2) %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Bank transfer</span>
+            <input name="bank_transfer_amount" value="<%= (session.bank_transfer_amount / 100).toFixed(2) %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Notes</span>
+            <input name="notes" value="<%= session.notes || '' %>" class="field-input" />
+          </label>
+        </form>
+      <% } else { %>
+        <div class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-3 gap-air">
+          <div>
+            <p class="field-label">Cash collected</p>
+            <p class="font-mono text-[16px] text-ink"><%= (session.cash_amount / 100).toFixed(2) %></p>
+          </div>
+          <div>
+            <p class="field-label">Bank transfer</p>
+            <p class="font-mono text-[16px] text-ink"><%= (session.bank_transfer_amount / 100).toFixed(2) %></p>
+          </div>
+          <div>
+            <p class="field-label">Notes</p>
+            <p class="font-sans text-[14px] text-coal"><%= session.notes || '—' %></p>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

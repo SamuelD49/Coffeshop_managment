@@ -1,0 +1,19 @@
+<tr id="row-<%= item.id %>" class="border-b border-rule">
+  <td class="px-gutter-lg py-gutter font-sans text-[15px] text-ink"><%= item.name %></td>
+  <td class="text-right font-mono text-[14px] text-smoke py-gutter"><%= (item.price / 100).toFixed(2) %></td>
+  <td class="py-gutter">
+    <input
+      type="number" min="0" step="1"
+      name="qty" value="<%= line ? line.qty : '' %>"
+      class="w-20 font-mono text-right border-0 border-b border-rule-strong bg-transparent px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember"
+      hx-post="/sales/<%= typeof session !== 'undefined' ? session.id : (totals ? totals.id : '') %>/lines/<%= item.id %>"
+      hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
+      hx-trigger="change delay:200ms, blur"
+      hx-target="#row-<%= item.id %>"
+      hx-swap="outerHTML"
+    />
+  </td>
+  <td id="row-total-<%= item.id %>" class="text-right font-mono text-[14px] text-ink py-gutter px-gutter-lg num-flash">
+    <%= line ? (line.total / 100).toFixed(2) : '0.00' %>
+  </td>
+</tr>
