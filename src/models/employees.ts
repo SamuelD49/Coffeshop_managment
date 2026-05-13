@@ -4,15 +4,26 @@ export type Employee = {
   id: number;
   full_name: string;
   phone: string | null;
+  national_id_number: string | null;
+  national_id_type: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  address: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relation: string | null;
+  position: string | null;
+  hire_date: string | null;
+  termination_date: string | null;
+  basic_salary: number;
   username: string | null;
   password_hash: string | null;
   role: "owner" | "employee";
   is_active: number;
   onboarding_status: "incomplete" | "complete";
-  basic_salary: number;
   created_at: string;
   updated_at: string;
-  // remaining HR columns left as `any` until Plan 2 surfaces them
 };
 
 export type CreateInput = {
@@ -66,4 +77,85 @@ export function setActive(id: number, active: boolean): void {
   getDb()
     .prepare("UPDATE employees SET is_active = ?, updated_at = datetime('now') WHERE id = ?")
     .run(active ? 1 : 0, id);
+}
+
+export type PersonalInput = {
+  full_name: string;
+  phone: string | null;
+  national_id_number: string | null;
+  national_id_type: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  address: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relation: string | null;
+};
+
+export type EmploymentInput = {
+  position: string | null;
+  hire_date: string | null;
+  termination_date?: string | null;
+  basic_salary: number;
+  role: "owner" | "employee";
+  is_active: boolean;
+  username?: string | null;
+};
+
+export function listAll(opts: { activeOnly?: boolean } = {}): Employee[] {
+  const where = opts.activeOnly ? "WHERE is_active = 1" : "";
+  return getDb().prepare(`SELECT * FROM employees ${where} ORDER BY full_name`).all() as Employee[];
+}
+
+export function findFull(id: number): Employee | null {
+  const row = getDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
+  return row ?? null;
+}
+
+export function updatePersonal(id: number, input: PersonalInput): void {
+  getDb().prepare(`
+    UPDATE employees SET
+      full_name = @full_name,
+      phone = @phone,
+      national_id_number = @national_id_number,
+      national_id_type = @national_id_type,
+      date_of_birth = @date_of_birth,
+      gender = @gender,
+      marital_status = @marital_status,
+      address = @address,
+      emergency_contact_name = @emergency_contact_name,
+      emergency_contact_phone = @emergency_contact_phone,
+      emergency_contact_relation = @emergency_contact_relation,
+      updated_at = datetime('now')
+    WHERE id = @id
+  `).run({ ...input, id });
+}
+
+export function updateEmployment(id: number, input: EmploymentInput): void {
+  getDb().prepare(`
+    UPDATE employees SET
+      position = @position,
+      hire_date = @hire_date,
+      termination_date = @termination_date,
+      basic_salary = @basic_salary,
+      role = @role,
+      is_active = @is_active,
+      username = @username,
+      updated_at = datetime('now')
+    WHERE id = @id
+  `).run({
+    position: input.position,
+    hire_date: input.hire_date,
+    termination_date: input.termination_date ?? null,
+    basic_salary: input.basic_salary,
+    role: input.role,
+    is_active: input.is_active ? 1 : 0,
+    username: input.username ?? null,
+    id,
+  });
+}
+
+export function setOnboardingStatus(id: number, status: "incomplete" | "complete"): void {
+  getDb().prepare("UPDATE employees SET onboarding_status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
 }
