@@ -61,15 +61,15 @@
           hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
           hx-target="#totals"
           hx-swap="outerHTML"
-          hx-trigger="change from:input, change from:textarea, change delay:200ms"
+          hx-trigger="input changed delay:300ms from:input[name='cash_amount'], input changed delay:300ms from:input[name='bank_transfer_amount'], change from:input[name='notes']"
         >
           <label class="block">
             <span class="field-label">Cash collected</span>
-            <input name="cash_amount" value="<%= (session.cash_amount / 100).toFixed(2) %>" class="field-input field-mono" />
+            <input name="cash_amount" value="<%= (session.cash_amount / 100).toFixed(2) %>" inputmode="decimal" oninput="window.recalcSales && window.recalcSales(this)" class="field-input field-mono" />
           </label>
           <label class="block">
             <span class="field-label">Bank transfer</span>
-            <input name="bank_transfer_amount" value="<%= (session.bank_transfer_amount / 100).toFixed(2) %>" class="field-input field-mono" />
+            <input name="bank_transfer_amount" value="<%= (session.bank_transfer_amount / 100).toFixed(2) %>" inputmode="decimal" oninput="window.recalcSales && window.recalcSales(this)" class="field-input field-mono" />
           </label>
           <label class="block">
             <span class="field-label">Notes</span>
@@ -94,5 +94,60 @@
       <% } %>
     </div>
   </main>
+
+  <script>
+    // Real-time totals. Server still reconciles via HTMX after 300ms — this is purely
+    // client-side preview so numbers move on every keystroke.
+    (function () {
+      function asMoneyCents(value) {
+        var n = Number(String(value || '').replace(/[, ]/g, ''));
+        return Number.isFinite(n) ? Math.round(n * 100) : 0;
+      }
+      function asQty(value) {
+        var n = Math.floor(Number(value || 0));
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      }
+      function fmt(cents) { return (cents / 100).toFixed(2); }
+
+      window.recalcSales = function () {
+        var subtotal = 0;
+        var items = 0;
+        document.querySelectorAll('tr[data-unit-price]').forEach(function (row) {
+          var unit = Number(row.dataset.unitPrice) || 0;
+          var qty = asQty(row.querySelector('input[name="qty"]').value);
+          var lineTotal = unit * qty;
+          subtotal += lineTotal;
+          items += qty;
+          var rt = row.querySelector('[id^="row-total-"]');
+          if (rt) rt.textContent = fmt(lineTotal);
+        });
+
+        var cashInput = document.querySelector('input[name="cash_amount"]');
+        var bankInput = document.querySelector('input[name="bank_transfer_amount"]');
+        var cash = cashInput ? asMoneyCents(cashInput.value) : 0;
+        var bank = bankInput ? asMoneyCents(bankInput.value) : 0;
+        var counted = cash + bank;
+        var diff = counted - subtotal;
+
+        var elS = document.getElementById('totals-subtotal');
+        if (elS) elS.textContent = fmt(subtotal);
+        var elC = document.getElementById('totals-counted');
+        if (elC) elC.textContent = fmt(counted);
+        var elI = document.getElementById('totals-items');
+        if (elI) elI.textContent = String(items);
+        var elD = document.getElementById('totals-difference');
+        if (elD) {
+          elD.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
+          elD.classList.remove('text-leaf', 'text-crimson', 'text-smoke');
+          elD.classList.add(diff === 0 ? 'text-smoke' : (diff > 0 ? 'text-leaf' : 'text-crimson'));
+        }
+      };
+
+      // Run once on load to populate "items sold" and reconcile any cached state.
+      document.addEventListener('DOMContentLoaded', window.recalcSales);
+      // Re-run after HTMX swaps so the values stay in sync with server-canonical state.
+      document.body.addEventListener('htmx:afterSwap', window.recalcSales);
+    })();
+  </script>
 </body>
 </html>

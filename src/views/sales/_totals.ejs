@@ -2,21 +2,21 @@
   <div class="grid grid-cols-4 gap-air">
     <div>
       <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Subtotal</p>
-      <p class="font-mono text-[20px] text-ink mt-1"><%= (totals.subtotal / 100).toFixed(2) %></p>
+      <p id="totals-subtotal" class="font-mono text-[20px] text-ink mt-1"><%= (totals.subtotal / 100).toFixed(2) %></p>
     </div>
     <div>
       <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Counted</p>
-      <p class="font-mono text-[20px] text-ink mt-1"><%= (totals.total_amount / 100).toFixed(2) %></p>
+      <p id="totals-counted" class="font-mono text-[20px] text-ink mt-1"><%= (totals.total_amount / 100).toFixed(2) %></p>
     </div>
     <div>
       <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Difference</p>
-      <p class="font-mono text-[20px] mt-1 <%= totals.difference === 0 ? 'text-smoke' : (totals.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
+      <p id="totals-difference" class="font-mono text-[20px] mt-1 <%= totals.difference === 0 ? 'text-smoke' : (totals.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
         <%= totals.difference >= 0 ? '+' : '' %><%= (totals.difference / 100).toFixed(2) %>
       </p>
     </div>
     <div>
       <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Items sold</p>
-      <p class="font-mono text-[20px] text-ink mt-1"><%= totals.subtotal === 0 ? '0' : ((totals.subtotal / 100).toFixed(0)) %></p>
+      <p id="totals-items" class="font-mono text-[20px] text-ink mt-1">—</p>
     </div>
   </div>
 </div>
