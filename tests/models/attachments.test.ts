@@ -1,0 +1,53 @@
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { unlinkSync, existsSync } from "fs";
+import { closeDb, runMigrations } from "../../src/lib/db";
+import * as Employees from "../../src/models/employees";
+import * as Attachments from "../../src/models/attachments";
+
+const TEST_DB = "./data/test-attachments.db";
+process.env.DB_PATH = TEST_DB;
+
+beforeEach(() => {
+  closeDb();
+  if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+  runMigrations();
+});
+
+afterAll(() => {
+  closeDb();
+  if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+});
+
+describe("Attachments", () => {
+  it("create() and findByOwner() round-trip", () => {
+    const e = Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
+    Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "profile_photo", filename: "abc.png", original_name: "me.png", mime_type: "image/png", size_bytes: 1234, uploaded_by: null });
+    Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "id_front", filename: "def.jpg", original_name: "id.jpg", mime_type: "image/jpeg", size_bytes: 5678, uploaded_by: null });
+    const list = Attachments.findByOwner("employee", e.id);
+    expect(list).toHaveLength(2);
+    expect(list.map(a => a.kind).sort()).toEqual(["id_front", "profile_photo"]);
+  });
+
+  it("findOneByKind() returns the latest of a kind or null", () => {
+    const e = Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
+    Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "profile_photo", filename: "old.png", original_name: "old.png", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
+    Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "profile_photo", filename: "new.png", original_name: "new.png", mime_type: "image/png", size_bytes: 2, uploaded_by: null });
+    expect(Attachments.findOneByKind("employee", e.id, "profile_photo")?.filename).toBe("new.png");
+    expect(Attachments.findOneByKind("employee", e.id, "contract")).toBeNull();
+  });
+
+  it("remove() deletes by id", () => {
+    const e = Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
+    const a = Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "id_front", filename: "x.jpg", original_name: "x.jpg", mime_type: "image/jpeg", size_bytes: 1, uploaded_by: null });
+    Attachments.remove(a.id);
+    expect(Attachments.findByOwner("employee", e.id)).toHaveLength(0);
+  });
+
+  it("removeByOwner() bulk-deletes all rows for an owner", () => {
+    const e = Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
+    Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "id_front",  filename: "a", original_name: "a", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
+    Attachments.create({ owner_type: "employee", owner_id: e.id, kind: "id_back",   filename: "b", original_name: "b", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
+    Attachments.removeByOwner("employee", e.id);
+    expect(Attachments.findByOwner("employee", e.id)).toHaveLength(0);
+  });
+});
