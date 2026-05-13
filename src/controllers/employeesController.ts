@@ -12,7 +12,7 @@ function actor(req: Request): number | null { return req.session.employeeId ?? n
 
 export function list(req: Request, res: Response) {
   const showInactive = req.query.show === "all";
-  const rows = Employees.listAll({ activeOnly: !showInactive });
+  const rows = Employees.listAll({ activeOnly: !showInactive }).filter(e => e.role !== "owner");
   const withStatus = rows.map(e => ({
     employee: e,
     completeness: calculateCompleteness(e.id),
