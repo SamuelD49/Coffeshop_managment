@@ -3,115 +3,121 @@
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
-    <header class="reveal reveal-1">
-      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Outgoing</p>
-      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Purchases</h1>
+    <header class="reveal reveal-1 flex items-end justify-between">
+      <h1 class="font-display text-[36px] leading-[42px] text-ink" style="font-variation-settings:'opsz' 72,'SOFT' 50">Purchases</h1>
+      <details class="text-right">
+        <summary class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink cursor-pointer transition-colors list-none">
+          <% if (filters.from || filters.to) { %>
+            Filter: <span class="font-mono"><%= filters.from || '…' %> → <%= filters.to || '…' %></span>
+          <% } else { %>
+            Filter by date
+          <% } %>
+        </summary>
+        <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end">
+          <label class="block">
+            <span class="field-label">From</span>
+            <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">To</span>
+            <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
+          </label>
+          <button class="btn-secondary">Apply</button>
+          <% if (filters.from || filters.to) { %>
+            <a href="/purchases" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors self-center">Clear</a>
+          <% } %>
+        </form>
+      </details>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
 
-    <form method="GET" class="flex items-end gap-gutter mb-air">
-      <label class="block">
-        <span class="field-label">From</span>
-        <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
-      </label>
-      <label class="block">
-        <span class="field-label">To</span>
-        <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
-      </label>
-      <button class="btn-secondary">Filter</button>
-    </form>
-
     <%- include('../partials/flash', { flash }) %>
 
-    <form method="POST" action="/purchases" class="reveal reveal-3 card mb-air">
+    <%# Hidden form element referenced by the inline empty row below (HTML5 form= attribute) %>
+    <form method="POST" action="/purchases" id="purchase-new" class="hidden">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <header class="card-header">
-        <h2 class="card-title">Log a purchase</h2>
-        <p class="card-meta">Inline add — date defaults to today</p>
-      </header>
-      <div class="card-body grid grid-cols-6 gap-gutter">
-        <label class="col-span-2">
-          <span class="field-label">Date</span>
-          <input type="date" name="purchase_date" value="<%= today %>" required class="field-input field-mono" />
-        </label>
-        <label class="col-span-3">
-          <span class="field-label">Description</span>
-          <input name="description" required class="field-input" placeholder="Beans, milk, sugar..." />
-        </label>
-        <label>
-          <span class="field-label">Unit</span>
-          <input name="unit" class="field-input field-mono" placeholder="kg, L" />
-        </label>
-        <label>
-          <span class="field-label">Qty</span>
-          <input name="qty" required class="field-input field-mono" placeholder="0" />
-        </label>
-        <label>
-          <span class="field-label">Unit price</span>
-          <input name="unit_price" required class="field-input field-mono" placeholder="0.00" />
-        </label>
-        <label class="col-span-3">
-          <span class="field-label">Remark</span>
-          <input name="remark" class="field-input" />
-        </label>
-        <div class="col-span-1 flex items-end justify-end">
-          <button class="btn-primary w-full">Add</button>
-        </div>
-      </div>
     </form>
 
-    <% if (purchases.length === 0) { %>
-      <div class="card">
-        <div class="card-body text-center py-air">
-          <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No purchases match.</p>
-        </div>
-      </div>
-    <% } else { %>
-      <div class="card">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-rule">
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Description</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Qty</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit price</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Total</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Remark</th>
-              <th class="px-gutter-lg"></th>
+    <div class="reveal reveal-3 card">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-rule-strong">
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Description</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Un.</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Qty</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Price</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Total</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Remark</th>
+            <th class="px-gutter-lg"></th>
+          </tr>
+        </thead>
+
+        <%# Empty row at the top — exactly matches "fill in the next line" on the paper form %>
+        <tbody>
+          <tr class="border-b border-rule bg-paper">
+            <td class="px-gutter-lg py-gutter">
+              <input form="purchase-new" type="date" name="purchase_date" value="<%= today %>" required class="w-32 font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <input form="purchase-new" name="description" required placeholder="Beans, milk, sugar…" class="w-full font-sans text-[14px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <input form="purchase-new" name="unit" placeholder="kg" class="w-16 font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <input form="purchase-new" name="qty" required placeholder="0" class="w-20 font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <input form="purchase-new" name="unit_price" required placeholder="0.00" class="w-24 font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter text-right font-mono text-[13px] text-mist">—</td>
+            <td class="py-gutter pl-gutter-lg">
+              <input form="purchase-new" name="remark" class="w-full font-sans text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="px-gutter-lg py-gutter text-right">
+              <button form="purchase-new" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Add →</button>
+            </td>
+          </tr>
+
+          <% purchases.forEach(p => { %>
+            <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+              <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= p.purchase_date %></td>
+              <td class="py-gutter font-sans text-[14px] text-ink"><%= p.description %></td>
+              <td class="py-gutter font-mono text-[13px] text-smoke"><%= p.unit || '' %></td>
+              <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= p.qty %></td>
+              <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
+              <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
+              <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke truncate max-w-[200px]"><%= p.remark || '' %></td>
+              <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
+                <a href="/purchases/<%= p.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ember transition-colors mr-gutter">Edit</a>
+                <form method="POST" action="/purchases/<%= p.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Delete</button>
+                </form>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            <% purchases.forEach(p => { %>
-              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
-                <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= p.purchase_date %></td>
-                <td class="py-gutter font-sans text-[14px] text-ink"><%= p.description %></td>
-                <td class="py-gutter font-mono text-[13px] text-smoke"><%= p.unit || '—' %></td>
-                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= p.qty %></td>
-                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
-                <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
-                <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke truncate max-w-[200px]"><%= p.remark || '' %></td>
-                <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
-                  <a href="/purchases/<%= p.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors mr-gutter">Edit</a>
-                  <form method="POST" action="/purchases/<%= p.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Delete</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-          <tfoot>
-            <tr class="border-t-2 border-rule-strong bg-paper">
-              <td colspan="5" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
-              <td class="py-gutter-lg text-right font-mono text-[18px] text-ink"><%= (sumTotal / 100).toFixed(2) %></td>
-              <td colspan="2"></td>
+          <% }) %>
+
+          <% if (purchases.length === 0) { %>
+            <tr>
+              <td colspan="8" class="px-gutter-lg py-air text-center font-display italic text-[18px] text-mist" style="font-variation-settings:'opsz' 24,'SOFT' 50">
+                No rows yet — type into the line above to add the first.
+              </td>
             </tr>
-          </tfoot>
-        </table>
-      </div>
-    <% } %>
+          <% } %>
+        </tbody>
+
+        <tfoot>
+          <tr class="border-t-2 border-rule-strong bg-paper">
+            <td colspan="5" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
+            <td class="py-gutter-lg text-right font-mono text-[18px] text-ink"><%= (sumTotal / 100).toFixed(2) %></td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </main>
 </body>
 </html>

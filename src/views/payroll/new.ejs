@@ -1,13 +1,12 @@
 <%- include('../partials/head', { title: 'New payroll run', shopName }) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
-  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-3xl">
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-2xl">
     <header class="reveal reveal-1">
       <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
         <a href="/payroll" class="hover:text-ink transition-colors">Payroll</a> · New
       </p>
-      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">New payroll run</h1>
-      <p class="font-sans text-coal mt-gutter">Pick a year and month. The system will auto-populate an entry for each active employee using the default pension rates from Settings.</p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Payroll sheet for the month of…</h1>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
@@ -16,14 +15,7 @@
 
     <form method="POST" action="/payroll" class="reveal reveal-3 card mb-air">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <header class="card-header">
-        <h2 class="card-title">Period</h2>
-      </header>
       <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
-        <label class="block">
-          <span class="field-label">Year</span>
-          <input type="number" name="year" value="<%= defaultYear %>" required class="field-input field-mono" />
-        </label>
         <label class="block">
           <span class="field-label">Month</span>
           <select name="month" class="field-input">
@@ -32,6 +24,20 @@
             <% }) %>
           </select>
         </label>
+        <label class="block">
+          <span class="field-label">Year</span>
+          <input type="number" name="year" value="<%= defaultYear %>" required class="field-input field-mono" />
+        </label>
+      </div>
+      <div class="px-gutter-lg pb-gutter-lg pt-gutter">
+        <p class="font-sans text-[13px] text-smoke">
+          A row will be created for each active employee
+          <% if (eligible.length > 0) { %>
+            (<span class="text-coal"><%= eligible.length %> ready</span><% if (incomplete.length > 0) { %>, <span class="text-coal"><%= incomplete.length %> skipped due to incomplete HR</span><% } %>).
+          <% } else { %>
+            — but none are eligible right now<% if (requireComplete) { %>; either finish onboarding or relax the setting under <a href="/settings" class="link">Settings</a><% } %>.
+          <% } %>
+        </p>
       </div>
       <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
         <a href="/payroll" class="btn-secondary">Cancel</a>
@@ -39,40 +45,19 @@
       </div>
     </form>
 
-    <div class="reveal reveal-3 card mb-air">
-      <header class="card-header">
-        <h2 class="card-title">Will include</h2>
-        <p class="card-meta"><%= eligible.length %> active employee<%= eligible.length === 1 ? '' : 's' %></p>
-      </header>
-      <div class="card-body">
-        <% if (eligible.length === 0) { %>
-          <p class="font-display italic text-[18px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No eligible employees.</p>
-          <% if (requireComplete) { %>
-            <p class="font-sans text-[13px] text-smoke mt-gutter">Settings require complete HR records. Finish onboarding at least one employee, or relax the setting.</p>
-          <% } %>
-        <% } else { %>
+    <% if (eligible.length > 0 || incomplete.length > 0) { %>
+      <details class="reveal reveal-3 font-sans text-[13px] text-smoke">
+        <summary class="cursor-pointer hover:text-ink transition-colors tracking-smallcaps uppercase text-[11px]">See who's included</summary>
+        <div class="mt-gutter card">
           <ul class="divide-y divide-rule">
             <% eligible.forEach(e => { %>
-              <li class="py-gutter flex items-center justify-between">
+              <li class="px-gutter-lg py-gutter flex items-center justify-between">
                 <span class="font-sans text-[14px] text-ink"><%= e.full_name %></span>
                 <span class="pip pip-approved">Eligible</span>
               </li>
             <% }) %>
-          </ul>
-        <% } %>
-      </div>
-    </div>
-
-    <% if (incomplete.length > 0) { %>
-      <div class="reveal reveal-3 card">
-        <header class="card-header">
-          <h2 class="card-title">Will be skipped</h2>
-          <p class="card-meta">HR records incomplete — see Settings to relax the requirement</p>
-        </header>
-        <div class="card-body">
-          <ul class="divide-y divide-rule">
             <% incomplete.forEach(e => { %>
-              <li class="py-gutter">
+              <li class="px-gutter-lg py-gutter">
                 <div class="flex items-center justify-between">
                   <a href="/employees/<%= e.id %>" class="font-sans text-[14px] text-ink hover:text-ember transition-colors"><%= e.full_name %></a>
                   <span class="pip pip-draft"><%= e.missing.length %> missing</span>
@@ -82,7 +67,7 @@
             <% }) %>
           </ul>
         </div>
-      </div>
+      </details>
     <% } %>
   </main>
 </body>

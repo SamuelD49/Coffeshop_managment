@@ -3,129 +3,130 @@
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
-    <header class="reveal reveal-1 flex items-end justify-between">
-      <div>
-        <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Cash on hand</p>
-        <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Petty cash</h1>
-      </div>
-      <div class="text-right">
-        <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Current balance</p>
-        <p class="font-mono text-[28px] mt-1 <%= balance < 0 ? 'text-crimson' : 'text-ink' %>"><%= (balance / 100).toFixed(2) %></p>
+    <header class="reveal reveal-1 flex items-end justify-between gap-gutter">
+      <h1 class="font-display text-[36px] leading-[42px] text-ink" style="font-variation-settings:'opsz' 72,'SOFT' 50">Petty cash</h1>
+      <div class="flex items-end gap-air">
+        <details class="text-right">
+          <summary class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink cursor-pointer transition-colors list-none">
+            <% if (filters.from || filters.to) { %>
+              Filter: <span class="font-mono"><%= filters.from || '…' %> → <%= filters.to || '…' %></span>
+            <% } else { %>
+              Filter by date
+            <% } %>
+          </summary>
+          <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end">
+            <label class="block">
+              <span class="field-label">From</span>
+              <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
+            </label>
+            <label class="block">
+              <span class="field-label">To</span>
+              <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
+            </label>
+            <button class="btn-secondary">Apply</button>
+            <% if (filters.from || filters.to) { %>
+              <a href="/petty-cash" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors self-center">Clear</a>
+            <% } %>
+          </form>
+        </details>
+        <div class="text-right">
+          <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Cash on hand</p>
+          <p class="font-mono text-[24px] mt-0 <%= balance < 0 ? 'text-crimson' : 'text-ink' %>"><%= (balance / 100).toFixed(2) %></p>
+        </div>
       </div>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
 
-    <form method="GET" class="flex items-end gap-gutter mb-air">
-      <label class="block">
-        <span class="field-label">From</span>
-        <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
-      </label>
-      <label class="block">
-        <span class="field-label">To</span>
-        <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
-      </label>
-      <button class="btn-secondary">Filter</button>
-    </form>
-
     <%- include('../partials/flash', { flash }) %>
 
-    <form method="POST" action="/petty-cash" class="reveal reveal-3 card mb-air">
+    <%# Hidden form referenced by the inline empty row below %>
+    <form method="POST" action="/petty-cash" id="petty-new" class="hidden">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <header class="card-header">
-        <h2 class="card-title">Log a movement</h2>
-        <p class="card-meta">Expense subtracts, refund and replenishment add</p>
-      </header>
-      <div class="card-body grid grid-cols-6 gap-gutter">
-        <label class="col-span-2">
-          <span class="field-label">Date</span>
-          <input type="date" name="entry_date" value="<%= today %>" required class="field-input field-mono" />
-        </label>
-        <label class="col-span-2">
-          <span class="field-label">Type</span>
-          <select name="type" class="field-input">
-            <option value="expense">Expense</option>
-            <option value="refund">Refund</option>
-            <option value="replenishment">Replenishment</option>
-          </select>
-        </label>
-        <label class="col-span-2">
-          <span class="field-label">Amount</span>
-          <input name="amount" required class="field-input field-mono" placeholder="0.00" />
-        </label>
-        <label class="col-span-3">
-          <span class="field-label">Description</span>
-          <input name="description" required class="field-input" placeholder="What was this for?" />
-        </label>
-        <label class="col-span-2">
-          <span class="field-label">Payer</span>
-          <input name="payer_name" class="field-input" placeholder="Who paid / received?" />
-        </label>
-        <div class="col-span-1 flex items-end justify-end">
-          <button class="btn-primary w-full">Add</button>
-        </div>
-        <label class="col-span-6">
-          <span class="field-label">Remark</span>
-          <input name="remark" class="field-input" />
-        </label>
-      </div>
     </form>
 
-    <% if (entries.length === 0) { %>
-      <div class="card">
-        <div class="card-body text-center py-air">
-          <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No entries match.</p>
-        </div>
-      </div>
-    <% } else { %>
-      <div class="card">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-rule">
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Type</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Description</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Payer</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Amount</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Balance</th>
-              <th class="px-gutter-lg"></th>
+    <div class="reveal reveal-3 card">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-rule-strong">
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Type</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Description</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Payer</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Amount</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Cash on hand</th>
+            <th class="px-gutter-lg"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <%# Empty row at the top — the "next line" of the paper form %>
+          <tr class="border-b border-rule bg-paper">
+            <td class="px-gutter-lg py-gutter">
+              <input form="petty-new" type="date" name="entry_date" value="<%= today %>" required class="w-32 font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <select form="petty-new" name="type" class="font-sans text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember">
+                <option value="expense">Expense</option>
+                <option value="refund">Refund</option>
+                <option value="replenishment">Replenishment</option>
+              </select>
+            </td>
+            <td class="py-gutter">
+              <input form="petty-new" name="description" required placeholder="What was this for?" class="w-full font-sans text-[14px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <input form="petty-new" name="payer_name" placeholder="Who?" class="w-full font-sans text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter">
+              <input form="petty-new" name="amount" required placeholder="0.00" class="w-24 font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            </td>
+            <td class="py-gutter text-right font-mono text-[13px] text-mist">—</td>
+            <td class="px-gutter-lg py-gutter text-right">
+              <button form="petty-new" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Add →</button>
+            </td>
+          </tr>
+
+          <% entries.forEach(e => {
+               const sign = e.type === 'expense' ? -1 : 1;
+               const signed = (sign * e.amount) / 100;
+          %>
+            <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+              <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= e.entry_date %></td>
+              <td class="py-gutter">
+                <% if (e.type === 'expense') { %>
+                  <span class="pip pip-draft">Expense</span>
+                <% } else if (e.type === 'refund') { %>
+                  <span class="pip pip-open">Refund</span>
+                <% } else { %>
+                  <span class="pip pip-approved">Replenishment</span>
+                <% } %>
+              </td>
+              <td class="py-gutter font-sans text-[14px] text-ink"><%= e.description %></td>
+              <td class="py-gutter font-sans text-[13px] text-smoke"><%= e.payer_name || '' %></td>
+              <td class="py-gutter text-right font-mono text-[14px] <%= sign < 0 ? 'text-crimson' : 'text-leaf' %>">
+                <%= sign > 0 ? '+' : '' %><%= signed.toFixed(2) %>
+              </td>
+              <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.running_balance / 100).toFixed(2) %></td>
+              <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
+                <a href="/petty-cash/<%= e.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ember transition-colors mr-gutter">Edit</a>
+                <form method="POST" action="/petty-cash/<%= e.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Delete</button>
+                </form>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            <% entries.forEach(e => {
-                 const sign = e.type === 'expense' ? -1 : 1;
-                 const signed = (sign * e.amount) / 100;
-            %>
-              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
-                <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= e.entry_date %></td>
-                <td class="py-gutter">
-                  <% if (e.type === 'expense') { %>
-                    <span class="pip pip-draft">Expense</span>
-                  <% } else if (e.type === 'refund') { %>
-                    <span class="pip pip-open">Refund</span>
-                  <% } else { %>
-                    <span class="pip pip-approved">Replenishment</span>
-                  <% } %>
-                </td>
-                <td class="py-gutter font-sans text-[14px] text-ink"><%= e.description %></td>
-                <td class="py-gutter font-sans text-[13px] text-smoke"><%= e.payer_name || '—' %></td>
-                <td class="py-gutter text-right font-mono text-[14px] <%= sign < 0 ? 'text-crimson' : 'text-leaf' %>">
-                  <%= sign > 0 ? '+' : '' %><%= signed.toFixed(2) %>
-                </td>
-                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.running_balance / 100).toFixed(2) %></td>
-                <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
-                  <a href="/petty-cash/<%= e.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors mr-gutter">Edit</a>
-                  <form method="POST" action="/petty-cash/<%= e.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Delete</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
+          <% }) %>
+
+          <% if (entries.length === 0) { %>
+            <tr>
+              <td colspan="7" class="px-gutter-lg py-air text-center font-display italic text-[18px] text-mist" style="font-variation-settings:'opsz' 24,'SOFT' 50">
+                No rows yet — type into the line above to add the first.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
   </main>
 </body>
 </html>
