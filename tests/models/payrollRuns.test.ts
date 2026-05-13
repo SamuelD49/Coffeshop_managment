@@ -1,0 +1,68 @@
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { unlinkSync, existsSync } from "fs";
+import { closeDb, runMigrations } from "../../src/lib/db";
+import * as Employees from "../../src/models/employees";
+import * as Runs from "../../src/models/payrollRuns";
+
+const TEST_DB = "./data/test-payroll-runs.db";
+process.env.DB_PATH = TEST_DB;
+
+beforeEach(() => {
+  closeDb();
+  if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+  runMigrations();
+});
+
+afterAll(() => {
+  closeDb();
+  if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+});
+
+describe("PayrollRuns", () => {
+  it("create() inserts a draft run", () => {
+    const owner = Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
+    const r = Runs.create({ year: 2026, month: 5, prepared_by: owner.id });
+    expect(r.id).toBeGreaterThan(0);
+    expect(r.status).toBe("draft");
+    expect(r.prepared_by).toBe(owner.id);
+    expect(r.approved_by).toBeNull();
+  });
+
+  it("unique (year, month) constraint", () => {
+    const o = Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
+    Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    expect(() => Runs.create({ year: 2026, month: 5, prepared_by: o.id })).toThrow();
+  });
+
+  it("findById(), findByYearMonth(), listAll() ordering", () => {
+    const o = Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
+    const a = Runs.create({ year: 2026, month: 3, prepared_by: o.id });
+    const b = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    Runs.create({ year: 2025, month: 12, prepared_by: o.id });
+    expect(Runs.findById(a.id)?.month).toBe(3);
+    expect(Runs.findByYearMonth(2026, 5)?.id).toBe(b.id);
+    expect(Runs.findByYearMonth(2027, 1)).toBeNull();
+    const list = Runs.listAll();
+    expect(list[0].year).toBe(2026);
+    expect(list[0].month).toBe(5); // newest first
+    expect(list[list.length - 1].year).toBe(2025);
+  });
+
+  it("approve() sets status + approved_by", () => {
+    const o = Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
+    const r = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    Runs.approve(r.id, o.id);
+    const got = Runs.findById(r.id);
+    expect(got?.status).toBe("approved");
+    expect(got?.approved_by).toBe(o.id);
+  });
+
+  it("revert() flips an approved run back to draft", () => {
+    const o = Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
+    const r = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    Runs.approve(r.id, o.id);
+    Runs.revert(r.id);
+    expect(Runs.findById(r.id)?.status).toBe("draft");
+    expect(Runs.findById(r.id)?.approved_by).toBeNull();
+  });
+});
