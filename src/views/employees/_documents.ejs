@@ -1,0 +1,94 @@
+<%
+  function findAtt(kind) {
+    return attachments.find(a => a.kind === kind) || null;
+  }
+  const slots = [
+    { key: 'profile_photo', label: 'Profile photo' },
+    { key: 'id_front',      label: 'ID — front'   },
+    { key: 'id_back',       label: 'ID — back'    },
+    { key: 'contract',      label: 'Signed contract' },
+  ];
+  const others = attachments.filter(a => a.kind === 'other');
+%>
+
+<div class="grid grid-cols-2 gap-air">
+  <% slots.forEach(slot => {
+       const att = findAtt(slot.key);
+  %>
+    <article class="card">
+      <header class="card-header flex items-start justify-between gap-gutter">
+        <div>
+          <h3 class="font-display text-[18px] text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= slot.label %></h3>
+          <% if (att) { %>
+            <p class="card-meta truncate"><%= att.original_name %></p>
+          <% } else { %>
+            <p class="card-meta">Required</p>
+          <% } %>
+        </div>
+        <% if (att) { %>
+          <span class="pip pip-approved">Uploaded</span>
+        <% } else { %>
+          <span class="pip pip-draft">Missing</span>
+        <% } %>
+      </header>
+      <div class="card-body">
+        <% if (att) { %>
+          <% if (att.mime_type.startsWith('image/')) { %>
+            <a href="/employees/<%= employee.id %>/files/<%= att.filename %>" target="_blank" class="block">
+              <img src="/employees/<%= employee.id %>/files/<%= att.filename %>"
+                   alt="<%= att.original_name %>"
+                   class="w-full max-h-48 object-cover border border-rule rounded-soft" />
+            </a>
+          <% } else { %>
+            <a href="/employees/<%= employee.id %>/files/<%= att.filename %>" target="_blank" class="link">
+              View document
+            </a>
+          <% } %>
+          <form method="POST" action="/employees/<%= employee.id %>/documents/<%= att.id %>/delete" class="mt-gutter">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-danger w-full">Remove</button>
+          </form>
+        <% } else { %>
+          <form method="POST" action="/employees/<%= employee.id %>/documents" enctype="multipart/form-data" class="space-y-gutter">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="kind" value="<%= slot.key %>" />
+            <input type="file" name="file" required accept="image/*,.pdf" class="font-sans text-[14px] block w-full" />
+            <button class="btn-primary w-full">Upload</button>
+          </form>
+        <% } %>
+      </div>
+    </article>
+  <% }) %>
+</div>
+
+<article class="card mt-air">
+  <header class="card-header">
+    <h3 class="card-title">Other documents</h3>
+    <p class="card-meta">Anything else worth keeping on file</p>
+  </header>
+  <div class="card-body space-y-gutter">
+    <% if (others.length) { %>
+      <ul class="divide-y divide-rule">
+        <% others.forEach(a => { %>
+          <li class="py-gutter flex items-center justify-between">
+            <a href="/employees/<%= employee.id %>/files/<%= a.filename %>" target="_blank" class="link font-sans text-[14px] truncate"><%= a.original_name %></a>
+            <form method="POST" action="/employees/<%= employee.id %>/documents/<%= a.id %>/delete">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Remove</button>
+            </form>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <form method="POST" action="/employees/<%= employee.id %>/documents" enctype="multipart/form-data" class="flex items-end gap-gutter pt-gutter border-t border-rule">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <input type="hidden" name="kind" value="other" />
+      <label class="flex-1">
+        <span class="field-label">Add document</span>
+        <input type="file" name="file" required accept="image/*,.pdf" class="font-sans text-[14px] block w-full mt-1" />
+      </label>
+      <button class="btn-primary">Upload</button>
+    </form>
+  </div>
+</article>
