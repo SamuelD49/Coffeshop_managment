@@ -6,11 +6,11 @@
     <%
       const hour = new Date().getHours();
       const greet = hour < 12 ? 'Selam' : (hour < 18 ? 'Good afternoon' : 'Good evening');
-      const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const todayLabel = new Date(typeof data !== 'undefined' ? data.today : Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     %>
 
     <header class="reveal reveal-1">
-      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke"><%= today %></p>
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke"><%= todayLabel %></p>
       <h1 class="font-display italic text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
         <%= greet %>, <%= currentUser.full_name.split(' ')[0] %>.
       </h1>
@@ -20,38 +20,62 @@
 
     <%- include('partials/flash', { flash }) %>
 
-    <% if (currentRole === 'owner') { %>
+    <% if (currentRole === 'owner' && typeof data !== 'undefined') { %>
       <section class="reveal reveal-3 grid grid-cols-1 md:grid-cols-3 gap-air">
         <article class="card">
           <header class="card-header">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Today's sales</p>
-            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (data.salesTotal / 100).toFixed(2) %></p>
           </header>
           <div class="card-body">
-            <p class="font-sans text-[13px] text-smoke">Coming with the Sales module.</p>
+            <p class="font-sans text-[12px] text-smoke">
+              Cash <span class="font-mono text-coal"><%= (data.cashVsBank.cash / 100).toFixed(2) %></span> ·
+              Bank <span class="font-mono text-coal"><%= (data.cashVsBank.bank / 100).toFixed(2) %></span>
+            </p>
+            <a href="/sales" class="link text-[12px] tracking-smallcaps uppercase mt-gutter inline-block">View shifts →</a>
           </div>
         </article>
 
         <article class="card">
           <header class="card-header">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Purchases today</p>
-            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (data.purchasesTotal / 100).toFixed(2) %></p>
           </header>
           <div class="card-body">
-            <p class="font-sans text-[13px] text-smoke">Coming with the Purchases module.</p>
+            <a href="/purchases" class="link text-[12px] tracking-smallcaps uppercase">View purchases →</a>
           </div>
         </article>
 
         <article class="card">
           <header class="card-header">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Petty cash spent</p>
-            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (data.pettyCashSpent / 100).toFixed(2) %></p>
           </header>
           <div class="card-body">
-            <p class="font-sans text-[13px] text-smoke">Coming with the Petty Cash module.</p>
+            <a href="/petty-cash" class="link text-[12px] tracking-smallcaps uppercase">View entries →</a>
           </div>
         </article>
       </section>
+
+      <% if (data.topItems.length > 0) { %>
+        <section class="reveal reveal-3 mt-air-lg">
+          <h2 class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-gutter">Top items today</h2>
+          <div class="card">
+            <table class="w-full">
+              <tbody>
+                <% data.topItems.forEach((item, i) => { %>
+                  <tr class="border-b border-rule last:border-0">
+                    <td class="px-gutter-lg py-gutter font-mono text-[12px] text-mist w-12"><%= i + 1 %></td>
+                    <td class="py-gutter font-sans text-[15px] text-ink"><%= item.name %></td>
+                    <td class="py-gutter text-right font-mono text-[14px] text-coal"><%= item.qty %> sold</td>
+                    <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (item.revenue / 100).toFixed(2) %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      <% } %>
     <% } else { %>
       <section class="reveal reveal-3 space-y-gutter max-w-md">
         <a href="/sales/new" class="btn-primary w-full h-14 text-[14px]">Start new shift →</a>
