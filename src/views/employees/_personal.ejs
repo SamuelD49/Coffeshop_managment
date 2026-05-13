@@ -1,0 +1,72 @@
+<form method="POST" action="/employees/<%= employee.id %>/personal" class="card">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+  <header class="card-header">
+    <h2 class="card-title">Personal information</h2>
+    <p class="card-meta">Identity, contact, emergency</p>
+  </header>
+  <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+    <label class="block col-span-2">
+      <span class="field-label">Full name</span>
+      <input name="full_name" required value="<%= employee.full_name %>" class="field-input" />
+    </label>
+    <label class="block">
+      <span class="field-label">Phone</span>
+      <input name="phone" value="<%= employee.phone || '' %>" class="field-input field-mono" />
+    </label>
+    <label class="block">
+      <span class="field-label">Date of birth</span>
+      <input type="date" name="date_of_birth" value="<%= employee.date_of_birth || '' %>" class="field-input field-mono" />
+    </label>
+    <label class="block">
+      <span class="field-label">Gender</span>
+      <select name="gender" class="field-input">
+        <% ['', 'F', 'M', 'Other'].forEach(g => { %>
+          <option value="<%= g %>" <%= (employee.gender || '') === g ? 'selected' : '' %>><%= g || '—' %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label class="block">
+      <span class="field-label">Marital status</span>
+      <select name="marital_status" class="field-input">
+        <% ['', 'single', 'married', 'divorced', 'widowed'].forEach(s => { %>
+          <option value="<%= s %>" <%= (employee.marital_status || '') === s ? 'selected' : '' %>><%= s || '—' %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label class="block">
+      <span class="field-label">National ID type</span>
+      <select name="national_id_type" class="field-input">
+        <% ['', 'Kebele', 'Passport', 'Driving license', 'Other'].forEach(t => { %>
+          <option value="<%= t %>" <%= (employee.national_id_type || '') === t ? 'selected' : '' %>><%= t || '—' %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label class="block">
+      <span class="field-label">National ID number</span>
+      <input name="national_id_number" value="<%= employee.national_id_number || '' %>" class="field-input field-mono" />
+    </label>
+    <label class="block col-span-2">
+      <span class="field-label">Address</span>
+      <input name="address" value="<%= employee.address || '' %>" class="field-input" />
+    </label>
+
+    <div class="col-span-2 mt-gutter">
+      <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-gutter">Emergency contact</p>
+    </div>
+    <label class="block">
+      <span class="field-label">Name</span>
+      <input name="emergency_contact_name" value="<%= employee.emergency_contact_name || '' %>" class="field-input" />
+    </label>
+    <label class="block">
+      <span class="field-label">Phone</span>
+      <input name="emergency_contact_phone" value="<%= employee.emergency_contact_phone || '' %>" class="field-input field-mono" />
+    </label>
+    <label class="block col-span-2">
+      <span class="field-label">Relation</span>
+      <input name="emergency_contact_relation" value="<%= employee.emergency_contact_relation || '' %>" class="field-input" />
+    </label>
+  </div>
+  <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+    <button class="btn-primary">Save personal info</button>
+  </div>
+</form>

@@ -1,0 +1,59 @@
+<%- include('../partials/head', { title: employee.full_name, shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <%
+    const tabs = [
+      { key: 'personal',    label: 'Personal' },
+      { key: 'documents',   label: 'Documents' },
+      { key: 'guarantors',  label: 'Guarantors' },
+      { key: 'employment',  label: 'Employment' },
+      { key: 'payroll',     label: 'Payroll' },
+    ];
+  %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-4xl">
+    <header class="reveal reveal-1 flex items-start justify-between gap-air">
+      <div>
+        <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
+          <a href="/employees" class="hover:text-ink transition-colors">Employees</a> · <%= employee.position || 'No position set' %>
+        </p>
+        <h1 class="font-display text-[40px] leading-[44px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 80,'SOFT' 50"><%= employee.full_name %></h1>
+        <div class="mt-gutter">
+          <% if (completeness.complete) { %>
+            <span class="pip pip-approved">Onboarding complete</span>
+          <% } else { %>
+            <span class="pip pip-draft" title="<%= completeness.missing.join(', ') %>">
+              <%= completeness.missing.length %> item<%= completeness.missing.length === 1 ? '' : 's' %> missing
+            </span>
+          <% } %>
+        </div>
+      </div>
+    </header>
+
+    <nav class="reveal reveal-2 mt-air-lg border-b border-rule-strong flex gap-air-lg">
+      <% tabs.forEach(t => {
+           const isActive = t.key === tab;
+      %>
+        <a href="/employees/<%= employee.id %>?tab=<%= t.key %>"
+           class="relative pb-gutter font-sans text-[14px] transition-colors <%= isActive ? 'text-ink' : 'text-smoke hover:text-coal' %>">
+          <%= t.label %>
+          <% if (isActive) { %>
+            <span class="absolute left-0 right-0 -bottom-px h-[2px] bg-ember"></span>
+          <% } %>
+        </a>
+      <% }) %>
+    </nav>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <section class="reveal reveal-3 mt-air">
+      <% if (tab === 'personal')   { %><%- include('_personal',   { employee, csrfToken }) %><% } %>
+      <% if (tab === 'documents')  { %><%- include('_documents',  { employee, attachments, csrfToken }) %><% } %>
+      <% if (tab === 'guarantors') { %><%- include('_guarantors', { employee, guarantors, guarantorAttachments, csrfToken }) %><% } %>
+      <% if (tab === 'employment') { %><%- include('_employment', { employee, csrfToken }) %><% } %>
+      <% if (tab === 'payroll')    { %><%- include('_payroll',    { employee }) %><% } %>
+    </section>
+  </main>
+</body>
+</html>
