@@ -1,0 +1,48 @@
+<form method="POST" action="/employees/<%= employee.id %>/employment" class="card">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+  <header class="card-header">
+    <h2 class="card-title">Employment</h2>
+    <p class="card-meta">Role, salary, and login access</p>
+  </header>
+  <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+    <label class="block">
+      <span class="field-label">Position</span>
+      <input name="position" value="<%= employee.position || '' %>" class="field-input" placeholder="Barista" />
+    </label>
+    <label class="block">
+      <span class="field-label">Basic salary (per month)</span>
+      <input name="basic_salary" value="<%= (employee.basic_salary / 100).toFixed(2) %>" class="field-input field-mono" />
+    </label>
+    <label class="block">
+      <span class="field-label">Hire date</span>
+      <input type="date" name="hire_date" value="<%= employee.hire_date || '' %>" class="field-input field-mono" />
+    </label>
+    <label class="block">
+      <span class="field-label">Termination date</span>
+      <input type="date" name="termination_date" value="<%= employee.termination_date || '' %>" class="field-input field-mono" />
+    </label>
+    <label class="block">
+      <span class="field-label">Role</span>
+      <select name="role" class="field-input">
+        <% ['employee', 'owner'].forEach(r => { %>
+          <option value="<%= r %>" <%= employee.role === r ? 'selected' : '' %>><%= r === 'owner' ? 'Owner (full access)' : 'Employee' %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label class="block">
+      <span class="field-label">Status</span>
+      <select name="is_active" class="field-input">
+        <option value="true"  <%= employee.is_active ? 'selected' : '' %>>Active</option>
+        <option value="false" <%= !employee.is_active ? 'selected' : '' %>>Inactive</option>
+      </select>
+    </label>
+    <label class="block col-span-2">
+      <span class="field-label">Username (optional — required if they need to log in)</span>
+      <input name="username" value="<%= employee.username || '' %>" class="field-input field-mono" placeholder="leave blank if no login" />
+      <span class="field-hint">Owner can set a password from a future profile tab. For now, the cashier signs in once the username + password are set via the setup or password-reset flow.</span>
+    </label>
+  </div>
+  <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+    <button class="btn-primary">Save employment</button>
+  </div>
+</form>
