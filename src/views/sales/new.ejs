@@ -1,0 +1,36 @@
+<%- include('../partials/head', { title: 'Start new shift', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
+        <a href="/sales" class="hover:text-ink transition-colors">Sales</a> · New
+      </p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Start a new shift</h1>
+      <p class="font-sans text-coal mt-gutter">A blank Daily Sales Income sheet, ready for the counter.</p>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <form method="POST" action="/sales" class="reveal reveal-3 card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <div class="card-body space-y-gutter-lg">
+        <label class="block">
+          <span class="field-label">Business date</span>
+          <input type="date" name="business_date" value="<%= today %>" required class="field-input field-mono" />
+        </label>
+        <label class="block">
+          <span class="field-label">Shift</span>
+          <input name="shift" required class="field-input" placeholder="morning · afternoon · evening · any label" />
+        </label>
+      </div>
+      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+        <a href="/sales" class="btn-secondary">Cancel</a>
+        <button class="btn-primary">Begin shift →</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
