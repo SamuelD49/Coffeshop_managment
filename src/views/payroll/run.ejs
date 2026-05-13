@@ -1,0 +1,139 @@
+<%- include('../partials/head', { title: month_name + ' ' + run.year + ' payroll', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-6xl">
+    <header class="reveal reveal-1 flex items-end justify-between">
+      <div>
+        <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
+          <a href="/payroll" class="hover:text-ink transition-colors">Payroll</a> · Run
+        </p>
+        <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
+          <%= month_name %> <%= run.year %>
+        </h1>
+        <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
+          <span class="pip pip-<%= run.status === 'approved' ? 'approved' : 'draft' %>"><%= run.status %></span>
+          <span class="ml-gutter">Standard days: <%= stdDays %></span>
+        </p>
+      </div>
+      <div class="flex items-center gap-gutter">
+        <a href="/payroll/<%= run.id %>/print" target="_blank" class="btn-secondary">Print</a>
+        <% if (locked) { %>
+          <form method="POST" action="/payroll/<%= run.id %>/revert">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-secondary">Reopen</button>
+          </form>
+        <% } else { %>
+          <form method="POST" action="/payroll/<%= run.id %>/approve" onsubmit="return confirm('Approve this payroll? You will need to reopen it to edit further.')">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-primary">Approve & lock</button>
+          </form>
+        <% } %>
+      </div>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <% if (entries.length === 0) { %>
+      <div class="reveal reveal-3 card">
+        <div class="card-body text-center py-air">
+          <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No entries in this run.</p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="reveal reveal-3 card overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-rule-strong">
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter sticky left-0 bg-parchment">Employee</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Basic</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Days</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Gross</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Pen Empr <span class="text-mist normal-case">(<%= entries[0].pension_employer_pct %>%)</span></th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Pen Empl <span class="text-mist normal-case">(<%= entries[0].pension_employee_pct %>%)</span></th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Tax</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Advance</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Deduction</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Net</th>
+              <% if (!locked) { %><th class="px-gutter-lg"></th><% } %>
+            </tr>
+          </thead>
+          <tbody>
+            <% entries.forEach(e => { %>
+              <% if (locked) { %>
+                <tr class="border-b border-rule last:border-0">
+                  <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink sticky left-0 bg-parchment"><%= e.full_name %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.basic_salary / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= e.days_worked %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.gross_salary / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.pension_employer_amount / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.pension_employee_amount / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.income_tax / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.advance_salary / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.total_deduction / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (e.net_payment / 100).toFixed(2) %></td>
+                </tr>
+              <% } else { %>
+                <tr class="border-b border-rule last:border-0">
+                  <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink sticky left-0 bg-parchment"><%= e.full_name %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.basic_salary / 100).toFixed(2) %></td>
+                  <td class="py-gutter">
+                    <form method="POST" action="/payroll/<%= run.id %>/entries/<%= e.id %>" class="flex justify-end">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <input type="hidden" name="income_tax" value="<%= (e.income_tax / 100).toFixed(2) %>" />
+                      <input type="hidden" name="advance_salary" value="<%= (e.advance_salary / 100).toFixed(2) %>" />
+                      <input name="days_worked" value="<%= e.days_worked %>" class="w-16 font-mono text-right border-0 border-b border-rule-strong bg-transparent px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" onchange="this.form.submit()" />
+                    </form>
+                  </td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.gross_salary / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.pension_employer_amount / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.pension_employee_amount / 100).toFixed(2) %></td>
+                  <td class="py-gutter">
+                    <form method="POST" action="/payroll/<%= run.id %>/entries/<%= e.id %>" class="flex justify-end">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <input type="hidden" name="days_worked" value="<%= e.days_worked %>" />
+                      <input type="hidden" name="advance_salary" value="<%= (e.advance_salary / 100).toFixed(2) %>" />
+                      <input name="income_tax" value="<%= (e.income_tax / 100).toFixed(2) %>" class="w-20 font-mono text-right border-0 border-b border-rule-strong bg-transparent px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" onchange="this.form.submit()" />
+                    </form>
+                  </td>
+                  <td class="py-gutter">
+                    <form method="POST" action="/payroll/<%= run.id %>/entries/<%= e.id %>" class="flex justify-end">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <input type="hidden" name="days_worked" value="<%= e.days_worked %>" />
+                      <input type="hidden" name="income_tax" value="<%= (e.income_tax / 100).toFixed(2) %>" />
+                      <input name="advance_salary" value="<%= (e.advance_salary / 100).toFixed(2) %>" class="w-20 font-mono text-right border-0 border-b border-rule-strong bg-transparent px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" onchange="this.form.submit()" />
+                    </form>
+                  </td>
+                  <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.total_deduction / 100).toFixed(2) %></td>
+                  <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (e.net_payment / 100).toFixed(2) %></td>
+                  <td class="px-gutter-lg"></td>
+                </tr>
+              <% } %>
+            <% }) %>
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-rule-strong bg-paper">
+              <td class="px-gutter-lg py-gutter-lg font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke sticky left-0 bg-paper">Total</td>
+              <td></td><td></td>
+              <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (totals.gross_salary / 100).toFixed(2) %></td>
+              <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (totals.pension_employer_amount / 100).toFixed(2) %></td>
+              <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (totals.pension_employee_amount / 100).toFixed(2) %></td>
+              <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (totals.income_tax / 100).toFixed(2) %></td>
+              <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (totals.advance_salary / 100).toFixed(2) %></td>
+              <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (totals.total_deduction / 100).toFixed(2) %></td>
+              <td class="py-gutter-lg text-right font-mono text-[16px] text-ink"><%= (totals.net_payment / 100).toFixed(2) %></td>
+              <% if (!locked) { %><td></td><% } %>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% } %>
+
+    <p class="font-sans text-[12px] text-smoke italic mt-gutter">
+      Pension rates captured when this run was created. Changing the defaults in Settings does not alter this run.
+    </p>
+  </main>
+</body>
+</html>
