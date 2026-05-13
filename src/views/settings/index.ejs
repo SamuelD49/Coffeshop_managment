@@ -1,0 +1,118 @@
+<%- include('../partials/head', { title: 'Settings', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-3xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Configuration</p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Settings</h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <form method="POST" action="/settings" class="reveal reveal-3 space-y-air">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Shop</h2>
+          <p class="card-meta">Used on receipts and printed payslips</p>
+        </header>
+        <div class="card-body space-y-gutter-lg">
+          <label class="block">
+            <span class="field-label">Shop name</span>
+            <input name="shop_name" value="<%= settings.shop_name || '' %>" class="field-input" />
+          </label>
+          <label class="block">
+            <span class="field-label">Address</span>
+            <input name="shop_address" value="<%= settings.shop_address || '' %>" class="field-input" />
+          </label>
+          <label class="block">
+            <span class="field-label">Phone</span>
+            <input name="shop_phone" value="<%= settings.shop_phone || '' %>" class="field-input field-mono" />
+          </label>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Money</h2>
+          <p class="card-meta">How figures are displayed across the app</p>
+        </header>
+        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+          <label class="block">
+            <span class="field-label">Currency code</span>
+            <input name="currency_code" value="<%= settings.currency_code || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Currency symbol</span>
+            <input name="currency_symbol" value="<%= settings.currency_symbol || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Decimal places</span>
+            <input name="decimal_places" value="<%= settings.decimal_places || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Thousand separator</span>
+            <input name="thousand_separator" value="<%= settings.thousand_separator || '' %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Decimal separator</span>
+            <input name="decimal_separator" value="<%= settings.decimal_separator || '' %>" class="field-input field-mono" />
+          </label>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">Payroll defaults</h2>
+          <p class="card-meta">Snapshotted into each payroll run at creation</p>
+        </header>
+        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+          <label class="block">
+            <span class="field-label">Employer pension %</span>
+            <input name="pension_employer_default_pct" value="<%= settings.pension_employer_default_pct %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Employee pension %</span>
+            <input name="pension_employee_default_pct" value="<%= settings.pension_employee_default_pct %>" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Standard days / month</span>
+            <input name="standard_days_in_month" value="<%= settings.standard_days_in_month %>" class="field-input field-mono" />
+          </label>
+          <label class="flex items-start gap-gutter-tight mt-air pt-1">
+            <input type="checkbox" name="require_complete_hr_before_payroll" value="true" <%= settings.require_complete_hr_before_payroll === 'true' ? 'checked' : '' %> class="mt-1 w-4 h-4 accent-ember" />
+            <span class="font-sans text-[14px] text-coal">Require complete HR record before adding an employee to payroll</span>
+          </label>
+        </div>
+      </article>
+
+      <article class="card">
+        <header class="card-header">
+          <h2 class="card-title">System</h2>
+          <p class="card-meta">Time and business-day handling</p>
+        </header>
+        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+          <label class="block">
+            <span class="field-label">Business-day cutoff</span>
+            <input name="business_day_cutoff" value="<%= settings.business_day_cutoff %>" class="field-input field-mono" placeholder="HH:MM" />
+            <span class="field-hint">Sales logged before this hour file under yesterday</span>
+          </label>
+          <label class="block">
+            <span class="field-label">Timezone</span>
+            <input name="timezone" value="<%= settings.timezone %>" class="field-input field-mono" />
+          </label>
+        </div>
+      </article>
+
+      <div class="flex items-center justify-end gap-gutter pt-gutter">
+        <a href="/" class="btn-secondary">Cancel</a>
+        <button class="btn-primary">Save settings</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
