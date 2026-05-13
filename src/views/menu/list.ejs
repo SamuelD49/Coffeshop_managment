@@ -28,8 +28,7 @@
         <table class="w-full">
           <thead>
             <tr class="border-b border-rule">
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Order</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Item</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Price</th>
               <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
               <th class="px-gutter-lg"></th>
@@ -38,8 +37,7 @@
           <tbody>
             <% items.forEach(item => { %>
               <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
-                <td class="px-gutter-lg py-gutter-lg font-mono text-[14px] text-smoke"><%= item.sort_order %></td>
-                <td class="py-gutter-lg font-sans text-[15px] text-ink"><%= item.name %></td>
+                <td class="px-gutter-lg py-gutter-lg font-sans text-[15px] text-ink"><%= item.name %></td>
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-coal"><%= (item.price / 100).toFixed(2) %></td>
                 <td class="py-gutter-lg pl-air">
                   <% if (item.is_active) { %>

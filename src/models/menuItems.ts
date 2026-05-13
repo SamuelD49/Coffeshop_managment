@@ -10,14 +10,14 @@ export type MenuItem = {
   updated_at: string;
 };
 
-export type CreateInput = { name: string; price: number; sort_order: number };
-export type UpdateInput = { name: string; price: number; sort_order: number };
+export type CreateInput = { name: string; price: number; sort_order?: number };
+export type UpdateInput = { name: string; price: number; sort_order?: number };
 
 export function create(input: CreateInput): MenuItem {
   const r = getDb().prepare(`
     INSERT INTO menu_items (name, price, sort_order)
     VALUES (@name, @price, @sort_order)
-  `).run(input);
+  `).run({ ...input, sort_order: input.sort_order ?? 0 });
   return findById(Number(r.lastInsertRowid))!;
 }
 
@@ -27,11 +27,25 @@ export function findById(id: number): MenuItem | null {
 }
 
 export function listAll(): MenuItem[] {
-  return getDb().prepare("SELECT * FROM menu_items ORDER BY sort_order, name").all() as MenuItem[];
+  return getDb().prepare("SELECT * FROM menu_items ORDER BY name").all() as MenuItem[];
 }
 
 export function listActive(): MenuItem[] {
-  return getDb().prepare("SELECT * FROM menu_items WHERE is_active = 1 ORDER BY sort_order, name").all() as MenuItem[];
+  return getDb().prepare("SELECT * FROM menu_items WHERE is_active = 1 ORDER BY name").all() as MenuItem[];
+}
+
+// Active menu items ordered by lifetime qty sold (descending), then by name.
+// Items never sold appear after sold items, alphabetically. Used by the sales
+// entry page so the cashier finds the common items near the top.
+export function listActiveByPopularity(): MenuItem[] {
+  return getDb().prepare(`
+    SELECT m.*, COALESCE(SUM(l.qty), 0) AS sold_qty
+    FROM menu_items m
+    LEFT JOIN sale_line_items l ON l.menu_item_id = m.id
+    WHERE m.is_active = 1
+    GROUP BY m.id
+    ORDER BY sold_qty DESC, m.name ASC
+  `).all() as MenuItem[];
 }
 
 export function update(id: number, input: UpdateInput): void {
@@ -39,7 +53,7 @@ export function update(id: number, input: UpdateInput): void {
     UPDATE menu_items
     SET name = @name, price = @price, sort_order = @sort_order, updated_at = datetime('now')
     WHERE id = @id
-  `).run({ ...input, id });
+  `).run({ ...input, sort_order: input.sort_order ?? 0, id });
 }
 
 export function setActive(id: number, active: boolean): void {

@@ -22,10 +22,6 @@
           <span class="field-label">Price</span>
           <input name="price" required value="<%= (item.price / 100).toFixed(2) %>" class="field-input field-mono" />
         </label>
-        <label class="block">
-          <span class="field-label">Sort order</span>
-          <input name="sort_order" type="number" value="<%= item.sort_order %>" class="field-input field-mono" />
-        </label>
       </div>
       <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
         <a href="/menu" class="btn-secondary">Cancel</a>

@@ -58,7 +58,7 @@ export function entry(req: Request, res: Response) {
   if (!session) return res.status(404).render("errors/404");
   if (!canView(req, session)) return res.status(403).render("errors/403", { message: "Not your shift" });
 
-  const items = Menu.listActive();
+  const items = Menu.listActiveByPopularity();
   const linesArr = Lines.listForSession(id);
   const lines: Record<number, typeof linesArr[0]> = {};
   for (const l of linesArr) lines[l.menu_item_id] = l;

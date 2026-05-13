@@ -27,8 +27,7 @@ export function create(req: Request, res: Response) {
     return res.redirect("/menu/new");
   }
   const price = parsePriceMajor(req.body.price);
-  const sort_order = Number(req.body.sort_order) || 0;
-  const m = Menu.create({ name, price, sort_order });
+  const m = Menu.create({ name, price });
   writeAudit({ actor_id: actor(req), action: "create_menu_item", entity: "menu_items", entity_id: m.id });
   pushFlash(req, "success", `${m.name} added to menu`);
   res.redirect("/menu");
@@ -48,7 +47,6 @@ export function update(req: Request, res: Response) {
   Menu.update(id, {
     name,
     price: parsePriceMajor(req.body.price),
-    sort_order: Number(req.body.sort_order) || 0,
   });
   writeAudit({ actor_id: actor(req), action: "update_menu_item", entity: "menu_items", entity_id: id });
   pushFlash(req, "success", `${name} updated`);
