@@ -1,0 +1,55 @@
+<%- include('../partials/head', { title: 'Edit petty cash entry', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-2xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
+        <a href="/petty-cash" class="hover:text-ink transition-colors">Petty cash</a> · Edit
+      </p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50"><%= entry.description %></h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <form method="POST" action="/petty-cash/<%= entry.id %>" class="reveal reveal-3 card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+        <label class="block">
+          <span class="field-label">Date</span>
+          <input type="date" name="entry_date" value="<%= entry.entry_date %>" class="field-input field-mono" />
+        </label>
+        <label class="block">
+          <span class="field-label">Type</span>
+          <select name="type" class="field-input">
+            <% ['expense', 'refund', 'replenishment'].forEach(t => { %>
+              <option value="<%= t %>" <%= entry.type === t ? 'selected' : '' %>><%= t.charAt(0).toUpperCase() + t.slice(1) %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="block col-span-2">
+          <span class="field-label">Description</span>
+          <input name="description" required value="<%= entry.description %>" class="field-input" />
+        </label>
+        <label class="block">
+          <span class="field-label">Payer</span>
+          <input name="payer_name" value="<%= entry.payer_name || '' %>" class="field-input" />
+        </label>
+        <label class="block">
+          <span class="field-label">Amount</span>
+          <input name="amount" value="<%= (entry.amount / 100).toFixed(2) %>" class="field-input field-mono" />
+        </label>
+        <label class="block col-span-2">
+          <span class="field-label">Remark</span>
+          <input name="remark" value="<%= entry.remark || '' %>" class="field-input" />
+        </label>
+      </div>
+      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+        <a href="/petty-cash" class="btn-secondary">Cancel</a>
+        <button class="btn-primary">Save changes</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
