@@ -1,0 +1,44 @@
+<%- include('../partials/head', { title: 'Add employee', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
+        <a href="/employees" class="hover:text-ink transition-colors">Employees</a> · New
+      </p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Add employee</h1>
+      <p class="font-sans text-coal mt-gutter">A short stub to start with. You can fill the rest in on the profile page.</p>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <form method="POST" action="/employees" class="reveal reveal-3 card">
+      <div class="card-body space-y-gutter-lg">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label class="block">
+          <span class="field-label">Full name</span>
+          <input name="full_name" required autofocus class="field-input" />
+        </label>
+        <label class="block">
+          <span class="field-label">Phone</span>
+          <input name="phone" class="field-input field-mono" placeholder="+251..." />
+        </label>
+        <label class="block">
+          <span class="field-label">Role</span>
+          <select name="role" class="field-input">
+            <option value="employee">Employee</option>
+            <option value="owner">Owner (full access)</option>
+          </select>
+        </label>
+      </div>
+      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+        <a href="/employees" class="btn-secondary">Cancel</a>
+        <button class="btn-primary">Add employee →</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
