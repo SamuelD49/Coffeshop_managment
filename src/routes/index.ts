@@ -11,6 +11,7 @@ import { menuRouter } from "./menu";
 import { salesRouter } from "./sales";
 import { purchasesRouter } from "./purchases";
 import { pettyCashRouter } from "./pettyCash";
+import { payrollRouter } from "./payroll";
 
 export const router = Router();
 
@@ -39,3 +40,4 @@ router.use("/menu", menuRouter);
 router.use("/sales", salesRouter);
 router.use("/purchases", purchasesRouter);
 router.use("/petty-cash", pettyCashRouter);
+router.use("/payroll", payrollRouter);
