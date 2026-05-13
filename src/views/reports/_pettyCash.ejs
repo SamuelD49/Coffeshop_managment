@@ -1,0 +1,40 @@
+<div class="grid grid-cols-3 gap-air mb-air">
+  <article class="card">
+    <div class="card-body">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Total in</p>
+      <p class="font-mono text-[24px] text-leaf mt-1">+<%= (data.summary.totalIn / 100).toFixed(2) %></p>
+    </div>
+  </article>
+  <article class="card">
+    <div class="card-body">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Total out</p>
+      <p class="font-mono text-[24px] text-crimson mt-1">−<%= (data.summary.totalOut / 100).toFixed(2) %></p>
+    </div>
+  </article>
+  <article class="card">
+    <div class="card-body">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Net change</p>
+      <p class="font-mono text-[24px] mt-1 <%= data.summary.net < 0 ? 'text-crimson' : 'text-ink' %>"><%= (data.summary.net / 100).toFixed(2) %></p>
+    </div>
+  </article>
+</div>
+
+<article class="card">
+  <header class="card-header"><h2 class="card-title">By type</h2></header>
+  <table class="w-full">
+    <tbody>
+      <tr class="border-b border-rule">
+        <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink">Expense</td>
+        <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-crimson">−<%= (data.summary.byType.expense / 100).toFixed(2) %></td>
+      </tr>
+      <tr class="border-b border-rule">
+        <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink">Refund</td>
+        <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-leaf">+<%= (data.summary.byType.refund / 100).toFixed(2) %></td>
+      </tr>
+      <tr>
+        <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink">Replenishment</td>
+        <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-leaf">+<%= (data.summary.byType.replenishment / 100).toFixed(2) %></td>
+      </tr>
+    </tbody>
+  </table>
+</article>

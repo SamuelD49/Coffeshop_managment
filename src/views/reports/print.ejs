@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reports · <%= tab %> · <%= shopName %></title>
+  <link rel="stylesheet" href="/css/app.css" />
+  <style>
+    @page { size: A4 portrait; margin: 14mm; }
+    @media print { body { background: white !important; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body class="bg-cream text-ink font-sans antialiased">
+  <div class="max-w-[900px] mx-auto p-air-lg">
+    <header class="mb-air">
+      <p class="font-mono text-[11px] tracking-smallcaps uppercase text-smoke">Report · <%= tab.replace('-', ' ') %></p>
+      <h1 class="wordmark text-[36px] leading-[40px] mt-gutter-tight"><%= shopName %></h1>
+      <p class="font-display italic text-[16px] text-coal mt-gutter-tight" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= range.from %> to <%= range.to %></p>
+    </header>
+
+    <% if (tab === 'sales')      { %><%- include('_sales',     { data, range, csrfToken: '' }) %><% } %>
+    <% if (tab === 'purchases')  { %><%- include('_purchases', { data, range, csrfToken: '' }) %><% } %>
+    <% if (tab === 'petty-cash') { %><%- include('_pettyCash', { data, range, csrfToken: '' }) %><% } %>
+    <% if (tab === 'payroll')    { %><%- include('_payroll',   { data, range, csrfToken: '' }) %><% } %>
+
+    <div class="no-print mt-air flex justify-end">
+      <button onclick="window.print()" class="btn-primary">Print</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<div class="grid grid-cols-3 gap-air mb-air">
+  <a href="/reports/export?tab=sales&group=day&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
+    <div class="card-body text-center py-gutter-lg">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By day</p>
+      <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
+    </div>
+  </a>
+  <a href="/reports/export?tab=sales&group=item&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
+    <div class="card-body text-center py-gutter-lg">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By item</p>
+      <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
+    </div>
+  </a>
+  <a href="/reports/export?tab=sales&group=employee&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
+    <div class="card-body text-center py-gutter-lg">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By employee</p>
+      <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
+    </div>
+  </a>
+</div>
+
+<article class="card mb-air">
+  <header class="card-header">
+    <h2 class="card-title">By day</h2>
+  </header>
+  <% if (data.byDay.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No sales in this range.</div>
+  <% } else { %>
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Shifts</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.byDay.forEach(r => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= r.business_date %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.session_count %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.subtotal / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</article>
+
+<article class="card mb-air">
+  <header class="card-header">
+    <h2 class="card-title">By item</h2>
+  </header>
+  <% if (data.byItem.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No items sold in this range.</div>
+  <% } else { %>
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Qty</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.byItem.forEach(r => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink"><%= r.name %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.qty %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.revenue / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</article>
+
+<article class="card">
+  <header class="card-header">
+    <h2 class="card-title">By employee</h2>
+  </header>
+  <% if (data.byEmployee.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No employee activity in this range.</div>
+  <% } else { %>
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Employee</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Shifts</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.byEmployee.forEach(r => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink"><%= r.full_name %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.session_count %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.subtotal / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</article>

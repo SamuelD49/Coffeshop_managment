@@ -12,6 +12,7 @@ import { salesRouter } from "./sales";
 import { purchasesRouter } from "./purchases";
 import { pettyCashRouter } from "./pettyCash";
 import { payrollRouter } from "./payroll";
+import { reportsRouter } from "./reports";
 
 export const router = Router();
 
@@ -41,3 +42,4 @@ router.use("/sales", salesRouter);
 router.use("/purchases", purchasesRouter);
 router.use("/petty-cash", pettyCashRouter);
 router.use("/payroll", payrollRouter);
+router.use("/reports", reportsRouter);

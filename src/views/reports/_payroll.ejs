@@ -1,0 +1,37 @@
+<%
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+%>
+<article class="card">
+  <header class="card-header">
+    <h2 class="card-title">Payroll runs</h2>
+    <p class="card-meta">All runs, newest first</p>
+  </header>
+  <% if (data.runs.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No payroll runs yet.</div>
+  <% } else { %>
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Period</th>
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Status</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Employees</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Gross</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.runs.forEach(r => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-display text-[15px] text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= monthNames[r.month - 1] %> <%= r.year %></td>
+            <td class="py-gutter">
+              <span class="pip pip-<%= r.status === 'approved' ? 'approved' : 'draft' %>"><%= r.status %></span>
+            </td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.employee_count %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (r.total_gross / 100).toFixed(2) %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.total_net / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</article>

@@ -1,0 +1,59 @@
+<%- include('../partials/head', { title: 'Reports', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
+    <header class="reveal reveal-1 flex items-end justify-between">
+      <div>
+        <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Analytics</p>
+        <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Reports</h1>
+      </div>
+      <div class="flex items-center gap-gutter">
+        <a href="/reports/print?tab=<%= tab %>&from=<%= range.from %>&to=<%= range.to %>" target="_blank" class="btn-secondary">Print</a>
+        <a href="/reports/export?tab=<%= tab %>&from=<%= range.from %>&to=<%= range.to %>" class="btn-primary">Download CSV</a>
+      </div>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <% const tabs = [
+        { key: 'sales',      label: 'Sales' },
+        { key: 'purchases',  label: 'Purchases' },
+        { key: 'petty-cash', label: 'Petty cash' },
+        { key: 'payroll',    label: 'Payroll' },
+    ]; %>
+
+    <nav class="reveal reveal-3 border-b border-rule-strong flex gap-air-lg mb-air">
+      <% tabs.forEach(t => { %>
+        <a href="/reports?tab=<%= t.key %>&from=<%= range.from %>&to=<%= range.to %>"
+           class="relative pb-gutter font-sans text-[14px] transition-colors <%= tab === t.key ? 'text-ink' : 'text-smoke hover:text-coal' %>">
+          <%= t.label %>
+          <% if (tab === t.key) { %>
+            <span class="absolute left-0 right-0 -bottom-px h-[2px] bg-ember"></span>
+          <% } %>
+        </a>
+      <% }) %>
+    </nav>
+
+    <form method="GET" class="flex items-end gap-gutter mb-air">
+      <input type="hidden" name="tab" value="<%= tab %>" />
+      <label class="block">
+        <span class="field-label">From</span>
+        <input type="date" name="from" value="<%= range.from %>" class="field-input field-mono" />
+      </label>
+      <label class="block">
+        <span class="field-label">To</span>
+        <input type="date" name="to" value="<%= range.to %>" class="field-input field-mono" />
+      </label>
+      <button class="btn-secondary">Apply</button>
+    </form>
+
+    <% if (tab === 'sales')      { %><%- include('_sales',     { data, range, csrfToken }) %><% } %>
+    <% if (tab === 'purchases')  { %><%- include('_purchases', { data, range, csrfToken }) %><% } %>
+    <% if (tab === 'petty-cash') { %><%- include('_pettyCash', { data, range, csrfToken }) %><% } %>
+    <% if (tab === 'payroll')    { %><%- include('_payroll',   { data, range, csrfToken }) %><% } %>
+  </main>
+</body>
+</html>

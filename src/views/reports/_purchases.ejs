@@ -1,0 +1,33 @@
+<article class="card">
+  <header class="card-header">
+    <h2 class="card-title">Purchases by day</h2>
+  </header>
+  <% if (data.byDay.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>
+  <% } else { %>
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.byDay.forEach(r => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= r.purchase_date %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.row_count %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.total / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr class="border-t-2 border-rule-strong">
+          <td colspan="2" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
+          <td class="px-gutter-lg py-gutter-lg text-right font-mono text-[16px] text-ink"><%= (data.byDay.reduce((s, r) => s + r.total, 0) / 100).toFixed(2) %></td>
+        </tr>
+      </tfoot>
+    </table>
+  <% } %>
+</article>
