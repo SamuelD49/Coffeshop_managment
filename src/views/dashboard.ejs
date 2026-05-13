@@ -1,0 +1,63 @@
+<%- include('partials/head', { title: 'Dashboard', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
+    <%
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Selam' : (hour < 18 ? 'Good afternoon' : 'Good evening');
+      const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    %>
+
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke"><%= today %></p>
+      <h1 class="font-display italic text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
+        <%= greet %>, <%= currentUser.full_name.split(' ')[0] %>.
+      </h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('partials/ornament') %></div>
+
+    <%- include('partials/flash', { flash }) %>
+
+    <% if (currentRole === 'owner') { %>
+      <section class="reveal reveal-3 grid grid-cols-1 md:grid-cols-3 gap-air">
+        <article class="card">
+          <header class="card-header">
+            <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Today's sales</p>
+            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+          </header>
+          <div class="card-body">
+            <p class="font-sans text-[13px] text-smoke">Coming with the Sales module.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <header class="card-header">
+            <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Purchases today</p>
+            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+          </header>
+          <div class="card-body">
+            <p class="font-sans text-[13px] text-smoke">Coming with the Purchases module.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <header class="card-header">
+            <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Petty cash spent</p>
+            <p class="font-mono text-[28px] leading-[32px] text-mist mt-gutter-tight">—</p>
+          </header>
+          <div class="card-body">
+            <p class="font-sans text-[13px] text-smoke">Coming with the Petty Cash module.</p>
+          </div>
+        </article>
+      </section>
+    <% } else { %>
+      <section class="reveal reveal-3 space-y-gutter max-w-md">
+        <a href="/sales/new" class="btn-primary w-full h-14 text-[14px]">Start new shift →</a>
+        <a href="/sales" class="btn-secondary w-full h-14 text-[14px]">My past shifts →</a>
+      </section>
+    <% } %>
+  </main>
+</body>
+</html>
