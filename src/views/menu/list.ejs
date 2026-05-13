@@ -1,0 +1,68 @@
+<%- include('../partials/head', { title: 'Menu', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-4xl">
+    <header class="reveal reveal-1 flex items-end justify-between">
+      <div>
+        <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Catalog</p>
+        <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Menu</h1>
+      </div>
+      <a href="/menu/new" class="btn-primary">Add item</a>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <% if (items.length === 0) { %>
+      <div class="reveal reveal-3 card">
+        <div class="card-body text-center py-air-lg">
+          <p class="font-display italic text-[22px] text-coal" style="font-variation-settings:'opsz' 36,'SOFT' 50">No items on the menu yet.</p>
+          <p class="font-sans text-[14px] text-smoke mt-gutter">Add your first drink or food item to start logging sales.</p>
+          <a href="/menu/new" class="btn-primary mt-gutter-lg">Add item</a>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="reveal reveal-3 card">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-rule">
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Order</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Item</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Price</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
+              <th class="px-gutter-lg"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% items.forEach(item => { %>
+              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+                <td class="px-gutter-lg py-gutter-lg font-mono text-[14px] text-smoke"><%= item.sort_order %></td>
+                <td class="py-gutter-lg font-sans text-[15px] text-ink"><%= item.name %></td>
+                <td class="py-gutter-lg text-right font-mono text-[14px] text-coal"><%= (item.price / 100).toFixed(2) %></td>
+                <td class="py-gutter-lg pl-air">
+                  <% if (item.is_active) { %>
+                    <span class="pip pip-open">Active</span>
+                  <% } else { %>
+                    <span class="pip pip-draft">Inactive</span>
+                  <% } %>
+                </td>
+                <td class="px-gutter-lg py-gutter-lg text-right">
+                  <a href="/menu/<%= item.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors mr-gutter">Edit</a>
+                  <form method="POST" action="/menu/<%= item.id %>/active" class="inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors">
+                      <%= item.is_active ? 'Deactivate' : 'Activate' %>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>

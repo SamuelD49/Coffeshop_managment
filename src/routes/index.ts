@@ -7,6 +7,7 @@ import * as Account from "../controllers/accountController";
 import { requireAuth } from "../middleware/requireAuth";
 import { requireOwner } from "../middleware/requireOwner";
 import { employeesRouter } from "./employees";
+import { menuRouter } from "./menu";
 
 export const router = Router();
 
@@ -31,3 +32,4 @@ router.get("/settings", requireAuth, requireOwner, Settings.show);
 router.post("/settings", requireAuth, requireOwner, Settings.update);
 
 router.use("/employees", employeesRouter);
+router.use("/menu", menuRouter);

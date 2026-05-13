@@ -1,0 +1,39 @@
+<%- include('../partials/head', { title: 'New menu item', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke"><a href="/menu" class="hover:text-ink transition-colors">Menu</a> · New</p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">New menu item</h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <form method="POST" action="/menu" class="reveal reveal-3 card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <div class="card-body space-y-gutter-lg">
+        <label class="block">
+          <span class="field-label">Name</span>
+          <input name="name" required autofocus class="field-input" placeholder="Macchiato" />
+        </label>
+        <label class="block">
+          <span class="field-label">Price</span>
+          <input name="price" required class="field-input field-mono" placeholder="45.00" />
+          <span class="field-hint">In the shop currency (e.g. ETB)</span>
+        </label>
+        <label class="block">
+          <span class="field-label">Sort order</span>
+          <input name="sort_order" type="number" value="0" class="field-input field-mono" />
+          <span class="field-hint">Lower numbers appear first on the sales form</span>
+        </label>
+      </div>
+      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+        <a href="/menu" class="btn-secondary">Cancel</a>
+        <button class="btn-primary">Add item →</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
