@@ -1,0 +1,117 @@
+<%- include('../partials/head', { title: 'Purchases', shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex">
+  <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
+
+  <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
+    <header class="reveal reveal-1">
+      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Outgoing</p>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Purchases</h1>
+    </header>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <form method="GET" class="flex items-end gap-gutter mb-air">
+      <label class="block">
+        <span class="field-label">From</span>
+        <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
+      </label>
+      <label class="block">
+        <span class="field-label">To</span>
+        <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
+      </label>
+      <button class="btn-secondary">Filter</button>
+    </form>
+
+    <%- include('../partials/flash', { flash }) %>
+
+    <form method="POST" action="/purchases" class="reveal reveal-3 card mb-air">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <header class="card-header">
+        <h2 class="card-title">Log a purchase</h2>
+        <p class="card-meta">Inline add — date defaults to today</p>
+      </header>
+      <div class="card-body grid grid-cols-6 gap-gutter">
+        <label class="col-span-2">
+          <span class="field-label">Date</span>
+          <input type="date" name="purchase_date" value="<%= today %>" required class="field-input field-mono" />
+        </label>
+        <label class="col-span-3">
+          <span class="field-label">Description</span>
+          <input name="description" required class="field-input" placeholder="Beans, milk, sugar..." />
+        </label>
+        <label>
+          <span class="field-label">Unit</span>
+          <input name="unit" class="field-input field-mono" placeholder="kg, L" />
+        </label>
+        <label>
+          <span class="field-label">Qty</span>
+          <input name="qty" required class="field-input field-mono" placeholder="0" />
+        </label>
+        <label>
+          <span class="field-label">Unit price</span>
+          <input name="unit_price" required class="field-input field-mono" placeholder="0.00" />
+        </label>
+        <label class="col-span-3">
+          <span class="field-label">Remark</span>
+          <input name="remark" class="field-input" />
+        </label>
+        <div class="col-span-1 flex items-end justify-end">
+          <button class="btn-primary w-full">Add</button>
+        </div>
+      </div>
+    </form>
+
+    <% if (purchases.length === 0) { %>
+      <div class="card">
+        <div class="card-body text-center py-air">
+          <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No purchases match.</p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="card">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-rule">
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Description</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Qty</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit price</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Total</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Remark</th>
+              <th class="px-gutter-lg"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% purchases.forEach(p => { %>
+              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+                <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= p.purchase_date %></td>
+                <td class="py-gutter font-sans text-[14px] text-ink"><%= p.description %></td>
+                <td class="py-gutter font-mono text-[13px] text-smoke"><%= p.unit || '—' %></td>
+                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= p.qty %></td>
+                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
+                <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
+                <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke truncate max-w-[200px]"><%= p.remark || '' %></td>
+                <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
+                  <a href="/purchases/<%= p.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors mr-gutter">Edit</a>
+                  <form method="POST" action="/purchases/<%= p.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-rule-strong bg-paper">
+              <td colspan="5" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
+              <td class="py-gutter-lg text-right font-mono text-[18px] text-ink"><%= (sumTotal / 100).toFixed(2) %></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>
