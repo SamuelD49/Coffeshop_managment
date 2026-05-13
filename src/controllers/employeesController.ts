@@ -3,6 +3,7 @@ import { resolve } from "path";
 import * as Employees from "../models/employees";
 import * as Guarantors from "../models/guarantors";
 import * as Attachments from "../models/attachments";
+import * as PayrollEntries from "../models/payrollEntries";
 import { calculateCompleteness } from "../lib/onboarding";
 import { writeAudit } from "../lib/audit";
 import { pushFlash } from "../lib/flash";
@@ -49,7 +50,8 @@ export function profile(req: Request, res: Response) {
   for (const g of guarantors) {
     guarantorAttachments[g.id] = Attachments.findByOwner("guarantor", g.id);
   }
-  res.render("employees/profile", { employee, guarantors, attachments, guarantorAttachments, completeness, tab });
+  const payrollHistory = PayrollEntries.listForEmployee(id);
+  res.render("employees/profile", { employee, guarantors, attachments, guarantorAttachments, completeness, tab, payrollHistory });
 }
 
 function refreshOnboardingStatus(id: number) {

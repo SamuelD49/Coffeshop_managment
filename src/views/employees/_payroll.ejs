@@ -1,6 +1,42 @@
-<div class="card">
-  <div class="card-body text-center py-air">
-    <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No payroll history yet.</p>
-    <p class="font-sans text-[13px] text-smoke mt-gutter">Past payroll runs for <%= employee.full_name %> will appear here once the Payroll module is built.</p>
+<% if (payrollHistory.length === 0) { %>
+  <div class="card">
+    <div class="card-body text-center py-air">
+      <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No payroll history yet.</p>
+      <p class="font-sans text-[13px] text-smoke mt-gutter">When <%= employee.full_name %> appears in a payroll run, it will show here.</p>
+    </div>
   </div>
-</div>
+<% } else { %>
+  <%
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  %>
+  <div class="card">
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Period</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Days</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Gross</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Net</th>
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
+          <th class="px-gutter-lg"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% payrollHistory.forEach(p => { %>
+          <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+            <td class="px-gutter-lg py-gutter-lg font-display text-[16px] text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= monthNames[p.month - 1] %> <%= p.year %></td>
+            <td class="py-gutter-lg text-right font-mono text-[13px] text-coal"><%= p.days_worked %></td>
+            <td class="py-gutter-lg text-right font-mono text-[13px] text-coal"><%= (p.gross_salary / 100).toFixed(2) %></td>
+            <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (p.net_payment / 100).toFixed(2) %></td>
+            <td class="py-gutter-lg pl-air">
+              <span class="pip pip-<%= p.status === 'approved' ? 'approved' : 'draft' %>"><%= p.status %></span>
+            </td>
+            <td class="px-gutter-lg py-gutter-lg text-right">
+              <a href="/payroll/<%= p.payroll_run_id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">View run →</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>

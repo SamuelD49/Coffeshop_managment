@@ -52,7 +52,7 @@
       <% if (tab === 'documents')  { %><%- include('_documents',  { employee, attachments, csrfToken }) %><% } %>
       <% if (tab === 'guarantors') { %><%- include('_guarantors', { employee, guarantors, guarantorAttachments, csrfToken }) %><% } %>
       <% if (tab === 'employment') { %><%- include('_employment', { employee, csrfToken }) %><% } %>
-      <% if (tab === 'payroll')    { %><%- include('_payroll',    { employee }) %><% } %>
+      <% if (tab === 'payroll')    { %><%- include('_payroll',    { employee, payrollHistory }) %><% } %>
     </section>
   </main>
 </body>
