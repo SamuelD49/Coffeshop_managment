@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Auto-start the Coffee Shop Management app at login.
+
+  Install:
+    cp ops/com.coffeeshop.app.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.coffeeshop.app.plist
+
+  Restart cleanly after a deploy:
+    launchctl kickstart -k gui/$(id -u)/com.coffeeshop.app
+
+  Uninstall:
+    launchctl unload -w ~/Library/LaunchAgents/com.coffeeshop.app.plist
+    rm ~/Library/LaunchAgents/com.coffeeshop.app.plist
+
+  Adjust the two <string> values inside <ProgramArguments> and <WorkingDirectory>
+  if the project lives somewhere other than /Users/sam/Desktop/Coffeshop_managment.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.coffeeshop.app</string>
+
+  <!--
+    /usr/bin/env -i runs with a clean env, then we add back what we need so
+    the agent isn't subject to whatever your interactive shell happens to set.
+    PATH includes both Homebrew layouts (Apple Silicon / Intel) so node is found.
+  -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <string>NODE_ENV=production</string>
+    <string>PORT=3000</string>
+    <string>node</string>
+    <string>/Users/sam/Desktop/Coffeshop_managment/dist/server.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/sam/Desktop/Coffeshop_managment</string>
+
+  <!-- Start at user login. -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart if the process exits for any reason (crash, OOM, manual kill). -->
+  <key>KeepAlive</key>
+  <true/>
+
+  <!-- 5 second back-off between restarts so a crash loop doesn't peg the CPU. -->
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+
+  <!-- Logs land here. Make sure data/logs/ exists before first run:
+       mkdir -p /Users/sam/Desktop/Coffeshop_managment/data/logs -->
+  <key>StandardOutPath</key>
+  <string>/Users/sam/Desktop/Coffeshop_managment/data/logs/app.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/sam/Desktop/Coffeshop_managment/data/logs/app.err.log</string>
+
+  <!-- ProcessType "Interactive" keeps macOS from aggressively suspending us. -->
+  <key>ProcessType</key>
+  <string>Interactive</string>
+</dict>
+</plist>
