@@ -6,18 +6,23 @@ export type MenuItem = {
   price: number;
   sort_order: number;
   is_active: number;
+  token_color: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type CreateInput = { name: string; price: number; sort_order?: number };
-export type UpdateInput = { name: string; price: number; sort_order?: number };
+export type CreateInput = { name: string; price: number; sort_order?: number; token_color?: string | null };
+export type UpdateInput = { name: string; price: number; sort_order?: number; token_color?: string | null };
 
 export function create(input: CreateInput): MenuItem {
   const r = getDb().prepare(`
-    INSERT INTO menu_items (name, price, sort_order)
-    VALUES (@name, @price, @sort_order)
-  `).run({ ...input, sort_order: input.sort_order ?? 0 });
+    INSERT INTO menu_items (name, price, sort_order, token_color)
+    VALUES (@name, @price, @sort_order, @token_color)
+  `).run({
+    ...input,
+    sort_order: input.sort_order ?? 0,
+    token_color: input.token_color ?? null,
+  });
   return findById(Number(r.lastInsertRowid))!;
 }
 
@@ -51,9 +56,14 @@ export function listActiveByPopularity(): MenuItem[] {
 export function update(id: number, input: UpdateInput): void {
   getDb().prepare(`
     UPDATE menu_items
-    SET name = @name, price = @price, sort_order = @sort_order, updated_at = datetime('now')
+    SET name = @name, price = @price, sort_order = @sort_order, token_color = @token_color, updated_at = datetime('now')
     WHERE id = @id
-  `).run({ ...input, sort_order: input.sort_order ?? 0, id });
+  `).run({
+    ...input,
+    sort_order: input.sort_order ?? 0,
+    token_color: input.token_color ?? null,
+    id,
+  });
 }
 
 export function setActive(id: number, active: boolean): void {

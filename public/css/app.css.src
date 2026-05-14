@@ -238,6 +238,53 @@
     pointer-events: none;
   }
 
+  /* Visually hidden but still focusable / form-submittable */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Color-swatch picker (used by the menu form) */
+  .swatch-label {
+    display: inline-flex;
+    cursor: pointer;
+  }
+  .swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 9999px;
+    border: 1px solid rgba(26, 20, 16, 0.18);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14), 0 1px 2px rgba(26, 20, 16, 0.16);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch-auto {
+    background: #FAF6EE;
+    color: #7A6E62;
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-size: 16px;
+    font-variation-settings: "opsz" 24, "SOFT" 50;
+  }
+  .swatch-label input:checked + .swatch {
+    box-shadow:
+      0 0 0 2px #F4ECDF,
+      0 0 0 4px #1A1410,
+      inset 0 -2px 0 rgba(0, 0, 0, 0.14);
+    transform: scale(1.08);
+  }
+  .swatch-label input:focus-visible + .swatch {
+    outline: 2px dashed #C75D34;
+    outline-offset: 4px;
+  }
+
   /* Flying token — overlay element animated from button to jar */
   .token-flyer {
     position: fixed;

@@ -1,8 +1,8 @@
 <%
-  // Deterministic per-item token color from the Buna Ledger accent palette.
-  // Same item always gets the same color so the eye learns it.
+  // Owner can pick a color when editing the item; otherwise we hash from the
+  // shared Buna Ledger palette so every item still gets a stable color.
   const TOKEN_COLORS = ['#C75D34', '#5C7558', '#B68A3C', '#8B2A26', '#3E2A1F', '#9E4524', '#7A6E62'];
-  const tokenColor = TOKEN_COLORS[item.id % TOKEN_COLORS.length];
+  const tokenColor = item.token_color || TOKEN_COLORS[item.id % TOKEN_COLORS.length];
 %>
 <tr id="row-<%= item.id %>" class="border-b border-rule" data-unit-price="<%= item.price %>" data-token-color="<%= tokenColor %>">
   <td class="px-gutter-lg py-gutter font-sans text-[15px] text-ink truncate"><%= item.name %></td>

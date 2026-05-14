@@ -1,0 +1,17 @@
+<%# Curated token-color picker. Pass `palette` (array of hex strings) and `selected` (current value or null) %>
+<fieldset>
+  <legend class="field-label">Token colour <span class="text-mist normal-case">(optional)</span></legend>
+  <div class="flex flex-wrap items-center gap-gutter mt-1">
+    <label class="swatch-label" title="Auto (let the system pick)">
+      <input type="radio" name="token_color" value="" class="sr-only" <%= !selected ? 'checked' : '' %> />
+      <span class="swatch swatch-auto" aria-label="Auto">A</span>
+    </label>
+    <% palette.forEach(c => { %>
+      <label class="swatch-label" title="<%= c %>">
+        <input type="radio" name="token_color" value="<%= c %>" class="sr-only" <%= selected === c ? 'checked' : '' %> />
+        <span class="swatch" style="background-color: <%= c %>" aria-label="<%= c %>"></span>
+      </label>
+    <% }) %>
+  </div>
+  <span class="field-hint">Used on the sales entry buttons and jars. Auto picks a stable colour from the palette based on the item.</span>
+</fieldset>

@@ -11,13 +11,30 @@ function parsePriceMajor(input: unknown): number {
   return Math.round(n * 100);
 }
 
+// Curated palette — exported so views can render the picker from the same list.
+export const TOKEN_PALETTE = [
+  "#C75D34", // ember
+  "#5C7558", // leaf
+  "#B68A3C", // clay
+  "#8B2A26", // crimson
+  "#3E2A1F", // bean
+  "#9E4524", // ember-deep
+  "#7A6E62", // smoke
+] as const;
+
+function parseTokenColor(input: unknown): string | null {
+  const v = (input ?? "").toString().trim();
+  if (v === "") return null; // "auto" — server falls back to deterministic palette
+  return (TOKEN_PALETTE as readonly string[]).includes(v) ? v : null;
+}
+
 export function list(_req: Request, res: Response) {
   const items = Menu.listAll();
-  res.render("menu/list", { items });
+  res.render("menu/list", { items, palette: TOKEN_PALETTE });
 }
 
 export function showNew(_req: Request, res: Response) {
-  res.render("menu/new");
+  res.render("menu/new", { palette: TOKEN_PALETTE });
 }
 
 export function create(req: Request, res: Response) {
@@ -27,7 +44,8 @@ export function create(req: Request, res: Response) {
     return res.redirect("/menu/new");
   }
   const price = parsePriceMajor(req.body.price);
-  const m = Menu.create({ name, price });
+  const token_color = parseTokenColor(req.body.token_color);
+  const m = Menu.create({ name, price, token_color });
   writeAudit({ actor_id: actor(req), action: "create_menu_item", entity: "menu_items", entity_id: m.id });
   pushFlash(req, "success", `${m.name} added to menu`);
   res.redirect("/menu");
@@ -36,7 +54,7 @@ export function create(req: Request, res: Response) {
 export function showEdit(req: Request, res: Response) {
   const item = Menu.findById(Number(req.params.id));
   if (!item) return res.status(404).render("errors/404");
-  res.render("menu/edit", { item });
+  res.render("menu/edit", { item, palette: TOKEN_PALETTE });
 }
 
 export function update(req: Request, res: Response) {
@@ -47,6 +65,7 @@ export function update(req: Request, res: Response) {
   Menu.update(id, {
     name,
     price: parsePriceMajor(req.body.price),
+    token_color: parseTokenColor(req.body.token_color),
   });
   writeAudit({ actor_id: actor(req), action: "update_menu_item", entity: "menu_items", entity_id: id });
   pushFlash(req, "success", `${name} updated`);
