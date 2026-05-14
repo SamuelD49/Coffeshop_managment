@@ -35,10 +35,11 @@
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Basic</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Employer pension</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Gross</th>
+          <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Bonus</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Tax</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Staff pension</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Advance</th>
-          <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Total pension</th>
+          <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Penalty</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Total deduction</th>
           <th class="text-right font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2">Net payment</th>
           <th class="text-left  font-sans font-medium text-[10px] tracking-smallcaps uppercase text-coal py-gutter px-2 w-[120px]">Signature</th>
@@ -53,10 +54,11 @@
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.basic_salary / 100).toFixed(2) %></td>
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.pension_employer_amount / 100).toFixed(2) %></td>
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.gross_salary / 100).toFixed(2) %></td>
+            <td class="font-mono text-[12px] text-right py-gutter px-2 <%= e.bonus > 0 ? 'text-coal' : 'text-mist' %>"><%= (e.bonus / 100).toFixed(2) %></td>
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.income_tax / 100).toFixed(2) %></td>
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.pension_employee_amount / 100).toFixed(2) %></td>
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.advance_salary / 100).toFixed(2) %></td>
-            <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= ((e.pension_employer_amount + e.pension_employee_amount) / 100).toFixed(2) %></td>
+            <td class="font-mono text-[12px] text-right py-gutter px-2 <%= e.penalty > 0 ? 'text-coal' : 'text-mist' %>"><%= (e.penalty / 100).toFixed(2) %></td>
             <td class="font-mono text-[12px] text-coal text-right py-gutter px-2"><%= (e.total_deduction / 100).toFixed(2) %></td>
             <td class="font-mono text-[13px] text-ink text-right py-gutter px-2"><%= (e.net_payment / 100).toFixed(2) %></td>
             <td class="py-gutter px-2 border-b border-rule"></td>
@@ -70,10 +72,11 @@
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (entries.reduce((s, e) => s + e.basic_salary, 0) / 100).toFixed(2) %></td>
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.pension_employer_amount / 100).toFixed(2) %></td>
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.gross_salary / 100).toFixed(2) %></td>
+          <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.bonus / 100).toFixed(2) %></td>
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.income_tax / 100).toFixed(2) %></td>
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.pension_employee_amount / 100).toFixed(2) %></td>
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.advance_salary / 100).toFixed(2) %></td>
-          <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= ((totals.pension_employer_amount + totals.pension_employee_amount) / 100).toFixed(2) %></td>
+          <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.penalty / 100).toFixed(2) %></td>
           <td class="font-mono text-[12px] text-ink text-right py-gutter px-2"><%= (totals.total_deduction / 100).toFixed(2) %></td>
           <td class="font-mono text-[14px] text-ink text-right py-gutter px-2"><%= (totals.net_payment / 100).toFixed(2) %></td>
           <td></td>

@@ -69,6 +69,35 @@ describe("computeEntry", () => {
     // net = 83333 - 155833 = -72500
     expect(e.net_payment).toBe(-72500);
   });
+
+  it("bonus is added to net but NOT to the pension base", () => {
+    const e = computeEntry({ ...sample, bonus: 75000 });
+    expect(e.gross_salary).toBe(500000);
+    expect(e.pension_employee_amount).toBe(35000); // 7% of 500000 — unchanged
+    expect(e.pension_employer_amount).toBe(55000); // 11% — unchanged
+    expect(e.total_deduction).toBe(35000 + 50000); // tax + pension_emp, no penalty
+    // net = gross + bonus - deductions = 500000 + 75000 - 85000 = 490000
+    expect(e.net_payment).toBe(490000);
+  });
+
+  it("penalty is added to total_deduction (subtracts from net)", () => {
+    const e = computeEntry({ ...sample, penalty: 20000 });
+    expect(e.total_deduction).toBe(35000 + 50000 + 20000);
+    expect(e.net_payment).toBe(500000 - e.total_deduction);
+  });
+
+  it("bonus and penalty combine cleanly", () => {
+    const e = computeEntry({ ...sample, bonus: 30000, penalty: 10000 });
+    expect(e.gross_salary).toBe(500000);
+    expect(e.total_deduction).toBe(35000 + 50000 + 10000);
+    expect(e.net_payment).toBe(500000 + 30000 - 95000);
+  });
+
+  it("missing bonus/penalty default to zero (legacy callers)", () => {
+    const e1 = computeEntry(sample);
+    const e2 = computeEntry({ ...sample, bonus: 0, penalty: 0 });
+    expect(e1).toEqual(e2);
+  });
 });
 
 describe("sumColumn", () => {

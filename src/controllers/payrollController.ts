@@ -105,6 +105,8 @@ export function run(req: Request, res: Response) {
     pension_employee_amount: sumColumn(entries, "pension_employee_amount"),
     income_tax: sumColumn(entries, "income_tax"),
     advance_salary: sumColumn(entries, "advance_salary"),
+    bonus: sumColumn(entries, "bonus"),
+    penalty: sumColumn(entries, "penalty"),
     total_deduction: sumColumn(entries, "total_deduction"),
     net_payment: sumColumn(entries, "net_payment"),
   };
@@ -130,6 +132,8 @@ export function updateEntry(req: Request, res: Response) {
     days_worked: Number(req.body.days_worked || 0),
     income_tax: parseMajor(req.body.income_tax),
     advance_salary: parseMajor(req.body.advance_salary),
+    bonus: parseMajor(req.body.bonus),
+    penalty: parseMajor(req.body.penalty),
     standard_days_in_month: stdDays,
   });
   writeAudit({ actor_id: actor(req), action: "update_payroll_entry", entity: "payroll_entries", entity_id: entryId });
@@ -179,6 +183,8 @@ export function print(req: Request, res: Response) {
     pension_employee_amount: sumColumn(entries, "pension_employee_amount"),
     income_tax: sumColumn(entries, "income_tax"),
     advance_salary: sumColumn(entries, "advance_salary"),
+    bonus: sumColumn(entries, "bonus"),
+    penalty: sumColumn(entries, "penalty"),
     total_deduction: sumColumn(entries, "total_deduction"),
     net_payment: sumColumn(entries, "net_payment"),
   };

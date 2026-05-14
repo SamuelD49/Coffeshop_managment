@@ -14,6 +14,8 @@ export type PayrollEntry = {
   gross_salary: number;
   income_tax: number;
   advance_salary: number;
+  bonus: number;
+  penalty: number;
   total_deduction: number;
   net_payment: number;
   signed_at: string | null;
@@ -42,29 +44,39 @@ export type CreateInput = {
   pension_employee_pct: number;
   income_tax?: number;
   advance_salary?: number;
+  bonus?: number;
+  penalty?: number;
 };
 
 export function createFromEmployee(input: CreateInput): PayrollEntry {
+  const bonus = input.bonus ?? 0;
+  const penalty = input.penalty ?? 0;
+  const income_tax = input.income_tax ?? 0;
+  const advance_salary = input.advance_salary ?? 0;
   const c = computeEntry({
     basic_salary: input.basic_salary,
     days_worked: input.days_worked,
     standard_days_in_month: input.standard_days_in_month,
     pension_employer_pct: input.pension_employer_pct,
     pension_employee_pct: input.pension_employee_pct,
-    income_tax: input.income_tax ?? 0,
-    advance_salary: input.advance_salary ?? 0,
+    income_tax,
+    advance_salary,
+    bonus,
+    penalty,
   });
   const r = getDb().prepare(`
     INSERT INTO payroll_entries (
       payroll_run_id, employee_id, days_worked, basic_salary,
       pension_employer_pct, pension_employee_pct,
       pension_employer_amount, pension_employee_amount,
-      gross_salary, income_tax, advance_salary, total_deduction, net_payment
+      gross_salary, income_tax, advance_salary, bonus, penalty,
+      total_deduction, net_payment
     ) VALUES (
       @run_id, @employee_id, @days_worked, @basic_salary,
       @pension_employer_pct, @pension_employee_pct,
       @pension_employer_amount, @pension_employee_amount,
-      @gross_salary, @income_tax, @advance_salary, @total_deduction, @net_payment
+      @gross_salary, @income_tax, @advance_salary, @bonus, @penalty,
+      @total_deduction, @net_payment
     )
   `).run({
     run_id: input.run_id,
@@ -76,8 +88,10 @@ export function createFromEmployee(input: CreateInput): PayrollEntry {
     pension_employer_amount: c.pension_employer_amount,
     pension_employee_amount: c.pension_employee_amount,
     gross_salary: c.gross_salary,
-    income_tax: input.income_tax ?? 0,
-    advance_salary: input.advance_salary ?? 0,
+    income_tax,
+    advance_salary,
+    bonus,
+    penalty,
     total_deduction: c.total_deduction,
     net_payment: c.net_payment,
   });
@@ -88,6 +102,8 @@ export type UpdateInput = {
   days_worked: number;
   income_tax: number;
   advance_salary: number;
+  bonus?: number;
+  penalty?: number;
   standard_days_in_month?: number; // optional — usually unchanged
 };
 
@@ -95,6 +111,8 @@ export function update(id: number, input: UpdateInput): void {
   const entry = findById(id);
   if (!entry) throw new Error(`Entry ${id} not found`);
   const stdDays = input.standard_days_in_month ?? 30;
+  const bonus = input.bonus ?? entry.bonus ?? 0;
+  const penalty = input.penalty ?? entry.penalty ?? 0;
   const c = computeEntry({
     basic_salary: entry.basic_salary,
     days_worked: input.days_worked,
@@ -103,12 +121,16 @@ export function update(id: number, input: UpdateInput): void {
     pension_employee_pct: entry.pension_employee_pct,
     income_tax: input.income_tax,
     advance_salary: input.advance_salary,
+    bonus,
+    penalty,
   });
   getDb().prepare(`
     UPDATE payroll_entries SET
       days_worked = @days_worked,
       income_tax = @income_tax,
       advance_salary = @advance_salary,
+      bonus = @bonus,
+      penalty = @penalty,
       pension_employer_amount = @pension_employer_amount,
       pension_employee_amount = @pension_employee_amount,
       gross_salary = @gross_salary,
@@ -121,6 +143,8 @@ export function update(id: number, input: UpdateInput): void {
     days_worked: input.days_worked,
     income_tax: input.income_tax,
     advance_salary: input.advance_salary,
+    bonus,
+    penalty,
     pension_employer_amount: c.pension_employer_amount,
     pension_employee_amount: c.pension_employee_amount,
     gross_salary: c.gross_salary,
