@@ -1,6 +1,83 @@
+<%
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function fmtMonth(yyyymm) {
+    if (!yyyymm) return '';
+    const parts = yyyymm.split('-');
+    const y = Number(parts[0]);
+    const m = Number(parts[1]);
+    return (MONTH_NAMES[m - 1] || '?') + ' ' + y;
+  }
+  const _byMonth = Array.isArray(data.byMonth) ? data.byMonth : [];
+%>
+
+<div class="grid grid-cols-2 gap-air mb-air">
+  <a href="/reports/export?tab=purchases&group=day&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
+    <div class="card-body text-center py-gutter-lg">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By day</p>
+      <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
+    </div>
+  </a>
+  <a href="/reports/export?tab=purchases&group=month&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
+    <div class="card-body text-center py-gutter-lg">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By month</p>
+      <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
+    </div>
+  </a>
+</div>
+
+<article class="card mb-air">
+  <header class="card-header">
+    <h2 class="card-title">By month</h2>
+    <p class="card-meta">Calendar-month buckets across the selected range</p>
+  </header>
+  <% if (_byMonth.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>
+  <% } else { %>
+    <% const _max = Math.max(0, ..._byMonth.map(m => m.total)); %>
+    <div class="card-body">
+      <div class="sparkbars" style="height: 140px;">
+        <% _byMonth.forEach(m => {
+             const h = _max > 0 ? Math.max(2, Math.round((m.total / _max) * 100)) : 2;
+        %>
+          <div class="sparkbar" title="<%= fmtMonth(m.month) %>: <%= (m.total / 100).toFixed(2) %>">
+            <div class="sparkbar-track">
+              <div class="sparkbar-fill" style="height: <%= h %>%"></div>
+            </div>
+            <div class="sparkbar-label"><%= fmtMonth(m.month) %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <table class="w-full">
+      <thead>
+        <tr class="border-y border-rule">
+          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Month</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% _byMonth.forEach(m => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-display text-[15px] text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= fmtMonth(m.month) %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= m.row_count %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (m.total / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr class="border-t-2 border-rule-strong">
+          <td colspan="2" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
+          <td class="px-gutter-lg py-gutter-lg text-right font-mono text-[16px] text-ink"><%= (_byMonth.reduce((s, m) => s + m.total, 0) / 100).toFixed(2) %></td>
+        </tr>
+      </tfoot>
+    </table>
+  <% } %>
+</article>
+
 <article class="card">
   <header class="card-header">
-    <h2 class="card-title">Purchases by day</h2>
+    <h2 class="card-title">By day</h2>
   </header>
   <% if (data.byDay.length === 0) { %>
     <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>

@@ -8,9 +8,9 @@ import { todayBusinessDate } from "../lib/dates";
 
 function defaultRange(): { from: string; to: string } {
   const today = todayBusinessDate(Settings.get("business_day_cutoff") ?? "00:00", Settings.get("timezone") ?? "Africa/Addis_Ababa");
-  // last 30 days
+  // Default to last 90 days so the by-month sections always show ≥3 buckets.
   const t = new Date(today);
-  t.setDate(t.getDate() - 30);
+  t.setDate(t.getDate() - 90);
   const yyyy = t.getFullYear();
   const mm = String(t.getMonth() + 1).padStart(2, "0");
   const dd = String(t.getDate()).padStart(2, "0");
@@ -35,15 +35,22 @@ function loadTabData(tab: Tab, range: { from: string; to: string }) {
   if (tab === "sales") {
     return {
       byDay: Reports.salesByDay(range),
+      byMonth: Reports.salesByMonth(range),
       byItem: Reports.salesByItem(range),
       byEmployee: Reports.salesByEmployee(range),
     };
   }
   if (tab === "purchases") {
-    return { byDay: Reports.purchasesByDay(range) };
+    return {
+      byDay: Reports.purchasesByDay(range),
+      byMonth: Reports.purchasesByMonth(range),
+    };
   }
   if (tab === "petty-cash") {
-    return { summary: Reports.pettyCashSummary(range) };
+    return {
+      summary: Reports.pettyCashSummary(range),
+      byMonth: Reports.pettyCashByMonth(range),
+    };
   }
   // payroll
   const runs = Runs.listAll().map(r => {
@@ -82,27 +89,50 @@ export function exportCsv(req: Request, res: Response) {
       const rows = Reports.salesByEmployee(range).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
       csv = toCsv(["full_name", "session_count", "subtotal"], rows);
       filename = `sales-by-employee-${range.from}-to-${range.to}.csv`;
+    } else if (grouping === "month") {
+      const rows = Reports.salesByMonth(range).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
+      csv = toCsv(["month", "session_count", "subtotal"], rows);
+      filename = `sales-by-month-${range.from}-to-${range.to}.csv`;
     } else {
       const rows = Reports.salesByDay(range).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
       csv = toCsv(["business_date", "session_count", "subtotal"], rows);
       filename = `sales-by-day-${range.from}-to-${range.to}.csv`;
     }
   } else if (tab === "purchases") {
-    const rows = Reports.purchasesByDay(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
-    csv = toCsv(["purchase_date", "row_count", "total"], rows);
+    const grouping = (req.query.group as string) || "day";
+    if (grouping === "month") {
+      const rows = Reports.purchasesByMonth(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
+      csv = toCsv(["month", "row_count", "total"], rows);
+      filename = `purchases-by-month-${range.from}-to-${range.to}.csv`;
+    } else {
+      const rows = Reports.purchasesByDay(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
+      csv = toCsv(["purchase_date", "row_count", "total"], rows);
+    }
   } else if (tab === "petty-cash") {
-    const s = Reports.pettyCashSummary(range);
-    csv = toCsv(
-      ["metric", "amount"],
-      [
-        { metric: "expense",       amount: (s.byType.expense / 100).toFixed(2) },
-        { metric: "refund",        amount: (s.byType.refund / 100).toFixed(2) },
-        { metric: "replenishment", amount: (s.byType.replenishment / 100).toFixed(2) },
-        { metric: "total_in",      amount: (s.totalIn / 100).toFixed(2) },
-        { metric: "total_out",     amount: (s.totalOut / 100).toFixed(2) },
-        { metric: "net",           amount: (s.net / 100).toFixed(2) },
-      ],
-    );
+    const grouping = (req.query.group as string) || "summary";
+    if (grouping === "month") {
+      const rows = Reports.pettyCashByMonth(range).map(r => ({
+        month: r.month,
+        total_in:  (r.total_in / 100).toFixed(2),
+        total_out: (r.total_out / 100).toFixed(2),
+        net:       (r.net / 100).toFixed(2),
+      }));
+      csv = toCsv(["month", "total_in", "total_out", "net"], rows);
+      filename = `petty-cash-by-month-${range.from}-to-${range.to}.csv`;
+    } else {
+      const s = Reports.pettyCashSummary(range);
+      csv = toCsv(
+        ["metric", "amount"],
+        [
+          { metric: "expense",       amount: (s.byType.expense / 100).toFixed(2) },
+          { metric: "refund",        amount: (s.byType.refund / 100).toFixed(2) },
+          { metric: "replenishment", amount: (s.byType.replenishment / 100).toFixed(2) },
+          { metric: "total_in",      amount: (s.totalIn / 100).toFixed(2) },
+          { metric: "total_out",     amount: (s.totalOut / 100).toFixed(2) },
+          { metric: "net",           amount: (s.net / 100).toFixed(2) },
+        ],
+      );
+    }
   } else if (tab === "payroll") {
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const rows = Runs.listAll().map(r => {

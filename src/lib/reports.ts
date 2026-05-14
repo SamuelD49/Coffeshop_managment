@@ -3,9 +3,12 @@ import { getDb } from "./db";
 export type DateRange = { from: string; to: string };
 
 export type SalesByDayRow = { business_date: string; subtotal: number; session_count: number };
+export type SalesByMonthRow = { month: string; subtotal: number; session_count: number };
 export type SalesByItemRow = { menu_item_id: number; name: string; qty: number; revenue: number };
 export type SalesByEmployeeRow = { employee_id: number; full_name: string; subtotal: number; session_count: number };
 export type PurchasesByDayRow = { purchase_date: string; total: number; row_count: number };
+export type PurchasesByMonthRow = { month: string; total: number; row_count: number };
+export type PettyCashByMonthRow = { month: string; total_in: number; total_out: number; net: number };
 export type PettyCashSummary = {
   totalIn: number;
   totalOut: number;
@@ -92,6 +95,46 @@ export function purchasesByDay(range: DateRange): PurchasesByDayRow[] {
     GROUP BY purchase_date
     ORDER BY purchase_date
   `).all(range) as PurchasesByDayRow[];
+}
+
+// Monthly aggregations — group by the YYYY-MM prefix of the date string.
+// SQLite's substr() is 1-indexed, so substr(date, 1, 7) gives "2026-05".
+export function salesByMonth(range: DateRange): SalesByMonthRow[] {
+  return getDb().prepare(`
+    SELECT substr(s.business_date, 1, 7) AS month,
+           COALESCE(SUM(l.total), 0) AS subtotal,
+           COUNT(DISTINCT s.id) AS session_count
+    FROM sales_sessions s
+    LEFT JOIN sale_line_items l ON l.sales_session_id = s.id
+    WHERE s.business_date BETWEEN @from AND @to
+    GROUP BY month
+    ORDER BY month
+  `).all(range) as SalesByMonthRow[];
+}
+
+export function purchasesByMonth(range: DateRange): PurchasesByMonthRow[] {
+  return getDb().prepare(`
+    SELECT substr(purchase_date, 1, 7) AS month,
+           COALESCE(SUM(total), 0) AS total,
+           COUNT(*) AS row_count
+    FROM purchase_requisitions
+    WHERE purchase_date BETWEEN @from AND @to
+    GROUP BY month
+    ORDER BY month
+  `).all(range) as PurchasesByMonthRow[];
+}
+
+export function pettyCashByMonth(range: DateRange): PettyCashByMonthRow[] {
+  const raw = getDb().prepare(`
+    SELECT substr(entry_date, 1, 7) AS month,
+           COALESCE(SUM(CASE WHEN type IN ('refund','replenishment') THEN amount ELSE 0 END), 0) AS total_in,
+           COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_out
+    FROM petty_cash_entries
+    WHERE entry_date BETWEEN @from AND @to
+    GROUP BY month
+    ORDER BY month
+  `).all(range) as Array<{ month: string; total_in: number; total_out: number }>;
+  return raw.map(r => ({ ...r, net: r.total_in - r.total_out }));
 }
 
 export function pettyCashSummary(range: DateRange): PettyCashSummary {
