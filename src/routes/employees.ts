@@ -17,6 +17,9 @@ employeesRouter.get("/:id",     Ctrl.profile);
 employeesRouter.post("/:id/personal",   Ctrl.updatePersonal);
 employeesRouter.post("/:id/employment", Ctrl.updateEmployment);
 
+// Soft-delete toggle (activate / deactivate)
+employeesRouter.post("/:id/active",     Ctrl.toggleActive);
+
 // Documents (employee)
 employeesRouter.post("/:id/documents",          upload.single("file"), Ctrl.uploadDocument);
 employeesRouter.post("/:id/documents/:attId/delete", Ctrl.deleteDocument);

@@ -13,7 +13,10 @@ function actor(req: Request): number | null { return req.session.employeeId ?? n
 
 export function list(req: Request, res: Response) {
   const showInactive = req.query.show === "all";
-  const rows = Employees.listAll({ activeOnly: !showInactive }).filter(e => e.role !== "owner");
+  // List EVERYONE in the system — owners and employees alike — so the count
+  // matches what shows up on payroll / sales / settings audits. Owners are
+  // tagged visually in the table so they're easy to spot.
+  const rows = Employees.listAll({ activeOnly: !showInactive });
   const withStatus = rows.map(e => ({
     employee: e,
     completeness: calculateCompleteness(e.id),
@@ -83,22 +86,44 @@ export function updatePersonal(req: Request, res: Response) {
 
 export function updateEmployment(req: Request, res: Response) {
   const id = Number(req.params.id);
-  if (!Employees.findFull(id)) return res.status(404).render("errors/404");
+  const current = Employees.findFull(id);
+  if (!current) return res.status(404).render("errors/404");
   const basic = req.body.basic_salary?.toString() || "0";
   const cents = Math.round(Number(basic) * 100);
+  // is_active is no longer in the Employment form — owners flip it via the
+  // Activate/Deactivate button on the profile header. Preserve the current
+  // value through saves so the form doesn't accidentally turn it off.
   Employees.updateEmployment(id, {
     position: req.body.position || null,
     hire_date: req.body.hire_date || null,
     termination_date: req.body.termination_date || null,
     basic_salary: Number.isFinite(cents) ? cents : 0,
     role: req.body.role === "owner" ? "owner" : "employee",
-    is_active: req.body.is_active === "true",
+    is_active: !!current.is_active,
     username: req.body.username || null,
   });
   refreshOnboardingStatus(id);
   writeAudit({ actor_id: actor(req), action: "update_employee_employment", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Employment info saved");
   res.redirect(`/employees/${id}?tab=employment`);
+}
+
+// Owner-only soft-delete (and reactivate). is_active=0 keeps history intact:
+// payroll runs, sales, audit log all keep referring to the row by id.
+export function toggleActive(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const current = Employees.findFull(id);
+  if (!current) return res.status(404).render("errors/404");
+  const next = !current.is_active;
+  Employees.setActive(id, next);
+  writeAudit({
+    actor_id: actor(req),
+    action: next ? "activate_employee" : "deactivate_employee",
+    entity: "employees",
+    entity_id: id,
+  });
+  pushFlash(req, "success", `${current.full_name} ${next ? "reactivated" : "deactivated"}`);
+  res.redirect(`/employees/${id}`);
 }
 
 const ALLOWED_EMP_KINDS = ["profile_photo", "id_front", "id_back", "contract", "other"] as const;

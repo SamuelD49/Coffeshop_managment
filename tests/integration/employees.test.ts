@@ -44,7 +44,9 @@ describe("Employees onboarding flow", () => {
     const res = await agent.get("/employees");
     expect(res.status).toBe(200);
     expect(res.text).toContain("Employees");
-    expect(res.text).toContain("No one on the roster yet");
+    // The seeded Owner row now appears on the list (the page shows everyone in
+    // the system, including owners, so the count matches payroll).
+    expect(res.text).toContain("Owner");
   });
 
   it("creates an employee via POST /employees", async () => {

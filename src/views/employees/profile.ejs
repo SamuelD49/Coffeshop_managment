@@ -19,7 +19,7 @@
           <a href="/employees" class="hover:text-ink transition-colors">Employees</a> · <%= employee.position || 'No position set' %>
         </p>
         <h1 class="font-display text-[40px] leading-[44px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 80,'SOFT' 50"><%= employee.full_name %></h1>
-        <div class="mt-gutter">
+        <div class="mt-gutter flex items-center gap-gutter">
           <% if (completeness.complete) { %>
             <span class="pip pip-approved">Onboarding complete</span>
           <% } else { %>
@@ -27,7 +27,30 @@
               <%= completeness.missing.length %> item<%= completeness.missing.length === 1 ? '' : 's' %> missing
             </span>
           <% } %>
+          <% if (!employee.is_active) { %>
+            <span class="pip pip-closed">Inactive</span>
+          <% } %>
+          <% if (employee.role === 'owner') { %>
+            <span class="font-sans text-[11px] tracking-smallcaps uppercase text-ember">Owner</span>
+          <% } %>
         </div>
+      </div>
+      <div class="flex items-center gap-gutter">
+        <% if (employee.is_active) { %>
+          <form method="POST" action="/employees/<%= employee.id %>/active"
+                data-confirm="<%= employee.full_name %> will be marked inactive — hidden from payroll auto-populate and the active-employee lists, but all their history (past payrolls, sales, documents) stays intact. You can reactivate at any time."
+                data-confirm-title="Deactivate <%= employee.full_name %>?"
+                data-confirm-label="Deactivate"
+                data-confirm-variant="danger">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-danger">Deactivate</button>
+          </form>
+        <% } else { %>
+          <form method="POST" action="/employees/<%= employee.id %>/active">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-primary">Reactivate</button>
+          </form>
+        <% } %>
       </div>
     </header>
 

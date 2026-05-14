@@ -21,20 +21,14 @@
       <span class="field-label">Termination date</span>
       <input type="date" name="termination_date" value="<%= employee.termination_date || '' %>" class="field-input field-mono" />
     </label>
-    <label class="block">
+    <label class="block col-span-2">
       <span class="field-label">Role</span>
       <select name="role" class="field-input">
         <% ['employee', 'owner'].forEach(r => { %>
           <option value="<%= r %>" <%= employee.role === r ? 'selected' : '' %>><%= r === 'owner' ? 'Owner (full access)' : 'Employee' %></option>
         <% }) %>
       </select>
-    </label>
-    <label class="block">
-      <span class="field-label">Status</span>
-      <select name="is_active" class="field-input">
-        <option value="true"  <%= employee.is_active ? 'selected' : '' %>>Active</option>
-        <option value="false" <%= !employee.is_active ? 'selected' : '' %>>Inactive</option>
-      </select>
+      <span class="field-hint">Use the Deactivate button at the top to soft-delete this employee while keeping their history.</span>
     </label>
     <label class="block col-span-2">
       <span class="field-label">Username (optional — required if they need to log in)</span>

@@ -44,7 +44,7 @@
             <% employees.forEach(({ employee, completeness }) => { %>
               <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
                 <td class="px-gutter-lg py-gutter-lg">
-                  <a href="/employees/<%= employee.id %>" class="font-sans text-[15px] text-ink hover:text-ember transition-colors">
+                  <a href="/employees/<%= employee.id %>" class="font-sans text-[15px] <%= employee.is_active ? 'text-ink' : 'text-smoke italic' %> hover:text-ember transition-colors">
                     <%= employee.full_name %>
                   </a>
                   <% if (!employee.is_active) { %>
@@ -52,7 +52,7 @@
                   <% } %>
                 </td>
                 <td class="py-gutter-lg font-sans text-[14px] text-coal"><%= employee.position || '—' %></td>
-                <td class="py-gutter-lg font-sans text-[14px] text-coal capitalize"><%= employee.role %></td>
+                <td class="py-gutter-lg font-sans text-[14px] capitalize <%= employee.role === 'owner' ? 'text-ember' : 'text-coal' %>"><%= employee.role %></td>
                 <td class="py-gutter-lg">
                   <% if (completeness.complete) { %>
                     <span class="pip pip-approved">Complete</span>
