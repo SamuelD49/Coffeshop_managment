@@ -22,7 +22,7 @@
           <span class="field-label">Price</span>
           <input name="price" required value="<%= (item.price / 100).toFixed(2) %>" class="field-input field-mono" />
         </label>
-        <%- include('_color_picker', { palette, selected: item.token_color }) %>
+        <%- include('_color_picker', { palette: locals.palette, selected: item.token_color }) %>
       </div>
       <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
         <a href="/menu" class="btn-secondary">Cancel</a>

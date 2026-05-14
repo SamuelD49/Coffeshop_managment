@@ -1,14 +1,19 @@
-<%# Curated token-color picker. Pass `palette` (array of hex strings) and `selected` (current value or null) %>
+<%# Curated token-color picker. Optionally accepts `palette` (array of hex strings) and `selected` (current value or null). %>
+<%
+  const _defaultPalette = ['#C75D34', '#5C7558', '#B68A3C', '#8B2A26', '#3E2A1F', '#9E4524', '#7A6E62'];
+  const _palette  = (typeof palette  !== 'undefined' && Array.isArray(palette) && palette.length) ? palette : _defaultPalette;
+  const _selected = (typeof selected !== 'undefined') ? selected : null;
+%>
 <fieldset>
   <legend class="field-label">Token colour <span class="text-mist normal-case">(optional)</span></legend>
   <div class="flex flex-wrap items-center gap-gutter mt-1">
     <label class="swatch-label" title="Auto (let the system pick)">
-      <input type="radio" name="token_color" value="" class="sr-only" <%= !selected ? 'checked' : '' %> />
+      <input type="radio" name="token_color" value="" class="sr-only" <%= !_selected ? 'checked' : '' %> />
       <span class="swatch swatch-auto" aria-label="Auto">A</span>
     </label>
-    <% palette.forEach(c => { %>
+    <% _palette.forEach(c => { %>
       <label class="swatch-label" title="<%= c %>">
-        <input type="radio" name="token_color" value="<%= c %>" class="sr-only" <%= selected === c ? 'checked' : '' %> />
+        <input type="radio" name="token_color" value="<%= c %>" class="sr-only" <%= _selected === c ? 'checked' : '' %> />
         <span class="swatch" style="background-color: <%= c %>" aria-label="<%= c %>"></span>
       </label>
     <% }) %>

@@ -23,7 +23,7 @@
           <input name="price" required class="field-input field-mono" placeholder="45.00" />
           <span class="field-hint">In the shop currency (e.g. ETB). Items will be ordered by sales volume on the entry page.</span>
         </label>
-        <%- include('_color_picker', { palette, selected: null }) %>
+        <%- include('_color_picker', { palette: locals.palette, selected: null }) %>
       </div>
       <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
         <a href="/menu" class="btn-secondary">Cancel</a>
