@@ -51,6 +51,7 @@ describe("First-run setup", () => {
 
     const res = await agent.post("/setup").type("form").send({
       _csrf: csrf,
+      shop_name: "Bunna",
       full_name: "Sam",
       username: "sam",
       password: "secret123",
@@ -64,7 +65,7 @@ describe("First-run setup", () => {
     const agent = request.agent(app);
     const getRes = await agent.get("/setup");
     const csrf = /name="_csrf" value="([^"]+)"/.exec(getRes.text)?.[1]!;
-    await agent.post("/setup").type("form").send({ _csrf: csrf, full_name: "Sam", username: "sam", password: "secret123" });
+    await agent.post("/setup").type("form").send({ _csrf: csrf, shop_name: "Bunna", full_name: "Sam", username: "sam", password: "secret123" });
 
     const getRes2 = await agent.get("/setup");
     // After setup, requireSetup no longer redirects to /setup — root works.

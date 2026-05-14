@@ -28,13 +28,9 @@ describe("happy path", () => {
     const { app } = await import("../../src/app");
     const agent = request.agent(app);
 
-    // Setup
+    // Setup — shop_name is now collected here and becomes the app title.
     let t = await csrf(agent, "/setup");
-    await agent.post("/setup").type("form").send({ _csrf: t, full_name: "Sam", username: "sam", password: "secret123" });
-
-    // Settings update
-    t = await csrf(agent, "/settings");
-    await agent.post("/settings").type("form").send({ _csrf: t, shop_name: "Bunna Café" });
+    await agent.post("/setup").type("form").send({ _csrf: t, shop_name: "Bunna Café", full_name: "Sam", username: "sam", password: "secret123" });
 
     // Verify reflected in dashboard
     const home = await agent.get("/");
