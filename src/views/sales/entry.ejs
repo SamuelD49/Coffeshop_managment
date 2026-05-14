@@ -124,6 +124,57 @@
       }
       function fmt(cents) { return (cents / 100).toFixed(2); }
 
+      // Render the buna jar for one row. `popLastN` adds the pop animation to
+      // the last N newly-added disks (used when the cashier drops a token so
+      // there's a satisfying visual cue).
+      function renderJar(row, popLastN) {
+        var jar = row.querySelector('[data-jar]');
+        if (!jar) return;
+        var qty = asQty(row.querySelector('input[name="qty"]').value);
+        var color = row.dataset.tokenColor || '#C75D34';
+        var maxVisible = 40;
+        var visible = Math.min(qty, maxVisible);
+        var pop = popLastN || 0;
+        var html = '';
+        for (var i = 0; i < visible; i++) {
+          var isPop = (i >= visible - pop) ? ' token-pop' : '';
+          html += '<span class="token-disk-small' + isPop + '" style="background-color:' + color + '" aria-hidden="true"></span>';
+        }
+        if (qty > maxVisible) {
+          html += '<span class="font-mono text-[10px] text-smoke ml-1">+' + (qty - maxVisible) + '</span>';
+        }
+        jar.innerHTML = html;
+      }
+
+      // "Drop a token" — increment qty by 1 and trigger the same input pipeline
+      // (recalc + debounced HTMX save) that typing the number does.
+      window.dropToken = function (btn) {
+        var row = btn.closest('tr[data-unit-price]');
+        if (!row) return;
+        var input = row.querySelector('input[name="qty"]');
+        var current = asQty(input.value);
+        input.value = String(current + 1);
+        // Re-render this jar immediately with a pop on the new token, then let
+        // recalcSales run the regular pass for everything else.
+        renderJar(row, 1);
+        // Fire input event so HTMX picks it up.
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+
+      // Clicking a small disk in the jar removes one token (intuitive: pick it
+      // back out). Event delegation since the jar re-renders.
+      document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.classList || !t.classList.contains('token-disk-small')) return;
+        var row = t.closest('tr[data-unit-price]');
+        if (!row) return;
+        var input = row.querySelector('input[name="qty"]');
+        var current = asQty(input.value);
+        if (current <= 0) return;
+        input.value = String(current - 1);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+
       window.recalcSales = function () {
         var subtotal = 0;
         var items = 0;
@@ -135,6 +186,7 @@
           items += qty;
           var rt = row.querySelector('[id^="row-total-"]');
           if (rt) rt.textContent = fmt(lineTotal);
+          renderJar(row, 0);
         });
 
         var cashInput = document.querySelector('input[name="cash_amount"]');
