@@ -31,7 +31,9 @@
               aria-label="Drop one <%= item.name %> token">
         <span class="token-disk" style="background-color: <%= tokenColor %>"></span>
       </button>
-      <div class="token-jar flex flex-wrap gap-[3px] items-center min-h-[18px] flex-1" data-jar aria-label="Tokens"></div>
+      <div class="row-jar" aria-label="<%= item.name %> jar">
+        <div data-jar class="row-jar-stack"></div>
+      </div>
     </div>
   </td>
 </tr>

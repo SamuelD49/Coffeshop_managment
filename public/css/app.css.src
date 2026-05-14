@@ -187,4 +187,66 @@
   @media (prefers-reduced-motion: reduce) {
     .token-disk-small.token-pop { animation: none; }
   }
+
+  /* Per-row jar — a small vessel that the tokens fly into and stack inside */
+  .row-jar {
+    position: relative;
+    flex: 1;
+    height: 52px;
+    background:
+      linear-gradient(to bottom, rgba(250, 246, 238, 0.4) 0%, rgba(235, 224, 204, 0.7) 100%);
+    border: 1px solid rgba(26, 20, 16, 0.20);
+    border-radius: 4px 4px 14px 14px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                inset 0 -4px 6px rgba(26, 20, 16, 0.06);
+  }
+  .row-jar::before {
+    /* The lip of the jar */
+    content: '';
+    position: absolute;
+    top: 0; left: 6px; right: 6px;
+    height: 4px;
+    background: rgba(26, 20, 16, 0.06);
+    border-bottom: 1px solid rgba(26, 20, 16, 0.10);
+  }
+  .row-jar::after {
+    /* Subtle vertical highlight to suggest glass */
+    content: '';
+    position: absolute;
+    top: 6px; bottom: 6px; left: 6px;
+    width: 4px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.45), transparent);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .row-jar-stack {
+    position: absolute;
+    bottom: 4px; left: 4px; right: 4px; top: 8px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap-reverse;
+    align-content: flex-start;
+    gap: 2px;
+  }
+  .row-jar-empty {
+    position: absolute; left: 0; right: 0; bottom: 4px;
+    text-align: center;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10px;
+    color: #A89889;
+    pointer-events: none;
+  }
+
+  /* Flying token — overlay element animated from button to jar */
+  .token-flyer {
+    position: fixed;
+    width: 12px; height: 12px;
+    border-radius: 9999px;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.20),
+                0 2px 6px rgba(26, 20, 16, 0.28);
+    z-index: 1000;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
 }

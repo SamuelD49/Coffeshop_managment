@@ -132,15 +132,18 @@
       }
       function fmt(cents) { return (cents / 100).toFixed(2); }
 
-      // Render the buna jar for one row. `popLastN` adds the pop animation to
-      // the last N newly-added disks (used when the cashier drops a token so
-      // there's a satisfying visual cue).
+      function prefersReducedMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      }
+
+      // Render the per-row jar with N stacked disks. `popLastN` puts the pop
+      // animation on the most recently added disks so it feels like they "land".
       function renderJar(row, popLastN) {
         var jar = row.querySelector('[data-jar]');
         if (!jar) return;
         var qty = asQty(row.querySelector('input[name="qty"]').value);
         var color = row.dataset.tokenColor || '#C75D34';
-        var maxVisible = 60;
+        var maxVisible = 36;
         var visible = Math.min(qty, maxVisible);
         var pop = popLastN || 0;
         var html = '';
@@ -149,24 +152,65 @@
           html += '<span class="token-disk-small' + isPop + '" style="background-color:' + color + '" aria-hidden="true"></span>';
         }
         if (qty > maxVisible) {
-          html += '<span class="font-mono text-[10px] text-smoke ml-1">+' + (qty - maxVisible) + '</span>';
+          html += '<span class="font-mono text-[10px] text-smoke self-end mb-[2px] ml-1">+' + (qty - maxVisible) + '</span>';
         }
         jar.innerHTML = html;
       }
 
-      // "Drop a token" — increment qty by 1 and trigger the same input pipeline
-      // (recalc + debounced HTMX save) that typing the number does.
+      // Animate a small disk flying from `fromEl` (the button) to `toEl` (the jar)
+      // with a brief arc, settling near the top of the jar's mouth.
+      function flyToken(fromEl, toEl, color) {
+        if (prefersReducedMotion()) return;
+        var fr = fromEl.getBoundingClientRect();
+        var tr = toEl.getBoundingClientRect();
+        var size = 12;
+        var startX = fr.left + fr.width  / 2 - size / 2;
+        var startY = fr.top  + fr.height / 2 - size / 2;
+        var endX   = tr.left + tr.width  / 2 - size / 2;
+        var endY   = tr.top  + 6; // land just below the jar's lip
+        var dx = endX - startX, dy = endY - startY;
+        // Apex of the arc: midway in X, ~50px above the higher of start/end
+        var apexX = dx * 0.5;
+        var apexY = Math.min(0, dy) - 50;
+
+        var flyer = document.createElement('span');
+        flyer.className = 'token-flyer';
+        flyer.style.backgroundColor = color;
+        flyer.style.left = startX + 'px';
+        flyer.style.top  = startY + 'px';
+        document.body.appendChild(flyer);
+
+        var anim = flyer.animate(
+          [
+            { transform: 'translate(0, 0) scale(1.4)', opacity: 1 },
+            { transform: 'translate(' + apexX + 'px, ' + apexY + 'px) scale(1.2)', opacity: 1, offset: 0.55 },
+            { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0.85)', opacity: 0.9 }
+          ],
+          { duration: 420, easing: 'cubic-bezier(0.35, 0, 0.55, 1.05)', fill: 'forwards' }
+        );
+        anim.onfinish = function () { flyer.remove(); };
+      }
+
+      // "Drop a token" — animates the flight, then bumps qty + pops the new disk
+      // just as the flyer lands (so the visual reads as the flyer becoming the disk).
       window.dropToken = function (btn) {
         var row = btn.closest('tr[data-unit-price]');
         if (!row) return;
-        var input = row.querySelector('input[name="qty"]');
-        var current = asQty(input.value);
-        input.value = String(current + 1);
-        // Re-render this jar immediately with a pop on the new token, then let
-        // recalcSales run the regular pass for everything else.
-        renderJar(row, 1);
-        // Fire input event so HTMX picks it up.
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        var jar = row.querySelector('[data-jar]');
+        var color = row.dataset.tokenColor || '#C75D34';
+        var commit = function () {
+          var input = row.querySelector('input[name="qty"]');
+          var current = asQty(input.value);
+          input.value = String(current + 1);
+          renderJar(row, 1);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        if (jar && !prefersReducedMotion()) {
+          flyToken(btn, jar, color);
+          setTimeout(commit, 340);
+        } else {
+          commit();
+        }
       };
 
       // Clicking a small disk in the jar removes one token (intuitive: pick it
