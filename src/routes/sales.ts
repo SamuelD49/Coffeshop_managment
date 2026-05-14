@@ -16,3 +16,4 @@ salesRouter.post("/:id/header",            Ctrl.updateHeader);
 
 salesRouter.post("/:id/close",  Ctrl.close);
 salesRouter.post("/:id/reopen", Ctrl.reopen);
+salesRouter.post("/:id/delete", Ctrl.remove);

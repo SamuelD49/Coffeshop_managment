@@ -16,17 +16,32 @@
           <span class="pip pip-<%= session.status === 'open' ? 'open' : 'closed' %>"><%= session.status %></span>
         </p>
       </div>
-      <% if (editable) { %>
-        <form method="POST" action="/sales/<%= session.id %>/close" onsubmit="return confirm('Close this entry? You will not be able to edit it after.')">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-          <button class="btn-primary">Close entry →</button>
-        </form>
-      <% } else if (currentRole === 'owner') { %>
-        <form method="POST" action="/sales/<%= session.id %>/reopen">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-          <button class="btn-secondary">Reopen entry</button>
-        </form>
-      <% } %>
+      <div class="flex items-center gap-gutter">
+        <% if (editable) { %>
+          <form method="POST" action="/sales/<%= session.id %>/close"
+                data-confirm="Close this entry? You will not be able to edit it after."
+                data-confirm-title="Close entry?"
+                data-confirm-label="Close entry">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-primary">Close entry →</button>
+          </form>
+        <% } else if (currentRole === 'owner') { %>
+          <form method="POST" action="/sales/<%= session.id %>/reopen">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-secondary">Reopen entry</button>
+          </form>
+        <% } %>
+        <% if (currentRole === 'owner') { %>
+          <form method="POST" action="/sales/<%= session.id %>/delete"
+                data-confirm="This sales record and all its line items will be permanently removed. This can't be undone."
+                data-confirm-title="Delete this sales record?"
+                data-confirm-label="Delete"
+                data-confirm-variant="danger">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn-danger">Delete</button>
+          </form>
+        <% } %>
+      </div>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>

@@ -15,12 +15,8 @@
 
     <form method="GET" class="reveal reveal-3 flex items-end gap-gutter mb-air">
       <label class="block">
-        <span class="field-label">From</span>
-        <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
-      </label>
-      <label class="block">
-        <span class="field-label">To</span>
-        <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
+        <span class="field-label">Date</span>
+        <input type="date" name="date" value="<%= filters.date %>" class="field-input field-mono" />
       </label>
       <% if (currentRole === 'owner') { %>
         <label class="block">

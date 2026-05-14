@@ -58,3 +58,73 @@
     </div>
   <% } %>
 </aside>
+
+<%# Confirmation dialog — every authenticated page has the sidebar, so it has this too %>
+<dialog id="confirm-dialog" class="rounded-soft border border-rule-strong bg-cream p-0 w-full max-w-md text-ink shadow-2xl backdrop:bg-ink/40">
+  <div class="bg-parchment">
+    <header class="px-gutter-lg pt-gutter-lg pb-gutter border-b border-rule">
+      <h2 id="confirm-title" class="card-title">Are you sure?</h2>
+    </header>
+    <div class="px-gutter-lg py-gutter-lg">
+      <p id="confirm-body" class="font-sans text-[15px] text-coal"></p>
+    </div>
+    <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+      <button type="button" data-action="cancel" class="btn-secondary">Cancel</button>
+      <button type="button" data-action="confirm" id="confirm-action" class="btn-primary">Confirm</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  // Custom confirmation modal — replaces window.confirm().
+  // Usage on a form:
+  //   <form ... data-confirm="message body"
+  //              data-confirm-title="optional title"
+  //              data-confirm-label="Delete"
+  //              data-confirm-variant="danger">
+  (function(){
+    var dialog = document.getElementById('confirm-dialog');
+    if (!dialog) return;
+    var titleEl = document.getElementById('confirm-title');
+    var bodyEl = document.getElementById('confirm-body');
+    var actionBtn = document.getElementById('confirm-action');
+    var pending = null;
+
+    function close(){ try { dialog.close(); } catch(e){} pending = null; }
+
+    document.addEventListener('submit', function(e){
+      var form = e.target;
+      if (!form || form.tagName !== 'FORM') return;
+      var msg = form.getAttribute('data-confirm');
+      if (!msg) return;
+      e.preventDefault();
+      pending = form;
+      titleEl.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
+      bodyEl.textContent = msg;
+      actionBtn.textContent = form.getAttribute('data-confirm-label') || 'Confirm';
+      actionBtn.className = (form.getAttribute('data-confirm-variant') === 'danger') ? 'btn-danger' : 'btn-primary';
+      if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+        actionBtn.focus();
+      } else {
+        // Fallback for ancient browsers
+        if (window.confirm(msg)) { form.removeAttribute('data-confirm'); form.submit(); }
+        else { pending = null; }
+      }
+    }, true);
+
+    dialog.addEventListener('click', function(e){
+      // Clicking the backdrop (the dialog element itself, outside its content)
+      if (e.target === dialog) { close(); return; }
+      var act = e.target && e.target.getAttribute && e.target.getAttribute('data-action');
+      if (act === 'cancel') { close(); }
+      else if (act === 'confirm') {
+        var f = pending;
+        close();
+        if (f) { f.removeAttribute('data-confirm'); f.submit(); }
+      }
+    });
+
+    dialog.addEventListener('cancel', function(){ pending = null; });
+  })();
+</script>

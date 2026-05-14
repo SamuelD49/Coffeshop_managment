@@ -20,7 +20,11 @@
           <p class="card-meta"><%= g.relation_to_employee %></p>
         <% } %>
       </div>
-      <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>/delete" onsubmit="return confirm('Remove this guarantor and all their files?')">
+      <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>/delete"
+            data-confirm="The guarantor and all their uploaded ID files will be removed. This can't be undone."
+            data-confirm-title="Remove this guarantor?"
+            data-confirm-label="Remove"
+            data-confirm-variant="danger">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Remove</button>
       </form>

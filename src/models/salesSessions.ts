@@ -60,15 +60,20 @@ export function reopen(id: number): void {
   getDb().prepare("UPDATE sales_sessions SET status = 'open', updated_at = datetime('now') WHERE id = ?").run(id);
 }
 
+// Deletes a session and (via ON DELETE CASCADE in the schema) all its sale_line_items.
+export function remove(id: number): void {
+  getDb().prepare("DELETE FROM sales_sessions WHERE id = ?").run(id);
+}
+
 export function listAll(filters: { from?: string; to?: string; employeeId?: number; status?: "open" | "closed" } = {}): SalesSession[] {
   const where: string[] = [];
-  const params: any = {};
-  if (filters.from)       { where.push("business_date >= @from"); params.from = filters.from; }
-  if (filters.to)         { where.push("business_date <= @to");   params.to = filters.to; }
-  if (filters.employeeId) { where.push("employee_id = @employee_id"); params.employee_id = filters.employeeId; }
-  if (filters.status)     { where.push("status = @status"); params.status = filters.status; }
+  const params: any[] = [];
+  if (filters.from)       { where.push("DATE(business_date) >= DATE(?)"); params.push(filters.from); }
+  if (filters.to)         { where.push("DATE(business_date) <= DATE(?)"); params.push(filters.to); }
+  if (filters.employeeId) { where.push("employee_id = ?"); params.push(filters.employeeId); }
+  if (filters.status)     { where.push("status = ?");      params.push(filters.status); }
   const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-  return getDb().prepare(`SELECT * FROM sales_sessions ${whereSql} ORDER BY business_date DESC, id DESC`).all(params) as SalesSession[];
+  return getDb().prepare(`SELECT * FROM sales_sessions ${whereSql} ORDER BY business_date DESC, id DESC`).all(...params) as SalesSession[];
 }
 
 export function listForEmployee(employeeId: number): SalesSession[] {

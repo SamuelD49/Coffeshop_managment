@@ -20,14 +20,48 @@ function canEdit(req: Request, session: Sessions.SalesSession): boolean {
 }
 
 export function list(req: Request, res: Response) {
-  const filters: any = {};
-  if (req.query.from)   filters.from = String(req.query.from);
-  if (req.query.to)     filters.to   = String(req.query.to);
-  if (req.query.status) filters.status = String(req.query.status);
-  if (role(req) === "employee") filters.employeeId = actor(req);
-  else if (req.query.employee) filters.employeeId = Number(req.query.employee);
+  const filters: any = {
+    date: "",
+    from: "",
+    to: "",
+    status: "",
+    employeeId: undefined
+  };
+  
+  const qDate = req.query.date;
+  if (typeof qDate === "string" && qDate.trim() !== "") {
+    const d = qDate.trim();
+    filters.date = d;
+    filters.from = d;
+    filters.to   = d;
+  } else {
+    const qFrom = req.query.from;
+    const qTo   = req.query.to;
+    if (typeof qFrom === "string" && qFrom.trim() !== "") filters.from = qFrom.trim();
+    if (typeof qTo   === "string" && qTo.trim()   !== "") filters.to   = qTo.trim();
+  }
 
-  const sessions = Sessions.listAll(filters).map(s => Sessions.withTotals(s.id)!);
+  const qStatus = req.query.status;
+  if (typeof qStatus === "string" && qStatus.trim() !== "") {
+    filters.status = qStatus.trim();
+  }
+
+  const qEmployee = req.query.employee;
+  if (typeof qEmployee === "string" && qEmployee.trim() !== "") {
+    filters.employeeId = Number(qEmployee.trim());
+  }
+
+  if (role(req) === "employee") {
+    filters.employeeId = actor(req);
+  }
+
+  const sessions = Sessions.listAll({
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    employeeId: filters.employeeId,
+    status: filters.status || undefined
+  }).map(s => Sessions.withTotals(s.id)!);
+  
   const employees = role(req) === "owner" ? Employees.listAll({ activeOnly: false }) : [];
   res.render("sales/list", { sessions, employees, filters });
 }
@@ -130,4 +164,15 @@ export function reopen(req: Request, res: Response) {
   writeAudit({ actor_id: actor(req), action: "reopen_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Shift reopened");
   res.redirect(`/sales/${id}`);
+}
+
+export function remove(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const session = Sessions.findById(id);
+  if (!session) return res.status(404).render("errors/404");
+  if (role(req) !== "owner") return res.status(403).render("errors/403", { message: "Only the owner can delete a sales record" });
+  Sessions.remove(id);
+  writeAudit({ actor_id: actor(req), action: "delete_sales_session", entity: "sales_sessions", entity_id: id });
+  pushFlash(req, "success", "Sales record deleted");
+  res.redirect("/sales");
 }

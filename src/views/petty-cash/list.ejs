@@ -109,7 +109,11 @@
               <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.running_balance / 100).toFixed(2) %></td>
               <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
                 <a href="/petty-cash/<%= e.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ember transition-colors mr-gutter">Edit</a>
-                <form method="POST" action="/petty-cash/<%= e.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
+                <form method="POST" action="/petty-cash/<%= e.id %>/delete" class="inline"
+                      data-confirm="This petty cash entry will be removed and the running balance recomputed."
+                      data-confirm-title="Delete this row?"
+                      data-confirm-label="Delete"
+                      data-confirm-variant="danger">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                   <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Delete</button>
                 </form>

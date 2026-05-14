@@ -92,7 +92,11 @@
               <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke truncate max-w-[200px]"><%= p.remark || '' %></td>
               <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
                 <a href="/purchases/<%= p.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ember transition-colors mr-gutter">Edit</a>
-                <form method="POST" action="/purchases/<%= p.id %>/delete" onsubmit="return confirm('Delete this row?')" class="inline">
+                <form method="POST" action="/purchases/<%= p.id %>/delete" class="inline"
+                      data-confirm="This purchase row will be removed from the log."
+                      data-confirm-title="Delete this row?"
+                      data-confirm-label="Delete"
+                      data-confirm-variant="danger">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                   <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Delete</button>
                 </form>

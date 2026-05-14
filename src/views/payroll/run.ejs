@@ -24,7 +24,10 @@
             <button class="btn-secondary">Reopen</button>
           </form>
         <% } else { %>
-          <form method="POST" action="/payroll/<%= run.id %>/approve" onsubmit="return confirm('Approve this payroll? You will need to reopen it to edit further.')">
+          <form method="POST" action="/payroll/<%= run.id %>/approve"
+                data-confirm="Approve this payroll? You will need to reopen it to edit further."
+                data-confirm-title="Approve payroll?"
+                data-confirm-label="Approve & lock">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button class="btn-primary">Approve & lock</button>
           </form>
