@@ -36,6 +36,7 @@ router.post("/account/password", requireAuth, Account.changePassword);
 router.get("/settings", requireAuth, requireOwner, Settings.show);
 router.post("/settings/backup",            requireAuth, requireOwner, Settings.backupNow);
 router.get("/settings/backup/:name",       requireAuth, requireOwner, Settings.downloadBackup);
+router.post("/settings/signature",         requireAuth, requireOwner, Settings.saveSignature);
 router.post("/settings", requireAuth, requireOwner, Settings.update);
 
 router.use("/employees", employeesRouter);

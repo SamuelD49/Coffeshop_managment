@@ -116,6 +116,153 @@
 
     <article class="card mt-air">
       <header class="card-header">
+        <h2 class="card-title">Signature</h2>
+        <p class="card-meta">Drawn once, reused wherever a signature is needed (payroll print, future reports)</p>
+      </header>
+      <form method="POST" action="/settings/signature" id="signature-form" class="card-body">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <input type="hidden" name="signature_data_url" id="signature-data" />
+
+        <div class="relative inline-block">
+          <canvas id="signature-pad"
+                  width="560" height="160"
+                  class="block border border-rule-strong rounded-soft bg-paper cursor-crosshair touch-none"
+                  aria-label="Signature drawing area"></canvas>
+          <div class="absolute bottom-2 left-3 right-3 border-b border-rule-strong pointer-events-none"></div>
+          <p id="signature-placeholder" class="absolute inset-0 flex items-center justify-center font-display italic text-mist text-[20px] pointer-events-none select-none" style="font-variation-settings:'opsz' 36,'SOFT' 50">Sign here</p>
+        </div>
+
+        <div class="flex items-center justify-between mt-gutter">
+          <p class="font-sans text-[12px] text-smoke">
+            Use a mouse or your finger. <button type="button" id="signature-clear" class="link">Clear</button>
+          </p>
+          <div class="flex items-center gap-gutter">
+            <% if (settings.shop_signature) { %>
+              <button type="button" id="signature-remove" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Remove saved signature</button>
+            <% } %>
+            <button type="submit" class="btn-primary">Save signature</button>
+          </div>
+        </div>
+
+        <% if (settings.shop_signature) { %>
+          <div class="mt-gutter-lg pt-gutter-lg border-t border-rule">
+            <p class="field-label">Currently saved</p>
+            <div class="mt-gutter inline-block bg-paper border border-rule rounded-soft px-gutter py-gutter-tight">
+              <img src="<%= settings.shop_signature %>" alt="Saved signature" class="max-h-16" />
+            </div>
+          </div>
+        <% } %>
+      </form>
+
+      <script>
+        (function () {
+          var canvas = document.getElementById('signature-pad');
+          if (!canvas || !canvas.getContext) return;
+          var ctx = canvas.getContext('2d');
+          var form = document.getElementById('signature-form');
+          var dataInput = document.getElementById('signature-data');
+          var clearBtn = document.getElementById('signature-clear');
+          var removeBtn = document.getElementById('signature-remove');
+          var placeholder = document.getElementById('signature-placeholder');
+
+          // Match the canvas's drawing buffer to its CSS size so the line lands
+          // under the cursor rather than offset.
+          function resizeCanvas() {
+            var rect = canvas.getBoundingClientRect();
+            var dpr = window.devicePixelRatio || 1;
+            // Only resize if the dimensions actually differ — preserves drawing
+            if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+              var saved = (touched && rect.width > 0) ? canvas.toDataURL() : null;
+              canvas.width = rect.width * dpr;
+              canvas.height = rect.height * dpr;
+              ctx.scale(dpr, dpr);
+              if (saved) {
+                var img = new Image();
+                img.onload = function () { ctx.drawImage(img, 0, 0, rect.width, rect.height); };
+                img.src = saved;
+              }
+            }
+          }
+
+          var touched = false;
+          var drawing = false;
+          var last = null;
+
+          function pos(e) {
+            var rect = canvas.getBoundingClientRect();
+            var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+          }
+          function start(e) {
+            e.preventDefault();
+            drawing = true;
+            touched = true;
+            if (placeholder) placeholder.style.display = 'none';
+            last = pos(e);
+          }
+          function move(e) {
+            if (!drawing) return;
+            e.preventDefault();
+            var p = pos(e);
+            ctx.beginPath();
+            ctx.moveTo(last.x, last.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.strokeStyle = '#1A1410';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            last = p;
+          }
+          function end() { drawing = false; last = null; }
+
+          canvas.addEventListener('mousedown', start);
+          canvas.addEventListener('mousemove', move);
+          canvas.addEventListener('mouseup', end);
+          canvas.addEventListener('mouseleave', end);
+          canvas.addEventListener('touchstart', start, { passive: false });
+          canvas.addEventListener('touchmove', move, { passive: false });
+          canvas.addEventListener('touchend', end);
+
+          clearBtn && clearBtn.addEventListener('click', function () {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            touched = false;
+            if (placeholder) placeholder.style.display = '';
+          });
+
+          // "Remove saved signature" submits an empty data URL so the server clears it.
+          removeBtn && removeBtn.addEventListener('click', function () {
+            if (!confirm('Remove the saved signature?')) return;
+            dataInput.value = '';
+            form.submit();
+          });
+
+          // Detect if the canvas is actually empty (so submitting blank doesn't overwrite).
+          function isBlank() {
+            try {
+              var d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+              for (var i = 3; i < d.length; i += 4) if (d[i] !== 0) return false;
+              return true;
+            } catch (_) { return !touched; }
+          }
+
+          form.addEventListener('submit', function (e) {
+            if (!touched || isBlank()) {
+              e.preventDefault();
+              alert('Draw your signature first.');
+              return;
+            }
+            dataInput.value = canvas.toDataURL('image/png');
+          });
+
+          resizeCanvas();
+        })();
+      </script>
+    </article>
+
+    <article class="card mt-air">
+      <header class="card-header">
         <h2 class="card-title">Backups</h2>
         <p class="card-meta">Stored in <span class="font-mono"><%= backupDir %></span></p>
       </header>

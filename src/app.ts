@@ -18,8 +18,10 @@ app.use("/js", express.static(resolve(process.cwd(), "public/js")));
 app.use("/fonts", express.static(resolve(process.cwd(), "public/fonts"), { maxAge: "1y", immutable: true }));
 app.use("/img", express.static(resolve(process.cwd(), "public/img")));
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// Signature data URLs from the canvas pad can run ~50-100 KB after base64
+// encoding; the default 100 KB limit is right on the edge. Raise to 500 KB.
+app.use(express.urlencoded({ extended: true, limit: "500kb" }));
+app.use(express.json({ limit: "500kb" }));
 
 app.use(sessionMiddleware());
 app.use(localsMiddleware);

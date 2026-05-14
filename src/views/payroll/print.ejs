@@ -81,17 +81,32 @@
       </tfoot>
     </table>
 
+    <%
+      const _sig = (typeof signature !== 'undefined' && signature) ? signature : '';
+      // For each block, show the saved signature image above the line. The line
+      // stays — the image sits just above it, mimicking a real ink signature.
+    %>
     <div class="grid grid-cols-2 gap-air-lg mt-air-lg">
       <div>
         <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Prepared by</p>
         <p class="font-display text-[16px] text-ink mt-1" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= preparer ? preparer.full_name : '—' %></p>
-        <div class="border-t border-ink mt-air w-3/4"></div>
+        <div class="relative mt-air w-3/4 h-12">
+          <% if (_sig) { %>
+            <img src="<%= _sig %>" alt="Signature" class="absolute bottom-0 left-2 max-h-12 max-w-full" />
+          <% } %>
+          <div class="absolute bottom-0 left-0 right-0 border-t border-ink"></div>
+        </div>
         <p class="font-sans text-[10px] tracking-smallcaps uppercase text-smoke mt-1">Signature</p>
       </div>
       <div>
         <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Approved by</p>
         <p class="font-display text-[16px] text-ink mt-1" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= approver ? approver.full_name : '—' %></p>
-        <div class="border-t border-ink mt-air w-3/4"></div>
+        <div class="relative mt-air w-3/4 h-12">
+          <% if (_sig) { %>
+            <img src="<%= _sig %>" alt="Signature" class="absolute bottom-0 left-2 max-h-12 max-w-full" />
+          <% } %>
+          <div class="absolute bottom-0 left-0 right-0 border-t border-ink"></div>
+        </div>
         <p class="font-sans text-[10px] tracking-smallcaps uppercase text-smoke mt-1">Signature</p>
       </div>
     </div>

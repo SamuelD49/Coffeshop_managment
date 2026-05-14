@@ -186,5 +186,6 @@ export function print(req: Request, res: Response) {
   const approver = r.approved_by ? Employees.findById(r.approved_by) : null;
   const month_name = MONTH_NAMES[r.month - 1];
   const shopName = Settings.get("shop_name") ?? "Coffee Shop";
-  res.render("payroll/print", { run: r, entries, totals, month_name, preparer, approver, shopName });
+  const signature = Settings.get("shop_signature") || "";
+  res.render("payroll/print", { run: r, entries, totals, month_name, preparer, approver, shopName, signature });
 }

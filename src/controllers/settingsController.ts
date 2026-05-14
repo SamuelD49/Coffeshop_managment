@@ -46,3 +46,28 @@ export function downloadBackup(req: Request, res: Response) {
   const path = resolve(join(backupDirPath(), name));
   res.download(path);
 }
+
+// Signature pad in Settings: accepts a single data URL (PNG) and stores it
+// under the `shop_signature` key. Empty string clears the signature.
+// Validates the data URL shape and a sane size ceiling so a malformed POST
+// can't fill the settings row with garbage.
+const MAX_SIG_BYTES = 200 * 1024; // 200 KB base64 ≈ 150 KB PNG, way more than enough
+const SIG_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+
+export function saveSignature(req: Request, res: Response) {
+  const raw = (req.body.signature_data_url ?? "").toString();
+  if (raw === "") {
+    Settings.set("shop_signature", "");
+    writeAudit({ actor_id: req.session.employeeId ?? null, action: "clear_shop_signature", entity: "settings", entity_id: null });
+    pushFlash(req, "success", "Signature cleared");
+    return res.redirect("/settings");
+  }
+  if (raw.length > MAX_SIG_BYTES || !SIG_RE.test(raw)) {
+    pushFlash(req, "error", "Could not save signature — invalid or too large");
+    return res.redirect("/settings");
+  }
+  Settings.set("shop_signature", raw);
+  writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_shop_signature", entity: "settings", entity_id: null });
+  pushFlash(req, "success", "Signature saved");
+  res.redirect("/settings");
+}
