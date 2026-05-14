@@ -52,7 +52,15 @@
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (r.total_net / 100).toFixed(2) %></td>
                 <td class="px-gutter-lg py-gutter-lg text-right whitespace-nowrap">
                   <a href="/payroll/<%= r.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors mr-gutter">Open →</a>
-                  <a href="/payroll/<%= r.id %>/print" target="_blank" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors">Print</a>
+                  <a href="/payroll/<%= r.id %>/print" target="_blank" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors mr-gutter">Print</a>
+                  <form method="POST" action="/payroll/<%= r.id %>/delete" class="inline"
+                        data-confirm="The whole <%= r.month_name %> <%= r.year %> payroll run and every entry on it will be removed."
+                        data-confirm-title="Delete <%= r.month_name %> <%= r.year %>?"
+                        data-confirm-label="Delete payroll"
+                        data-confirm-variant="danger">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Delete</button>
+                  </form>
                 </td>
               </tr>
             <% }) %>

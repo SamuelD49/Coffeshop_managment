@@ -13,4 +13,5 @@ payrollRouter.get("/:id",           Ctrl.run);
 payrollRouter.post("/:id/entries/:entryId", Ctrl.updateEntry);
 payrollRouter.post("/:id/approve",  Ctrl.approve);
 payrollRouter.post("/:id/revert",   Ctrl.revert);
+payrollRouter.post("/:id/delete",   Ctrl.remove);
 payrollRouter.get("/:id/print",     Ctrl.print);

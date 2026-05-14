@@ -32,6 +32,14 @@
             <button class="btn-primary">Approve & lock</button>
           </form>
         <% } %>
+        <form method="POST" action="/payroll/<%= run.id %>/delete"
+              data-confirm="This whole payroll run and every employee entry on it will be removed. This can't be undone."
+              data-confirm-title="Delete <%= month_name %> <%= run.year %> payroll?"
+              data-confirm-label="Delete payroll"
+              data-confirm-variant="danger">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="btn-danger">Delete</button>
+        </form>
       </div>
     </header>
 

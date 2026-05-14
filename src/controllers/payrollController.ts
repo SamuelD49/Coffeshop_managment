@@ -157,6 +157,17 @@ export function revert(req: Request, res: Response) {
   res.redirect(`/payroll/${id}`);
 }
 
+export function remove(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const r = Runs.findById(id);
+  if (!r) return res.status(404).render("errors/404");
+  const label = `${r.year}-${String(r.month).padStart(2, "0")}`;
+  Runs.remove(id);
+  writeAudit({ actor_id: actor(req), action: "delete_payroll_run", entity: "payroll_runs", entity_id: id });
+  pushFlash(req, "success", `Payroll for ${label} deleted`);
+  res.redirect("/payroll");
+}
+
 export function print(req: Request, res: Response) {
   const id = Number(req.params.id);
   const r = Runs.findById(id);

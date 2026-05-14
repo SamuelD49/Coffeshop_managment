@@ -41,3 +41,8 @@ export function approve(id: number, approverId: number): void {
 export function revert(id: number): void {
   getDb().prepare("UPDATE payroll_runs SET status = 'draft', approved_by = NULL, updated_at = datetime('now') WHERE id = ?").run(id);
 }
+
+// Deletes a run and (via ON DELETE CASCADE in the schema) all its entries.
+export function remove(id: number): void {
+  getDb().prepare("DELETE FROM payroll_runs WHERE id = ?").run(id);
+}
