@@ -4,9 +4,22 @@
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
     <%
+      // Defensive locals — the dashboard renders even if the controller is mid-update
+      // and the data shape is stale. Each fallback uses zero/empty values that paint
+      // gracefully rather than crashing on undefined access.
+      const _d = (typeof data !== 'undefined' && data) ? data : {};
+      const _today = _d.today || new Date().toISOString().slice(0, 10);
+      const _block = _d.todayBlock || { salesTotal: 0, cashVsBank: { cash: 0, bank: 0 }, purchasesTotal: 0, pettyCashSpent: 0, topItems: [] };
+      const _weekDays = Array.isArray(_d.weekDays) ? _d.weekDays : [];
+      const _weekTotal = _d.weekTotal || 0;
+      const _weekMax = _d.weekMax || 0;
+      const _weekDelta = (_d.weekDeltaPct === null || _d.weekDeltaPct === undefined) ? null : _d.weekDeltaPct;
+      const _trending = Array.isArray(_d.trending) ? _d.trending : [];
+      const _trendingMax = _d.trendingMax || 0;
+
       const hour = new Date().getHours();
       const greet = hour < 12 ? 'Selam' : (hour < 18 ? 'Good afternoon' : 'Good evening');
-      const todayLabel = (typeof data !== 'undefined') ? new Date(data.today).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      const todayLabel = new Date(_today).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     %>
 
     <header class="reveal reveal-1">
@@ -20,18 +33,18 @@
 
     <%- include('partials/flash', { flash }) %>
 
-    <% if (currentRole === 'owner' && typeof data !== 'undefined') { %>
+    <% if (currentRole === 'owner') { %>
       <%# ─── Today's snapshot ─── %>
       <section class="reveal reveal-3 grid grid-cols-1 md:grid-cols-3 gap-air">
         <article class="card">
           <header class="card-header">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Today's sales</p>
-            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (data.todayBlock.salesTotal / 100).toFixed(2) %></p>
+            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (_block.salesTotal / 100).toFixed(2) %></p>
           </header>
           <div class="card-body">
             <p class="font-sans text-[12px] text-smoke">
-              Cash <span class="font-mono text-coal"><%= (data.todayBlock.cashVsBank.cash / 100).toFixed(2) %></span> ·
-              Bank <span class="font-mono text-coal"><%= (data.todayBlock.cashVsBank.bank / 100).toFixed(2) %></span>
+              Cash <span class="font-mono text-coal"><%= (_block.cashVsBank.cash / 100).toFixed(2) %></span> ·
+              Bank <span class="font-mono text-coal"><%= (_block.cashVsBank.bank / 100).toFixed(2) %></span>
             </p>
             <a href="/sales" class="link text-[12px] tracking-smallcaps uppercase mt-gutter inline-block">View shifts →</a>
           </div>
@@ -40,7 +53,7 @@
         <article class="card">
           <header class="card-header">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Purchases today</p>
-            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (data.todayBlock.purchasesTotal / 100).toFixed(2) %></p>
+            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (_block.purchasesTotal / 100).toFixed(2) %></p>
           </header>
           <div class="card-body">
             <a href="/purchases" class="link text-[12px] tracking-smallcaps uppercase">View purchases →</a>
@@ -50,7 +63,7 @@
         <article class="card">
           <header class="card-header">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Petty cash spent</p>
-            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (data.todayBlock.pettyCashSpent / 100).toFixed(2) %></p>
+            <p class="font-mono text-[28px] leading-[32px] text-ink mt-gutter-tight"><%= (_block.pettyCashSpent / 100).toFixed(2) %></p>
           </header>
           <div class="card-body">
             <a href="/petty-cash" class="link text-[12px] tracking-smallcaps uppercase">View entries →</a>
@@ -64,31 +77,35 @@
           <header class="card-header flex items-baseline justify-between">
             <div>
               <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Last 7 days</p>
-              <p class="font-mono text-[24px] leading-[28px] text-ink mt-gutter-tight"><%= (data.weekTotal / 100).toFixed(2) %></p>
+              <p class="font-mono text-[24px] leading-[28px] text-ink mt-gutter-tight"><%= (_weekTotal / 100).toFixed(2) %></p>
             </div>
-            <% if (data.weekDeltaPct !== null) { %>
-              <% const cls = data.weekDeltaPct >= 0 ? 'text-leaf' : 'text-crimson'; %>
+            <% if (_weekDelta !== null) { %>
+              <% const cls = _weekDelta >= 0 ? 'text-leaf' : 'text-crimson'; %>
               <p class="font-mono text-[14px] <%= cls %>">
-                <%= data.weekDeltaPct >= 0 ? '+' : '' %><%= data.weekDeltaPct %>% <span class="text-smoke">vs prior 7</span>
+                <%= _weekDelta >= 0 ? '+' : '' %><%= _weekDelta %>% <span class="text-smoke">vs prior 7</span>
               </p>
             <% } else { %>
               <p class="font-mono text-[12px] text-smoke">first week</p>
             <% } %>
           </header>
           <div class="card-body">
-            <div class="sparkbars" role="img" aria-label="Daily sales for the last seven days">
-              <% data.weekDays.forEach(d => {
-                   const h = data.weekMax > 0 ? Math.max(2, Math.round((d.total / data.weekMax) * 100)) : 2;
-                   const isToday = d.date === data.today;
-              %>
-                <div class="sparkbar" title="<%= d.label %> <%= d.date %>: <%= (d.total / 100).toFixed(2) %>">
-                  <div class="sparkbar-track <%= isToday ? 'is-today' : '' %>">
-                    <div class="sparkbar-fill" style="height: <%= h %>%"></div>
+            <% if (_weekDays.length === 0) { %>
+              <p class="font-display italic text-[16px] text-mist" style="font-variation-settings:'opsz' 24,'SOFT' 50">No data yet.</p>
+            <% } else { %>
+              <div class="sparkbars" role="img" aria-label="Daily sales for the last seven days">
+                <% _weekDays.forEach(d => {
+                     const h = _weekMax > 0 ? Math.max(2, Math.round((d.total / _weekMax) * 100)) : 2;
+                     const isToday = d.date === _today;
+                %>
+                  <div class="sparkbar" title="<%= d.label %> <%= d.date %>: <%= (d.total / 100).toFixed(2) %>">
+                    <div class="sparkbar-track <%= isToday ? 'is-today' : '' %>">
+                      <div class="sparkbar-fill" style="height: <%= h %>%"></div>
+                    </div>
+                    <div class="sparkbar-label <%= isToday ? 'font-bold text-ink' : '' %>"><%= d.label %></div>
                   </div>
-                  <div class="sparkbar-label <%= isToday ? 'font-bold text-ink' : '' %>"><%= d.label %></div>
-                </div>
-              <% }) %>
-            </div>
+                <% }) %>
+              </div>
+            <% } %>
           </div>
         </article>
 
@@ -99,12 +116,12 @@
             <p class="font-display text-[18px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 24,'SOFT' 50">Top movers</p>
           </header>
           <div class="card-body">
-            <% if (data.trending.length === 0) { %>
+            <% if (_trending.length === 0) { %>
               <p class="font-display italic text-[16px] text-mist" style="font-variation-settings:'opsz' 24,'SOFT' 50">No sales yet this week.</p>
             <% } else { %>
               <ul class="space-y-gutter-tight">
-                <% data.trending.forEach((t, i) => {
-                     const w = data.trendingMax > 0 ? Math.max(3, Math.round((t.qty / data.trendingMax) * 100)) : 0;
+                <% _trending.forEach((t, i) => {
+                     const w = _trendingMax > 0 ? Math.max(3, Math.round((t.qty / _trendingMax) * 100)) : 0;
                 %>
                   <li class="rank-item">
                     <span class="rank-name font-sans text-[14px] text-ink truncate"><%= t.name %></span>
@@ -121,13 +138,13 @@
       </section>
 
       <%# ─── Top sellers today (kept from before, now compact) ─── %>
-      <% if (data.todayBlock.topItems.length > 0) { %>
+      <% if (_block.topItems && _block.topItems.length > 0) { %>
         <section class="reveal reveal-3 mt-air-lg">
           <h2 class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-gutter">Today's top items</h2>
           <div class="card">
             <table class="w-full">
               <tbody>
-                <% data.todayBlock.topItems.forEach((item, i) => { %>
+                <% _block.topItems.forEach((item, i) => { %>
                   <tr class="border-b border-rule last:border-0">
                     <td class="px-gutter-lg py-gutter font-mono text-[12px] text-mist w-12"><%= i + 1 %></td>
                     <td class="py-gutter font-sans text-[15px] text-ink"><%= item.name %></td>
