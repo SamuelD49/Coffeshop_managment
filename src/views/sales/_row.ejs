@@ -5,31 +5,33 @@
   const tokenColor = TOKEN_COLORS[item.id % TOKEN_COLORS.length];
 %>
 <tr id="row-<%= item.id %>" class="border-b border-rule" data-unit-price="<%= item.price %>" data-token-color="<%= tokenColor %>">
-  <td class="px-gutter-lg py-gutter font-sans text-[15px] text-ink"><%= item.name %></td>
+  <td class="px-gutter-lg py-gutter font-sans text-[15px] text-ink truncate"><%= item.name %></td>
   <td class="text-right font-mono text-[14px] text-smoke py-gutter"><%= (item.price / 100).toFixed(2) %></td>
-  <td class="py-gutter">
-    <div class="flex items-center gap-2 justify-end">
+  <td class="py-gutter pl-gutter-lg">
+    <input
+      type="number" min="0" step="1" inputmode="numeric"
+      name="qty" value="<%= line ? line.qty : '' %>"
+      class="w-20 font-mono text-right border-0 border-b border-rule-strong bg-transparent px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember"
+      oninput="window.recalcSales && window.recalcSales(this)"
+      hx-post="/sales/<%= typeof session !== 'undefined' ? session.id : (totals ? totals.id : '') %>/lines/<%= item.id %>"
+      hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
+      hx-trigger="input changed delay:300ms, blur"
+      hx-target="#row-<%= item.id %>"
+      hx-swap="outerHTML"
+    />
+  </td>
+  <td id="row-total-<%= item.id %>" class="text-right font-mono text-[14px] text-ink py-gutter px-gutter-lg num-flash">
+    <%= line ? (line.total / 100).toFixed(2) : '0.00' %>
+  </td>
+  <td class="py-gutter pl-gutter-lg pr-gutter-lg border-l-2 border-rule-strong bg-paper">
+    <div class="flex items-center gap-gutter">
       <button type="button"
               class="token-button shrink-0"
               onclick="window.dropToken && window.dropToken(this)"
               aria-label="Drop one <%= item.name %> token">
         <span class="token-disk" style="background-color: <%= tokenColor %>"></span>
       </button>
-      <div class="token-jar flex flex-wrap gap-[3px] justify-end items-center max-w-[150px] min-h-[18px]" data-jar aria-label="Tokens"></div>
-      <input
-        type="number" min="0" step="1" inputmode="numeric"
-        name="qty" value="<%= line ? line.qty : '' %>"
-        class="w-16 font-mono text-right border-0 border-b border-rule-strong bg-transparent px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember"
-        oninput="window.recalcSales && window.recalcSales(this)"
-        hx-post="/sales/<%= typeof session !== 'undefined' ? session.id : (totals ? totals.id : '') %>/lines/<%= item.id %>"
-        hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
-        hx-trigger="input changed delay:300ms, blur"
-        hx-target="#row-<%= item.id %>"
-        hx-swap="outerHTML"
-      />
+      <div class="token-jar flex flex-wrap gap-[3px] items-center min-h-[18px] flex-1" data-jar aria-label="Tokens"></div>
     </div>
-  </td>
-  <td id="row-total-<%= item.id %>" class="text-right font-mono text-[14px] text-ink py-gutter px-gutter-lg num-flash">
-    <%= line ? (line.total / 100).toFixed(2) : '0.00' %>
   </td>
 </tr>

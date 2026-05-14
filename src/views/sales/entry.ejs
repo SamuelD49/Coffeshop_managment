@@ -49,13 +49,21 @@
     <%- include('../partials/flash', { flash }) %>
 
     <div class="reveal reveal-3 card overflow-hidden">
-      <table class="w-full">
+      <table class="w-full table-fixed">
+        <colgroup>
+          <col style="width: 32%" />
+          <col style="width: 12%" />
+          <col style="width: 12%" />
+          <col style="width: 14%" />
+          <col style="width: 30%" />
+        </colgroup>
         <thead>
           <tr class="border-b border-rule-strong">
             <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
             <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
             <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Qty</th>
             <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
+            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg border-l-2 border-rule-strong bg-paper">Tally</th>
           </tr>
         </thead>
         <tbody>
@@ -132,7 +140,7 @@
         if (!jar) return;
         var qty = asQty(row.querySelector('input[name="qty"]').value);
         var color = row.dataset.tokenColor || '#C75D34';
-        var maxVisible = 40;
+        var maxVisible = 60;
         var visible = Math.min(qty, maxVisible);
         var pop = popLastN || 0;
         var html = '';
