@@ -18,7 +18,7 @@
         <span class="field-label">Date</span>
         <input type="date" name="date" value="<%= filters.date %>" class="field-input field-mono" />
       </label>
-      <% if (currentRole === 'owner') { %>
+      <% if (currentRole === 'owner' && (typeof hasCashiers !== 'undefined' && hasCashiers)) { %>
         <label class="block">
           <span class="field-label">Employee</span>
           <select name="employee" class="field-input">
@@ -29,14 +29,16 @@
           </select>
         </label>
       <% } %>
-      <label class="block">
-        <span class="field-label">Status</span>
-        <select name="status" class="field-input">
-          <option value="">All</option>
-          <option value="open"   <%= filters.status === 'open'   ? 'selected' : '' %>>Open</option>
-          <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
-        </select>
-      </label>
+      <% if (typeof hasCashiers !== 'undefined' && hasCashiers) { %>
+        <label class="block">
+          <span class="field-label">Status</span>
+          <select name="status" class="field-input">
+            <option value="">All</option>
+            <option value="open"   <%= filters.status === 'open'   ? 'selected' : '' %>>Open</option>
+            <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
+          </select>
+        </label>
+      <% } %>
       <button class="btn-secondary">Filter</button>
     </form>
 
@@ -51,17 +53,21 @@
     <% } else { %>
       <div class="card">
         <table class="w-full">
+          <% const _showCashierCol = (currentRole === 'owner' && (typeof hasCashiers !== 'undefined') && hasCashiers); %>
+          <% const _showStatusCol = (typeof hasCashiers !== 'undefined') && hasCashiers; %>
           <thead>
             <tr class="border-b border-rule">
               <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
               <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Shift</th>
-              <% if (currentRole === 'owner') { %>
+              <% if (_showCashierCol) { %>
                 <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Cashier</th>
               <% } %>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Subtotal</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Counted</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Diff</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
+              <% if (_showStatusCol) { %>
+                <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
+              <% } %>
               <th class="px-gutter-lg"></th>
             </tr>
           </thead>
@@ -70,7 +76,7 @@
               <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
                 <td class="px-gutter-lg py-gutter-lg font-mono text-[14px] text-coal"><%= s.business_date %></td>
                 <td class="py-gutter-lg font-sans text-[14px] text-coal"><%= s.shift || '—' %></td>
-                <% if (currentRole === 'owner') { %>
+                <% if (_showCashierCol) { %>
                   <td class="py-gutter-lg font-sans text-[14px] text-coal">#<%= s.employee_id %></td>
                 <% } %>
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.subtotal / 100).toFixed(2) %></td>
@@ -78,9 +84,11 @@
                 <td class="py-gutter-lg text-right font-mono text-[14px] <%= s.difference === 0 ? 'text-smoke' : (s.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
                   <%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %>
                 </td>
-                <td class="py-gutter-lg pl-air">
-                  <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status %></span>
-                </td>
+                <% if (_showStatusCol) { %>
+                  <td class="py-gutter-lg pl-air">
+                    <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status %></span>
+                  </td>
+                <% } %>
                 <td class="px-gutter-lg py-gutter-lg text-right">
                   <a href="/sales/<%= s.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Open →</a>
                 </td>

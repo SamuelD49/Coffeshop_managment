@@ -39,6 +39,14 @@ export function count(): number {
   return row.c;
 }
 
+// True when at least one active employee has role='employee'. Drives the sales
+// UI: when false (solo-owner shop), the Close-entry button and the per-employee
+// filter are hidden. When the owner hires a cashier, both reappear.
+export function hasActiveCashiers(): boolean {
+  const row = getDb().prepare("SELECT COUNT(*) AS c FROM employees WHERE role = 'employee' AND is_active = 1").get() as { c: number };
+  return row.c > 0;
+}
+
 export function create(input: CreateInput): Employee {
   const result = getDb()
     .prepare(`

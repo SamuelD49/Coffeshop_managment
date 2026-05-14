@@ -11,13 +11,25 @@
         <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
           <%= session.business_date %><% if (session.shift) { %> · <span class="italic"><%= session.shift %></span><% } %>
         </h1>
+        <%
+          const _hasCashiers = (typeof hasCashiers !== 'undefined') ? hasCashiers : false;
+          // The close/reopen flow only matters when cashiers exist (the owner
+          // can edit any record anyway, so locking it for themselves is moot).
+          // We still show "Reopen" on closed records regardless, so the owner
+          // can clean up legacy closed entries.
+          const _showStatusPip = _hasCashiers || session.status === 'closed';
+          const _showCloseBtn  = session.status === 'open'   && editable && (currentRole === 'employee' || _hasCashiers);
+          const _showReopenBtn = session.status === 'closed' && currentRole === 'owner';
+        %>
         <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
-          <% if (employee) { %>Cashier: <%= employee.full_name %> · <% } %>
-          <span class="pip pip-<%= session.status === 'open' ? 'open' : 'closed' %>"><%= session.status %></span>
+          <% if (employee && _hasCashiers) { %>Cashier: <%= employee.full_name %><% if (_showStatusPip) { %> · <% } %><% } %>
+          <% if (_showStatusPip) { %>
+            <span class="pip pip-<%= session.status === 'open' ? 'open' : 'closed' %>"><%= session.status %></span>
+          <% } %>
         </p>
       </div>
       <div class="flex items-center gap-gutter">
-        <% if (editable) { %>
+        <% if (_showCloseBtn) { %>
           <form method="POST" action="/sales/<%= session.id %>/close"
                 data-confirm="Close this entry? You will not be able to edit it after."
                 data-confirm-title="Close entry?"
@@ -25,7 +37,7 @@
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button class="btn-primary">Close entry →</button>
           </form>
-        <% } else if (currentRole === 'owner') { %>
+        <% } else if (_showReopenBtn) { %>
           <form method="POST" action="/sales/<%= session.id %>/reopen">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button class="btn-secondary">Reopen entry</button>

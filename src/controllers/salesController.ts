@@ -63,7 +63,8 @@ export function list(req: Request, res: Response) {
   }).map(s => Sessions.withTotals(s.id)!);
   
   const employees = role(req) === "owner" ? Employees.listAll({ activeOnly: false }) : [];
-  res.render("sales/list", { sessions, employees, filters });
+  const hasCashiers = Employees.hasActiveCashiers();
+  res.render("sales/list", { sessions, employees, filters, hasCashiers });
 }
 
 export function showNew(_req: Request, res: Response) {
@@ -99,7 +100,8 @@ export function entry(req: Request, res: Response) {
   const totals = Sessions.withTotals(id)!;
   const editable = canEdit(req, session);
   const employee = Employees.findById(session.employee_id);
-  res.render("sales/entry", { session, totals, items, lines, employee, editable });
+  const hasCashiers = Employees.hasActiveCashiers();
+  res.render("sales/entry", { session, totals, items, lines, employee, editable, hasCashiers });
 }
 
 export function upsertLine(req: Request, res: Response) {
