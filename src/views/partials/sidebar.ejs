@@ -1,38 +1,60 @@
-<aside class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex flex-col">
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<header class="mobile-topbar fixed top-0 left-0 right-0 z-40 hidden items-center justify-between px-gutter py-gutter-tight bg-cream border-b border-rule-strong">
+  <button type="button" id="mobile-hamburger" aria-label="Open navigation menu" aria-controls="app-sidebar" aria-expanded="false"
+          class="w-10 h-10 flex items-center justify-center text-ink hover:bg-paper rounded-soft transition-colors">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+      <line x1="3" y1="6"  x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <a href="/" class="wordmark text-[18px]" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= shopName %></a>
+  <div class="w-10" aria-hidden="true"></div>
+</header>
+
+<div class="mobile-backdrop fixed inset-0 bg-ink/40 opacity-0 pointer-events-none transition-opacity duration-200 z-40 hidden" aria-hidden="true"></div>
+
+<aside id="app-sidebar" class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex flex-col" aria-label="Main navigation">
   <a href="/" class="wordmark text-[28px] leading-[32px] mb-air block">
     <%= shopName %>
   </a>
 
   <%
     function initials(name){ return name.split(/\s+/).filter(Boolean).slice(0,2).map(s => s[0].toUpperCase()).join(""); }
+    function isActive(href, current) {
+      return href === '/' ? current === '/' : (current === href || current.startsWith(href + '/'));
+    }
     function navClass(href, current){
-      const active = href === '/' ? current === '/' : (current === href || current.startsWith(href + '/'));
-      return 'nav-link' + (active ? ' is-active' : '');
+      return 'nav-link' + (isActive(href, current) ? ' is-active' : '');
+    }
+    function navAria(href, current){
+      return isActive(href, current) ? 'aria-current="page"' : '';
     }
   %>
 
   <% if (currentRole === 'owner') { %>
     <p class="nav-section">Operations</p>
-    <nav class="space-y-1 mb-gutter-lg">
-      <a href="/"           class="<%= navClass('/',           currentPath) %>">Dashboard</a>
-      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>">Sales</a>
-      <a href="/menu"       class="<%= navClass('/menu',       currentPath) %>">Menu</a>
-      <a href="/employees"  class="<%= navClass('/employees',  currentPath) %>">Employees</a>
-      <a href="/purchases"  class="<%= navClass('/purchases',  currentPath) %>">Purchases</a>
-      <a href="/petty-cash" class="<%= navClass('/petty-cash', currentPath) %>">Petty cash</a>
-      <a href="/payroll"    class="<%= navClass('/payroll',    currentPath) %>">Payroll</a>
+    <nav class="space-y-1 mb-gutter-lg" aria-label="Operations">
+      <a href="/"           class="<%= navClass('/',           currentPath) %>" <%- navAria('/',           currentPath) %>>Dashboard</a>
+      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>" <%- navAria('/sales',      currentPath) %>>Sales</a>
+      <a href="/menu"       class="<%= navClass('/menu',       currentPath) %>" <%- navAria('/menu',       currentPath) %>>Menu</a>
+      <a href="/employees"  class="<%= navClass('/employees',  currentPath) %>" <%- navAria('/employees',  currentPath) %>>Employees</a>
+      <a href="/purchases"  class="<%= navClass('/purchases',  currentPath) %>" <%- navAria('/purchases',  currentPath) %>>Purchases</a>
+      <a href="/petty-cash" class="<%= navClass('/petty-cash', currentPath) %>" <%- navAria('/petty-cash', currentPath) %>>Petty cash</a>
+      <a href="/payroll"    class="<%= navClass('/payroll',    currentPath) %>" <%- navAria('/payroll',    currentPath) %>>Payroll</a>
     </nav>
 
     <p class="nav-section">Owner</p>
-    <nav class="space-y-1 mb-air">
-      <a href="/reports"  class="<%= navClass('/reports',  currentPath) %>">Reports</a>
-      <a href="/settings" class="<%= navClass('/settings', currentPath) %>">Settings</a>
+    <nav class="space-y-1 mb-air" aria-label="Owner">
+      <a href="/reports"  class="<%= navClass('/reports',  currentPath) %>" <%- navAria('/reports',  currentPath) %>>Reports</a>
+      <a href="/settings" class="<%= navClass('/settings', currentPath) %>" <%- navAria('/settings', currentPath) %>>Settings</a>
     </nav>
   <% } else { %>
-    <nav class="space-y-1 mb-air">
-      <a href="/"           class="<%= navClass('/',           currentPath) %>">Dashboard</a>
-      <a href="/sales/new"  class="<%= navClass('/sales/new',  currentPath) %>">New sales entry</a>
-      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>">My past entries</a>
+    <nav class="space-y-1 mb-air" aria-label="Cashier">
+      <a href="/"           class="<%= navClass('/',           currentPath) %>" <%- navAria('/',           currentPath) %>>Dashboard</a>
+      <a href="/sales/new"  class="<%= navClass('/sales/new',  currentPath) %>" <%- navAria('/sales/new',  currentPath) %>>New sales entry</a>
+      <a href="/sales"      class="<%= navClass('/sales',      currentPath) %>" <%- navAria('/sales',      currentPath) %>>My past entries</a>
     </nav>
   <% } %>
 
@@ -74,6 +96,41 @@
     </div>
   </div>
 </dialog>
+
+<script>
+  // ─── Mobile shell: hamburger drawer + skip-to-main anchor ─────────────
+  (function () {
+    // Auto-tag the main element so the "Skip to main content" link can target it.
+    var main = document.querySelector('main');
+    if (main && !main.id) main.id = 'main';
+
+    var ham = document.getElementById('mobile-hamburger');
+    var backdrop = document.querySelector('.mobile-backdrop');
+    var body = document.body;
+    if (!ham) return;
+
+    function setOpen(open) {
+      body.classList.toggle('sidebar-open', open);
+      ham.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    function close() { setOpen(false); }
+    function open()  { setOpen(true);  }
+    function toggle() { setOpen(!body.classList.contains('sidebar-open')); }
+
+    ham.addEventListener('click', toggle);
+    backdrop && backdrop.addEventListener('click', close);
+
+    // Tapping a nav link navigates — close the drawer so the user lands cleanly.
+    document.querySelectorAll('aside a.nav-link, aside .wordmark').forEach(function (el) {
+      el.addEventListener('click', close);
+    });
+
+    // Escape closes the drawer (parallels the dialog escape handling).
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && body.classList.contains('sidebar-open')) close();
+    });
+  })();
+</script>
 
 <script>
   // Custom confirmation modal — replaces window.confirm().

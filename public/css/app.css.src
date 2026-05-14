@@ -50,6 +50,68 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.6 0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.04'/></svg>");
     background-repeat: repeat;
   }
+
+  /* ─────────── Mobile shell ─────────────────────────────────────────────
+     On small screens the sidebar slides off-canvas and a top bar with a
+     hamburger replaces it. The :has() selector means these rules only fire
+     on pages that actually have a sidebar — login/setup are untouched.
+  */
+  @media (max-width: 767px) {
+    body:has(> aside) { display: block; }
+    body:has(> aside) > aside {
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      width: 260px;
+      max-width: 85vw;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      overflow-y: auto;
+      box-shadow: 8px 0 32px rgba(26, 20, 16, 0.18);
+    }
+    body:has(> aside).sidebar-open > aside { transform: translateX(0); }
+    body:has(> aside) > main {
+      padding-left: 16px !important;
+      padding-right: 16px !important;
+      padding-top: 76px !important;
+      max-width: 100% !important;
+    }
+    body:has(> aside) > .mobile-topbar { display: flex; }
+    body:has(> aside) > .mobile-backdrop { display: block; }
+    body:has(> aside).sidebar-open > .mobile-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    body:has(> aside).sidebar-open { overflow: hidden; }
+
+    /* Page headlines come down a notch — 36px is the design-system "display-md"
+       but it's loud on a phone. Knock it back to ~28-30px so the eye breathes. */
+    h1.font-display {
+      font-size: 28px !important;
+      line-height: 34px !important;
+    }
+  }
+
+  /* ─────────── Skip-to-main link ──────────────────────────────────────── */
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    z-index: 100;
+    background: #1A1410;
+    color: #F4ECDF;
+    padding: 10px 16px;
+    border-radius: 2px;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 14px;
+    text-decoration: none;
+    transition: top 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .skip-link:focus {
+    top: 8px;
+    outline: 2px solid #C75D34;
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
@@ -121,6 +183,11 @@
     @apply absolute left-[-24px] top-0 bottom-0 w-[3px] bg-ember;
   }
   .nav-link.is-active { @apply text-ink; }
+
+  /* Larger tap targets on mobile so nav links are easy to thumb */
+  @media (max-width: 767px) {
+    .nav-link { padding-top: 12px; padding-bottom: 12px; }
+  }
 
   /* Page reveal animation */
   .reveal { opacity: 0; transform: translateY(8px); animation: reveal 320ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards; }
