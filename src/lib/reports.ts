@@ -26,6 +26,34 @@ export function salesByDay(range: DateRange): SalesByDayRow[] {
   `).all(range) as SalesByDayRow[];
 }
 
+// salesByDay but with zero-filled days for every date in the range — useful for
+// the dashboard sparkline where missing days still need a bar position.
+export function salesByDayDense(range: DateRange): SalesByDayRow[] {
+  const rows = salesByDay(range);
+  const byDate: Record<string, SalesByDayRow> = {};
+  for (const r of rows) byDate[r.business_date] = r;
+
+  const out: SalesByDayRow[] = [];
+  let cursor = range.from;
+  while (cursor <= range.to) {
+    out.push(byDate[cursor] ?? { business_date: cursor, subtotal: 0, session_count: 0 });
+    cursor = addDays(cursor, 1);
+  }
+  return out;
+}
+
+// Pure date arithmetic on YYYY-MM-DD strings (no TZ confusion).
+function addDays(yyyymmdd: string, days: number): string {
+  const [y, m, d] = yyyymmdd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
+export function shiftDate(yyyymmdd: string, days: number): string {
+  return addDays(yyyymmdd, days);
+}
+
 export function salesByItem(range: DateRange): SalesByItemRow[] {
   return getDb().prepare(`
     SELECT l.menu_item_id, m.name,
