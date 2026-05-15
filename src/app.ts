@@ -11,7 +11,11 @@ import { router } from "./routes";
 export const app = express();
 
 app.set("view engine", "ejs");
-app.set("views", resolve(__dirname, "views"));
+// Views are read from src/views/ regardless of whether we're running through
+// `tsx` (dev) or `node dist/server.js` (prod). tsc doesn't copy *.ejs to dist/,
+// so resolving against __dirname would point at the wrong place in production.
+// process.cwd() is the project root in both modes when started normally.
+app.set("views", resolve(process.cwd(), "src/views"));
 
 app.use("/css", express.static(resolve(process.cwd(), "public/css")));
 app.use("/js", express.static(resolve(process.cwd(), "public/js")));
