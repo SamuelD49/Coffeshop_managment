@@ -13,6 +13,16 @@ npm run dev             # starts on http://localhost:3000
 
 First visit redirects to `/setup` to create the owner account.
 
+## Demo install (one command)
+
+For a customer demo on a clean machine, one command sets everything up with realistic seed data:
+
+```bash
+npm run install:demo
+```
+
+Login as `owner` / `demo123` (full nav) or `almaz` / `demo123` (cashier view). Full walkthrough + suggested 5-minute demo script in **[docs/demo-install.md](docs/demo-install.md)**.
+
 ## Production on the shop PC
 
 ```bash

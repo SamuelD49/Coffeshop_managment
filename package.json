@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "css:build": "tailwindcss -i public/css/app.css.src -o public/css/app.css --minify",
-    "css:watch": "tailwindcss -i public/css/app.css.src -o public/css/app.css --watch"
+    "css:watch": "tailwindcss -i public/css/app.css.src -o public/css/app.css --watch",
+    "seed:demo": "tsx bin/seed-demo.ts",
+    "install:demo": "bash bin/install-demo.sh"
   },
   "repository": {
     "type": "git",
