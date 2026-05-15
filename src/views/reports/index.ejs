@@ -37,6 +37,54 @@
       <% }) %>
     </nav>
 
+    <%
+      // Date arithmetic on YYYY-MM-DD strings — no TZ wobble.
+      function _shift(yyyymmdd, days) {
+        const [y, m, d] = yyyymmdd.split("-").map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d));
+        dt.setUTCDate(dt.getUTCDate() + days);
+        return dt.toISOString().slice(0, 10);
+      }
+      const _today = range.to; // controller defaults to today/today; this is "today" from the server's POV
+      const _yesterday = _shift(_today, -1);
+      const _last7From = _shift(_today, -6);   // 7-day window inclusive of today
+      const _last30From = _shift(_today, -29);
+      const _thisMonthFrom = _today.slice(0, 7) + "-01";
+
+      // Last month: first day of the previous month → last day of the previous month
+      const [_ty, _tm] = _today.split("-").map(Number);
+      const _lastMonthDate = new Date(Date.UTC(_ty, _tm - 2, 1)); // month is 0-indexed; -1 for previous, -1 for Date.UTC
+      const _lmYear = _lastMonthDate.getUTCFullYear();
+      const _lmMonth = String(_lastMonthDate.getUTCMonth() + 1).padStart(2, "0");
+      const _lastMonthFrom = `${_lmYear}-${_lmMonth}-01`;
+      const _lastMonthTo = _shift(`${_today.slice(0, 7)}-01`, -1);
+
+      const _presets = [
+        { label: "Today",        from: _today,         to: _today      },
+        { label: "Yesterday",    from: _yesterday,     to: _yesterday  },
+        { label: "Last 7 days",  from: _last7From,     to: _today      },
+        { label: "Last 30 days", from: _last30From,    to: _today      },
+        { label: "This month",   from: _thisMonthFrom, to: _today      },
+        { label: "Last month",   from: _lastMonthFrom, to: _lastMonthTo },
+      ];
+      function _isActive(p) { return p.from === range.from && p.to === range.to; }
+    %>
+
+    <div class="mb-gutter">
+      <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-gutter-tight">Quick range</p>
+      <div class="flex flex-wrap items-center gap-gutter-tight">
+        <% _presets.forEach(p => { %>
+          <a href="/reports?tab=<%= tab %>&from=<%= p.from %>&to=<%= p.to %>"
+             class="inline-block font-sans text-[12px] tracking-button uppercase px-3 py-1.5 rounded-soft border transition-colors
+                    <%= _isActive(p)
+                        ? 'border-ink bg-ink text-cream'
+                        : 'border-rule-strong text-coal hover:bg-paper hover:text-ink' %>">
+            <%= p.label %>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+
     <form method="GET" class="flex items-end gap-gutter mb-air">
       <input type="hidden" name="tab" value="<%= tab %>" />
       <label class="block">

@@ -7,14 +7,11 @@ import { toCsv } from "../lib/csv";
 import { todayBusinessDate } from "../lib/dates";
 
 function defaultRange(): { from: string; to: string } {
+  // Default to today only — that's the single most-asked-for view. The user
+  // widens the range with the date picker when they want history; the by-month
+  // section then fills in once the range crosses a month boundary.
   const today = todayBusinessDate(Settings.get("business_day_cutoff") ?? "00:00", Settings.get("timezone") ?? "Africa/Addis_Ababa");
-  // Default to last 90 days so the by-month sections always show ≥3 buckets.
-  const t = new Date(today);
-  t.setDate(t.getDate() - 90);
-  const yyyy = t.getFullYear();
-  const mm = String(t.getMonth() + 1).padStart(2, "0");
-  const dd = String(t.getDate()).padStart(2, "0");
-  return { from: `${yyyy}-${mm}-${dd}`, to: today };
+  return { from: today, to: today };
 }
 
 function rangeFromReq(req: Request): { from: string; to: string } {
