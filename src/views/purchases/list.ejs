@@ -5,9 +5,11 @@
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
     <%
       // The controller defaults filters.from/to to today. Detect that state so
-      // we can show the right contextual copy below the title.
+      // we can show the right contextual copy below the title. Using `locals.x`
+      // so the view doesn't crash if an older controller build is running.
+      const _showAll    = !!locals.showAll;
       const _isToday    = filters.from === today && filters.to === today;
-      const _isFiltered = !_isToday && (filters.from || filters.to) && !showAll;
+      const _isFiltered = !_isToday && (filters.from || filters.to) && !_showAll;
     %>
     <header class="reveal reveal-1 flex items-end justify-between gap-gutter">
       <div>
@@ -15,7 +17,7 @@
         <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
           <% if (_isToday) { %>
             Today's entries. <a href="/reports?tab=purchases" class="link">See history in Reports →</a>
-          <% } else if (showAll) { %>
+          <% } else if (_showAll) { %>
             All purchases — <a href="/purchases" class="link">back to today</a>
           <% } else if (_isFiltered) { %>
             <span class="font-mono"><%= filters.from || '…' %></span> → <span class="font-mono"><%= filters.to || '…' %></span> — <a href="/purchases" class="link">back to today</a>
