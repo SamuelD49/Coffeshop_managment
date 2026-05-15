@@ -42,65 +42,65 @@
     <div class="reveal reveal-3 card overflow-x-auto">
       <table class="w-full table-fixed">
         <colgroup>
-          <col style="width: 120px" />  <%# Date %>
-          <col />                       <%# Description (auto, takes remainder with remark) %>
-          <col style="width: 64px"  />  <%# Un %>
+          <col style="width: 132px" />  <%# Date %>
+          <col style="width: 28%"   />  <%# Description %>
+          <col style="width: 56px"  />  <%# Un %>
           <col style="width: 72px"  />  <%# Qty %>
-          <col style="width: 96px"  />  <%# Price %>
-          <col style="width: 96px"  />  <%# Total %>
-          <col style="width: 22%"   />  <%# Remark %>
-          <col style="width: 120px" />  <%# Actions %>
+          <col style="width: 100px" />  <%# Price %>
+          <col style="width: 108px" />  <%# Total %>
+          <col style="width: 20%"   />  <%# Remark %>
+          <col style="width: 132px" />  <%# Actions %>
         </colgroup>
         <thead>
           <tr class="border-b border-rule-strong">
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Description</th>
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Un.</th>
-            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Qty</th>
-            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Price</th>
-            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Total</th>
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Remark</th>
-            <th class="px-gutter-lg"></th>
+            <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter-lg">Date</th>
+            <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Description</th>
+            <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Un.</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Qty</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Price</th>
+            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Total</th>
+            <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pl-gutter-lg pr-gutter py-gutter-lg">Remark</th>
+            <th class="px-gutter-lg py-gutter-lg"></th>
           </tr>
         </thead>
 
         <%# Empty row at the top — exactly matches "fill in the next line" on the paper form %>
         <tbody>
           <tr class="border-b border-rule bg-paper">
-            <td class="px-gutter-lg py-gutter">
-              <input form="purchase-new" type="date" name="purchase_date" value="<%= today %>" required class="w-32 font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            <td class="px-gutter-lg py-gutter-lg">
+              <input form="purchase-new" type="date" name="purchase_date" value="<%= today %>" required class="w-full font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
             </td>
-            <td class="py-gutter">
-              <input form="purchase-new" name="description" required placeholder="Beans, milk, sugar…" class="w-full font-sans text-[14px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            <td class="pr-gutter py-gutter-lg">
+              <input form="purchase-new" name="description" required placeholder="Beans, milk, sugar…" class="w-full font-sans text-[15px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
             </td>
-            <td class="py-gutter">
-              <input form="purchase-new" name="unit" placeholder="kg" class="w-16 font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            <td class="pr-gutter py-gutter-lg">
+              <input form="purchase-new" name="unit" placeholder="kg" class="w-full font-mono text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
             </td>
-            <td class="py-gutter">
-              <input form="purchase-new" name="qty" required placeholder="0" class="w-20 font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            <td class="pr-gutter py-gutter-lg">
+              <input form="purchase-new" name="qty" required placeholder="0" class="w-full font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
             </td>
-            <td class="py-gutter">
-              <input form="purchase-new" name="unit_price" required placeholder="0.00" class="w-24 font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
+            <td class="pr-gutter py-gutter-lg">
+              <input form="purchase-new" name="unit_price" required placeholder="0.00" class="w-full font-mono text-right text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
             </td>
-            <td class="py-gutter text-right font-mono text-[13px] text-mist">—</td>
-            <td class="py-gutter pl-gutter-lg">
+            <td class="pr-gutter py-gutter-lg text-right font-mono text-[13px] text-mist">—</td>
+            <td class="pl-gutter-lg pr-gutter py-gutter-lg">
               <input form="purchase-new" name="remark" class="w-full font-sans text-[13px] bg-transparent border-0 border-b border-rule-strong px-1 py-1 focus:outline-none focus:border-b-2 focus:border-ember" />
             </td>
-            <td class="px-gutter-lg py-gutter text-right">
+            <td class="px-gutter-lg py-gutter-lg text-right">
               <button form="purchase-new" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Add →</button>
             </td>
           </tr>
 
           <% purchases.forEach(p => { %>
             <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors align-top">
-              <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= p.purchase_date %></td>
-              <td class="py-gutter font-sans text-[14px] text-ink break-words pr-gutter"><%= p.description %></td>
-              <td class="py-gutter font-mono text-[13px] text-smoke"><%= p.unit || '' %></td>
-              <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= p.qty %></td>
-              <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
-              <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
-              <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke break-words" title="<%= p.remark || '' %>"><%= p.remark || '' %></td>
-              <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
+              <td class="px-gutter-lg py-gutter-lg font-mono text-[13px] text-coal whitespace-nowrap"><%= p.purchase_date %></td>
+              <td class="pr-gutter py-gutter-lg font-sans text-[15px] text-ink leading-relaxed break-words"><%= p.description %></td>
+              <td class="pr-gutter py-gutter-lg font-mono text-[13px] text-smoke"><%= p.unit || '' %></td>
+              <td class="pr-gutter py-gutter-lg text-right font-mono text-[14px] text-coal"><%= p.qty %></td>
+              <td class="pr-gutter py-gutter-lg text-right font-mono text-[14px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
+              <td class="pr-gutter py-gutter-lg text-right font-mono text-[15px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
+              <td class="pl-gutter-lg pr-gutter py-gutter-lg font-sans text-[13px] text-smoke leading-relaxed break-words" title="<%= p.remark || '' %>"><%= p.remark || '' %></td>
+              <td class="px-gutter-lg py-gutter-lg text-right whitespace-nowrap">
                 <a href="/purchases/<%= p.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ember transition-colors mr-gutter">Edit</a>
                 <form method="POST" action="/purchases/<%= p.id %>/delete" class="inline"
                       data-confirm="This purchase row will be removed from the log."
@@ -126,7 +126,7 @@
         <tfoot>
           <tr class="border-t-2 border-rule-strong bg-paper">
             <td colspan="5" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
-            <td class="py-gutter-lg text-right font-mono text-[18px] text-ink"><%= (sumTotal / 100).toFixed(2) %></td>
+            <td class="pr-gutter py-gutter-lg text-right font-mono text-[18px] text-ink"><%= (sumTotal / 100).toFixed(2) %></td>
             <td colspan="2"></td>
           </tr>
         </tfoot>
