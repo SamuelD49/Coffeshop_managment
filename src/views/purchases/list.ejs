@@ -39,8 +39,18 @@
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
     </form>
 
-    <div class="reveal reveal-3 card">
-      <table class="w-full">
+    <div class="reveal reveal-3 card overflow-x-auto">
+      <table class="w-full table-fixed">
+        <colgroup>
+          <col style="width: 120px" />  <%# Date %>
+          <col />                       <%# Description (auto, takes remainder with remark) %>
+          <col style="width: 64px"  />  <%# Un %>
+          <col style="width: 72px"  />  <%# Qty %>
+          <col style="width: 96px"  />  <%# Price %>
+          <col style="width: 96px"  />  <%# Total %>
+          <col style="width: 22%"   />  <%# Remark %>
+          <col style="width: 120px" />  <%# Actions %>
+        </colgroup>
         <thead>
           <tr class="border-b border-rule-strong">
             <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
@@ -82,14 +92,14 @@
           </tr>
 
           <% purchases.forEach(p => { %>
-            <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+            <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors align-top">
               <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= p.purchase_date %></td>
-              <td class="py-gutter font-sans text-[14px] text-ink"><%= p.description %></td>
+              <td class="py-gutter font-sans text-[14px] text-ink break-words pr-gutter"><%= p.description %></td>
               <td class="py-gutter font-mono text-[13px] text-smoke"><%= p.unit || '' %></td>
               <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= p.qty %></td>
               <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
               <td class="py-gutter text-right font-mono text-[14px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
-              <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke truncate max-w-[200px]"><%= p.remark || '' %></td>
+              <td class="py-gutter pl-gutter-lg font-sans text-[13px] text-smoke break-words" title="<%= p.remark || '' %>"><%= p.remark || '' %></td>
               <td class="px-gutter-lg py-gutter text-right whitespace-nowrap">
                 <a href="/purchases/<%= p.id %>/edit" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ember transition-colors mr-gutter">Edit</a>
                 <form method="POST" action="/purchases/<%= p.id %>/delete" class="inline"
