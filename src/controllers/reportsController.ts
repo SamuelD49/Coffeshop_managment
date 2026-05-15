@@ -3,6 +3,7 @@ import * as Reports from "../lib/reports";
 import * as Runs from "../models/payrollRuns";
 import * as Entries from "../models/payrollEntries";
 import * as Settings from "../models/settings";
+import * as Purchases from "../models/purchases";
 import { toCsv } from "../lib/csv";
 import { todayBusinessDate } from "../lib/dates";
 
@@ -41,6 +42,7 @@ function loadTabData(tab: Tab, range: { from: string; to: string }) {
     return {
       byDay: Reports.purchasesByDay(range),
       byMonth: Reports.purchasesByMonth(range),
+      details: Purchases.listAll(range), // every line item in the range
     };
   }
   if (tab === "petty-cash") {
@@ -101,6 +103,18 @@ export function exportCsv(req: Request, res: Response) {
       const rows = Reports.purchasesByMonth(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
       csv = toCsv(["month", "row_count", "total"], rows);
       filename = `purchases-by-month-${range.from}-to-${range.to}.csv`;
+    } else if (grouping === "detail") {
+      const rows = Purchases.listAll(range).map(r => ({
+        date: r.purchase_date,
+        description: r.description,
+        unit: r.unit ?? "",
+        qty: r.qty,
+        unit_price: (r.unit_price / 100).toFixed(2),
+        total: (r.total / 100).toFixed(2),
+        remark: r.remark ?? "",
+      }));
+      csv = toCsv(["date", "description", "unit", "qty", "unit_price", "total", "remark"], rows);
+      filename = `purchases-detail-${range.from}-to-${range.to}.csv`;
     } else {
       const rows = Reports.purchasesByDay(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
       csv = toCsv(["purchase_date", "row_count", "total"], rows);

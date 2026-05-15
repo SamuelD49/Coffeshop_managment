@@ -7,13 +7,21 @@
     const m = Number(parts[1]);
     return (MONTH_NAMES[m - 1] || '?') + ' ' + y;
   }
-  const _byMonth = Array.isArray(data.byMonth) ? data.byMonth : [];
+  const _byMonth  = Array.isArray(data.byMonth) ? data.byMonth : [];
+  const _details  = Array.isArray(data.details) ? data.details : [];
 %>
 
-<div class="grid grid-cols-2 gap-air mb-air">
+<%# CSV export chips — three now: by day, by month, detail. %>
+<div class="grid grid-cols-3 gap-air mb-air">
   <a href="/reports/export?tab=purchases&group=day&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
     <div class="card-body text-center py-gutter-lg">
       <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By day</p>
+      <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
+    </div>
+  </a>
+  <a href="/reports/export?tab=purchases&group=detail&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
+    <div class="card-body text-center py-gutter-lg">
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Detail (every row)</p>
       <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
     </div>
   </a>
@@ -25,13 +33,103 @@
   </a>
 </div>
 
+<%# 1) By day — daily totals %>
 <article class="card mb-air">
   <header class="card-header">
+    <h2 class="card-title">By day</h2>
+  </header>
+  <% if (data.byDay.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>
+  <% } else { %>
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.byDay.forEach(r => { %>
+          <tr class="border-b border-rule last:border-0">
+            <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= r.purchase_date %></td>
+            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.row_count %></td>
+            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.total / 100).toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr class="border-t-2 border-rule-strong">
+          <td colspan="2" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
+          <td class="px-gutter-lg py-gutter-lg text-right font-mono text-[16px] text-ink"><%= (data.byDay.reduce((s, r) => s + r.total, 0) / 100).toFixed(2) %></td>
+        </tr>
+      </tfoot>
+    </table>
+  <% } %>
+</article>
+
+<%# 2) Detail — every purchase line in the range %>
+<article class="card mb-air overflow-x-auto">
+  <header class="card-header">
+    <h2 class="card-title">Detail</h2>
+    <p class="card-meta">Every item logged in the selected range</p>
+  </header>
+  <% if (_details.length === 0) { %>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchase entries in this range.</div>
+  <% } else { %>
+    <table class="w-full table-fixed">
+      <colgroup>
+        <col style="width: 116px" />   <%# Date %>
+        <col style="width: 26%"   />   <%# Description %>
+        <col style="width: 56px"  />   <%# Un %>
+        <col style="width: 64px"  />   <%# Qty %>
+        <col style="width: 92px"  />   <%# Price %>
+        <col style="width: 104px" />   <%# Total %>
+        <col />                        <%# Remark — fills the rest %>
+      </colgroup>
+      <thead>
+        <tr class="border-b border-rule">
+          <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter-lg">Date</th>
+          <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Description</th>
+          <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Un.</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Qty</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Price</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pr-gutter py-gutter-lg">Total</th>
+          <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke pl-gutter-lg pr-gutter-lg py-gutter-lg">Remark</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% _details.forEach(p => { %>
+          <tr class="border-b border-rule last:border-0 align-top">
+            <td class="px-gutter-lg py-gutter-lg font-mono text-[13px] text-coal whitespace-nowrap"><%= p.purchase_date %></td>
+            <td class="pr-gutter py-gutter-lg font-sans text-[15px] text-ink leading-relaxed break-words"><%= p.description %></td>
+            <td class="pr-gutter py-gutter-lg font-mono text-[13px] text-smoke"><%= p.unit || '' %></td>
+            <td class="pr-gutter py-gutter-lg text-right font-mono text-[14px] text-coal"><%= p.qty %></td>
+            <td class="pr-gutter py-gutter-lg text-right font-mono text-[14px] text-coal"><%= (p.unit_price / 100).toFixed(2) %></td>
+            <td class="pr-gutter py-gutter-lg text-right font-mono text-[15px] text-ink"><%= (p.total / 100).toFixed(2) %></td>
+            <td class="pl-gutter-lg pr-gutter-lg py-gutter-lg font-sans text-[13px] text-smoke leading-relaxed break-words"><%= p.remark || '' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr class="border-t-2 border-rule-strong bg-paper">
+          <td colspan="5" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
+          <td class="pr-gutter py-gutter-lg text-right font-mono text-[18px] text-ink"><%= (_details.reduce((s, p) => s + p.total, 0) / 100).toFixed(2) %></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  <% } %>
+</article>
+
+<%# 3) By month — moved to the bottom so daily / detail stay above the fold %>
+<article class="card">
+  <header class="card-header">
     <h2 class="card-title">By month</h2>
-    <p class="card-meta">Calendar-month buckets across the selected range</p>
+    <p class="card-meta">Calendar-month buckets — widen the date filter to see more months</p>
   </header>
   <% if (_byMonth.length === 0) { %>
-    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">Range only covers <%= range.from === range.to ? 'one day' : 'days within one month' %>. Widen the date filter to see monthly totals.</div>
   <% } else { %>
     <% const _max = Math.max(0, ..._byMonth.map(m => m.total)); %>
     <div class="card-body">
@@ -51,7 +149,7 @@
     <table class="w-full">
       <thead>
         <tr class="border-y border-rule">
-          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Month</th>
+          <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Month</th>
           <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
           <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
         </tr>
@@ -69,40 +167,6 @@
         <tr class="border-t-2 border-rule-strong">
           <td colspan="2" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
           <td class="px-gutter-lg py-gutter-lg text-right font-mono text-[16px] text-ink"><%= (_byMonth.reduce((s, m) => s + m.total, 0) / 100).toFixed(2) %></td>
-        </tr>
-      </tfoot>
-    </table>
-  <% } %>
-</article>
-
-<article class="card">
-  <header class="card-header">
-    <h2 class="card-title">By day</h2>
-  </header>
-  <% if (data.byDay.length === 0) { %>
-    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>
-  <% } else { %>
-    <table class="w-full">
-      <thead>
-        <tr class="border-b border-rule">
-          <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
-          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
-          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% data.byDay.forEach(r => { %>
-          <tr class="border-b border-rule last:border-0">
-            <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= r.purchase_date %></td>
-            <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.row_count %></td>
-            <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.total / 100).toFixed(2) %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-      <tfoot>
-        <tr class="border-t-2 border-rule-strong">
-          <td colspan="2" class="px-gutter-lg py-gutter-lg text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</td>
-          <td class="px-gutter-lg py-gutter-lg text-right font-mono text-[16px] text-ink"><%= (data.byDay.reduce((s, r) => s + r.total, 0) / 100).toFixed(2) %></td>
         </tr>
       </tfoot>
     </table>
