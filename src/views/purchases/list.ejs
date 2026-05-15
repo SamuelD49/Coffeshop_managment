@@ -3,15 +3,28 @@
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
-    <header class="reveal reveal-1 flex items-end justify-between">
-      <h1 class="font-display text-[36px] leading-[42px] text-ink" style="font-variation-settings:'opsz' 72,'SOFT' 50">Purchases</h1>
+    <%
+      // The controller defaults filters.from/to to today. Detect that state so
+      // we can show the right contextual copy below the title.
+      const _isToday    = filters.from === today && filters.to === today;
+      const _isFiltered = !_isToday && (filters.from || filters.to) && !showAll;
+    %>
+    <header class="reveal reveal-1 flex items-end justify-between gap-gutter">
+      <div>
+        <h1 class="font-display text-[36px] leading-[42px] text-ink" style="font-variation-settings:'opsz' 72,'SOFT' 50">Purchases</h1>
+        <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
+          <% if (_isToday) { %>
+            Today's entries. <a href="/reports?tab=purchases" class="link">See history in Reports →</a>
+          <% } else if (showAll) { %>
+            All purchases — <a href="/purchases" class="link">back to today</a>
+          <% } else if (_isFiltered) { %>
+            <span class="font-mono"><%= filters.from || '…' %></span> → <span class="font-mono"><%= filters.to || '…' %></span> — <a href="/purchases" class="link">back to today</a>
+          <% } %>
+        </p>
+      </div>
       <details class="text-right">
         <summary class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink cursor-pointer transition-colors list-none">
-          <% if (filters.from || filters.to) { %>
-            Filter: <span class="font-mono"><%= filters.from || '…' %> → <%= filters.to || '…' %></span>
-          <% } else { %>
-            Filter by date
-          <% } %>
+          Filter by date
         </summary>
         <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end">
           <label class="block">
@@ -23,10 +36,12 @@
             <input type="date" name="to" value="<%= filters.to || '' %>" class="field-input field-mono" />
           </label>
           <button class="btn-secondary">Apply</button>
-          <% if (filters.from || filters.to) { %>
-            <a href="/purchases" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors self-center">Clear</a>
-          <% } %>
         </form>
+        <div class="flex justify-end gap-gutter mt-gutter font-sans text-[12px] tracking-smallcaps uppercase">
+          <a href="/purchases" class="text-smoke hover:text-ink transition-colors">Today</a>
+          <span class="text-mist">·</span>
+          <a href="/purchases?show=all" class="text-smoke hover:text-ink transition-colors">Show all</a>
+        </div>
       </details>
     </header>
 
@@ -117,7 +132,11 @@
           <% if (purchases.length === 0) { %>
             <tr>
               <td colspan="8" class="px-gutter-lg py-air text-center font-display italic text-[18px] text-mist" style="font-variation-settings:'opsz' 24,'SOFT' 50">
-                No rows yet — type into the line above to add the first.
+                <% if (_isToday) { %>
+                  No purchases logged today — type into the line above to add one.
+                <% } else { %>
+                  No purchases in this range — widen the filter or <a href="/purchases" class="link">go back to today</a>.
+                <% } %>
               </td>
             </tr>
           <% } %>

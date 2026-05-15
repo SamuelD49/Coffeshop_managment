@@ -43,8 +43,10 @@ describe("Purchases", () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "owner", "pw");
     const csrf = await csrfFrom(agent, "/purchases");
+    // Use today's date so the row shows in the default-today filter on /purchases.
+    const today = new Date().toISOString().slice(0, 10);
     const res = await agent.post("/purchases").type("form").send({
-      _csrf: csrf, purchase_date: "2026-05-12", description: "Beans", unit: "kg", qty: "2", unit_price: "100.00", remark: "",
+      _csrf: csrf, purchase_date: today, description: "Beans", unit: "kg", qty: "2", unit_price: "100.00", remark: "",
     });
     expect(res.status).toBe(302);
     const list = await agent.get("/purchases");

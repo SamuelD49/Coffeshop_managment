@@ -17,12 +17,20 @@ function todayDate(): string {
 }
 
 export function list(req: Request, res: Response) {
+  // Defaults to today only — Purchases is a logging surface, history lives in
+  // Reports. User can widen via the date filter or click "Show all".
+  const today = todayDate();
+  const showAll = req.query.show === "all";
   const filters: { from?: string; to?: string } = {};
   if (req.query.from) filters.from = String(req.query.from);
   if (req.query.to)   filters.to   = String(req.query.to);
+  if (!showAll && !filters.from && !filters.to) {
+    filters.from = today;
+    filters.to   = today;
+  }
   const purchases = Purchases.listAll(filters);
   const sumTotal = purchases.reduce((acc, p) => acc + p.total, 0);
-  res.render("purchases/list", { purchases, filters, sumTotal, today: todayDate() });
+  res.render("purchases/list", { purchases, filters, sumTotal, today, showAll });
 }
 
 export function create(req: Request, res: Response) {
