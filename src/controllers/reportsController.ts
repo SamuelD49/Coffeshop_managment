@@ -7,16 +7,16 @@ import * as Purchases from "../models/purchases";
 import { toCsv } from "../lib/csv";
 import { todayBusinessDate } from "../lib/dates";
 
-function defaultRange(): { from: string; to: string } {
+async function defaultRange(): Promise<{ from: string; to: string }> {
   // Default to today only — that's the single most-asked-for view. The user
   // widens the range with the date picker when they want history; the by-month
   // section then fills in once the range crosses a month boundary.
-  const today = todayBusinessDate(Settings.get("business_day_cutoff") ?? "00:00", Settings.get("timezone") ?? "Africa/Addis_Ababa");
+  const today = todayBusinessDate((await Settings.get("business_day_cutoff")) ?? "00:00", (await Settings.get("timezone")) ?? "Africa/Addis_Ababa");
   return { from: today, to: today };
 }
 
-function rangeFromReq(req: Request): { from: string; to: string } {
-  const d = defaultRange();
+async function rangeFromReq(req: Request): Promise<{ from: string; to: string }> {
+  const d = await defaultRange();
   const from = req.query.from ? String(req.query.from) : d.from;
   const to   = req.query.to   ? String(req.query.to)   : d.to;
   return { from, to };
@@ -64,16 +64,16 @@ function loadTabData(tab: Tab, range: { from: string; to: string }) {
   return { runs };
 }
 
-export function show(req: Request, res: Response) {
+export async function show(req: Request, res: Response) {
   const tab = safeTab(req.query.tab);
-  const range = rangeFromReq(req);
+  const range = await rangeFromReq(req);
   const data = loadTabData(tab, range);
   res.render("reports/index", { tab, range, data });
 }
 
-export function exportCsv(req: Request, res: Response) {
+export async function exportCsv(req: Request, res: Response) {
   const tab = safeTab(req.query.tab);
-  const range = rangeFromReq(req);
+  const range = await rangeFromReq(req);
 
   let filename = `${tab}-${range.from}-to-${range.to}.csv`;
   let csv = "";
@@ -165,10 +165,10 @@ export function exportCsv(req: Request, res: Response) {
   res.send(csv);
 }
 
-export function print(req: Request, res: Response) {
+export async function print(req: Request, res: Response) {
   const tab = safeTab(req.query.tab);
-  const range = rangeFromReq(req);
+  const range = await rangeFromReq(req);
   const data = loadTabData(tab, range);
-  const shopName = Settings.get("shop_name") ?? "Coffee Shop";
+  const shopName = (await Settings.get("shop_name")) ?? "Coffee Shop";
   res.render("reports/print", { tab, range, data, shopName });
 }

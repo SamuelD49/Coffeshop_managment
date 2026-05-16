@@ -33,13 +33,13 @@ export function list(_req: Request, res: Response) {
   res.render("payroll/list", { runs });
 }
 
-export function showNew(_req: Request, res: Response) {
+export async function showNew(_req: Request, res: Response) {
   const today = new Date();
   const defaultYear = today.getFullYear();
   const defaultMonth = today.getMonth() + 1; // 1..12
 
   // Eligibility: active employees, optionally filtered by completeness
-  const requireComplete = Settings.getBool("require_complete_hr_before_payroll");
+  const requireComplete = await Settings.getBool("require_complete_hr_before_payroll");
   const all = Employees.listAll({ activeOnly: true });
   const eligible: Array<{ id: number; full_name: string; complete: boolean; missing: string[] }> = [];
   for (const e of all) {
@@ -72,10 +72,10 @@ export async function create(req: Request, res: Response) {
   await writeAudit({ actor_id: actor(req), action: "create_payroll_run", entity: "payroll_runs", entity_id: run.id });
 
   // Auto-populate entries for active employees
-  const requireComplete = Settings.getBool("require_complete_hr_before_payroll");
-  const stdDays = Settings.getNumber("standard_days_in_month");
-  const pePct = Settings.getNumber("pension_employer_default_pct");
-  const pnPct = Settings.getNumber("pension_employee_default_pct");
+  const requireComplete = await Settings.getBool("require_complete_hr_before_payroll");
+  const stdDays = await Settings.getNumber("standard_days_in_month");
+  const pePct = await Settings.getNumber("pension_employer_default_pct");
+  const pnPct = await Settings.getNumber("pension_employee_default_pct");
 
   const employees = Employees.listAll({ activeOnly: true });
   for (const e of employees) {
@@ -94,7 +94,7 @@ export async function create(req: Request, res: Response) {
   res.redirect(`/payroll/${run.id}`);
 }
 
-export function run(req: Request, res: Response) {
+export async function run(req: Request, res: Response) {
   const id = Number(req.params.id);
   const r = Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
@@ -111,7 +111,7 @@ export function run(req: Request, res: Response) {
     net_payment: sumColumn(entries, "net_payment"),
   };
   const month_name = MONTH_NAMES[r.month - 1];
-  const stdDays = Settings.getNumber("standard_days_in_month");
+  const stdDays = await Settings.getNumber("standard_days_in_month");
   res.render("payroll/run", { run: r, entries, totals, month_name, stdDays, locked: r.status === "approved" });
 }
 
@@ -127,7 +127,7 @@ export async function updateEntry(req: Request, res: Response) {
   const entry = Entries.findById(entryId);
   if (!entry || entry.payroll_run_id !== runId) return res.status(404).render("errors/404");
 
-  const stdDays = Settings.getNumber("standard_days_in_month");
+  const stdDays = await Settings.getNumber("standard_days_in_month");
   Entries.update(entryId, {
     days_worked: Number(req.body.days_worked || 0),
     income_tax: parseMajor(req.body.income_tax),
@@ -172,7 +172,7 @@ export async function remove(req: Request, res: Response) {
   res.redirect("/payroll");
 }
 
-export function print(req: Request, res: Response) {
+export async function print(req: Request, res: Response) {
   const id = Number(req.params.id);
   const r = Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
@@ -191,7 +191,7 @@ export function print(req: Request, res: Response) {
   const preparer = r.prepared_by ? Employees.findById(r.prepared_by) : null;
   const approver = r.approved_by ? Employees.findById(r.approved_by) : null;
   const month_name = MONTH_NAMES[r.month - 1];
-  const shopName = Settings.get("shop_name") ?? "Coffee Shop";
-  const signature = Settings.get("shop_signature") || "";
+  const shopName = (await Settings.get("shop_name")) ?? "Coffee Shop";
+  const signature = (await Settings.get("shop_signature")) || "";
   res.render("payroll/print", { run: r, entries, totals, month_name, preparer, approver, shopName, signature });
 }

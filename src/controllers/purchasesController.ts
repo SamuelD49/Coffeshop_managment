@@ -12,14 +12,14 @@ function parseMajor(v: unknown): number {
   return Number.isFinite(n) ? Math.round(n * 100) : 0;
 }
 
-function todayDate(): string {
-  return todayBusinessDate(Settings.get("business_day_cutoff") ?? "00:00", Settings.get("timezone") ?? "Africa/Addis_Ababa");
+async function todayDate(): Promise<string> {
+  return todayBusinessDate((await Settings.get("business_day_cutoff")) ?? "00:00", (await Settings.get("timezone")) ?? "Africa/Addis_Ababa");
 }
 
-export function list(req: Request, res: Response) {
+export async function list(req: Request, res: Response) {
   // Defaults to today only — Purchases is a logging surface, history lives in
   // Reports. User can widen via the date filter or click "Show all".
-  const today = todayDate();
+  const today = await todayDate();
   const showAll = req.query.show === "all";
   const filters: { from?: string; to?: string } = {};
   if (req.query.from) filters.from = String(req.query.from);
@@ -39,7 +39,7 @@ export async function create(req: Request, res: Response) {
     pushFlash(req, "error", "Description is required");
     return res.redirect("/purchases");
   }
-  const purchase_date = (req.body.purchase_date ?? todayDate()).toString();
+  const purchase_date = (req.body.purchase_date ?? (await todayDate())).toString();
   const qty = Number(req.body.qty || 0);
   const p = Purchases.create({
     purchase_date,

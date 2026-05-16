@@ -18,7 +18,7 @@ export async function submit(req: Request, res: Response) {
     pushFlash(req, "error", "All fields required, password ≥ 6 chars");
     return res.redirect("/setup");
   }
-  Settings.set("shop_name", trimmedShop);
+  await Settings.set("shop_name", trimmedShop);
   const hash = await bcrypt.hash(password, 12);
   const owner = Employees.create({
     full_name,

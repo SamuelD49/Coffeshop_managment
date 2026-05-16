@@ -30,7 +30,7 @@ beforeEach(async () => {
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
   // Relax HR completeness for tests so auto-populate includes our seeded employees.
-  Settings.set("require_complete_hr_before_payroll", "false");
+  await Settings.set("require_complete_hr_before_payroll", "false");
   const hash = await bcrypt.hash("pw", 12);
   Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
   const e1 = Employees.create({ full_name: "Almaz", username: "alm", password_hash: hash, role: "employee" });

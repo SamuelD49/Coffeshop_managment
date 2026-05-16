@@ -28,8 +28,8 @@ function tableHasRows(table: string): boolean {
   return !!row;
 }
 
-export function getStatus(): SetupStatus {
-  const shopName = Settings.get("shop_name");
+export async function getStatus(): Promise<SetupStatus> {
+  const shopName = await Settings.get("shop_name");
   const hasShopName = !!shopName && shopName.trim().length > 0 && shopName !== "Coffee Shop";
   const hasMenu = tableHasRows("menu_items");
   // employees table always contains the owner. The meaningful check is
@@ -37,7 +37,7 @@ export function getStatus(): SetupStatus {
   // so we treat "any employees row" as true. Owner counts.
   const hasEmployees = tableHasRows("employees");
   const hasSales = tableHasRows("sales_sessions");
-  const sig = Settings.get("shop_signature");
+  const sig = await Settings.get("shop_signature");
   const hasSignature = !!sig && sig.length > 0;
 
   const steps: SetupStep[] = [

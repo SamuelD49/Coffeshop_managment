@@ -67,10 +67,10 @@ export function list(req: Request, res: Response) {
   res.render("sales/list", { sessions, employees, filters, hasCashiers });
 }
 
-export function showNew(_req: Request, res: Response) {
+export async function showNew(_req: Request, res: Response) {
   const today = todayBusinessDate(
-    Settings.get("business_day_cutoff") ?? "00:00",
-    Settings.get("timezone") ?? "Africa/Addis_Ababa",
+    (await Settings.get("business_day_cutoff")) ?? "00:00",
+    (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
   );
   res.render("sales/new", { today });
 }

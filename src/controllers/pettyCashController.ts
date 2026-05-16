@@ -12,21 +12,21 @@ function parseMajor(v: unknown): number {
   return Number.isFinite(n) ? Math.round(n * 100) : 0;
 }
 
-function todayDate(): string {
-  return todayBusinessDate(Settings.get("business_day_cutoff") ?? "00:00", Settings.get("timezone") ?? "Africa/Addis_Ababa");
+async function todayDate(): Promise<string> {
+  return todayBusinessDate((await Settings.get("business_day_cutoff")) ?? "00:00", (await Settings.get("timezone")) ?? "Africa/Addis_Ababa");
 }
 
 function safeType(input: unknown): Petty.PettyType {
   return input === "expense" || input === "refund" || input === "replenishment" ? input : "expense";
 }
 
-export function list(req: Request, res: Response) {
+export async function list(req: Request, res: Response) {
   const filters: { from?: string; to?: string } = {};
   if (req.query.from) filters.from = String(req.query.from);
   if (req.query.to)   filters.to   = String(req.query.to);
   const entries = Petty.listWithBalance(filters);
   const balance = Petty.currentBalance();
-  res.render("petty-cash/list", { entries, balance, filters, today: todayDate() });
+  res.render("petty-cash/list", { entries, balance, filters, today: await todayDate() });
 }
 
 export async function create(req: Request, res: Response) {
@@ -36,7 +36,7 @@ export async function create(req: Request, res: Response) {
     return res.redirect("/petty-cash");
   }
   const e = Petty.create({
-    entry_date: (req.body.entry_date ?? todayDate()).toString(),
+    entry_date: (req.body.entry_date ?? (await todayDate())).toString(),
     description,
     payer_name: (req.body.payer_name || null) as string | null,
     amount: parseMajor(req.body.amount),

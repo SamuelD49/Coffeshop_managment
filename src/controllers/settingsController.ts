@@ -12,8 +12,8 @@ const ALLOWED_KEYS = [
   "business_day_cutoff", "timezone",
 ] as const;
 
-export function show(_req: Request, res: Response) {
-  const settings = Settings.getAll();
+export async function show(_req: Request, res: Response) {
+  const settings = await Settings.getAll();
   const backups = listBackups();
   const backupDir = backupDirPath();
   res.render("settings/index", { settings, backups, backupDir });
@@ -21,10 +21,10 @@ export function show(_req: Request, res: Response) {
 
 export async function update(req: Request, res: Response) {
   for (const key of ALLOWED_KEYS) {
-    if (typeof req.body[key] === "string") Settings.set(key, req.body[key]);
+    if (typeof req.body[key] === "string") await Settings.set(key, req.body[key]);
   }
   // Checkbox: present means "true", absent means "false"
-  Settings.set("require_complete_hr_before_payroll", req.body.require_complete_hr_before_payroll === "true" ? "true" : "false");
+  await Settings.set("require_complete_hr_before_payroll", req.body.require_complete_hr_before_payroll === "true" ? "true" : "false");
   await writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_settings", entity: "settings", entity_id: null });
   pushFlash(req, "success", "Settings saved");
   res.redirect("/settings");
@@ -57,7 +57,7 @@ const SIG_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 export async function saveSignature(req: Request, res: Response) {
   const raw = (req.body.signature_data_url ?? "").toString();
   if (raw === "") {
-    Settings.set("shop_signature", "");
+    await Settings.set("shop_signature", "");
     await writeAudit({ actor_id: req.session.employeeId ?? null, action: "clear_shop_signature", entity: "settings", entity_id: null });
     pushFlash(req, "success", "Signature cleared");
     return res.redirect("/settings");
@@ -66,7 +66,7 @@ export async function saveSignature(req: Request, res: Response) {
     pushFlash(req, "error", "Could not save signature — invalid or too large");
     return res.redirect("/settings");
   }
-  Settings.set("shop_signature", raw);
+  await Settings.set("shop_signature", raw);
   await writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_shop_signature", entity: "settings", entity_id: null });
   pushFlash(req, "success", "Signature saved");
   res.redirect("/settings");

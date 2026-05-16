@@ -3,6 +3,7 @@ import * as Reports from "../lib/reports";
 import * as Settings from "../models/settings";
 import * as Menu from "../models/menuItems";
 import { todayBusinessDate } from "../lib/dates";
+import { getStatus as getSetupStatus } from "../lib/setupStatus";
 
 const TOKEN_FALLBACK = ["#C75D34", "#5C7558", "#B68A3C", "#8B2A26", "#3E2A1F", "#9E4524", "#7A6E62"];
 
@@ -19,10 +20,10 @@ function dayLabel(yyyymmdd: string): string {
   return DAY_NAMES[dt.getUTCDay()];
 }
 
-export function show(_req: Request, res: Response) {
+export async function show(_req: Request, res: Response) {
   const today = todayBusinessDate(
-    Settings.get("business_day_cutoff") ?? "00:00",
-    Settings.get("timezone") ?? "Africa/Addis_Ababa",
+    (await Settings.get("business_day_cutoff")) ?? "00:00",
+    (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
   );
 
   // Today's snapshot (unchanged)
@@ -67,6 +68,10 @@ export function show(_req: Request, res: Response) {
     color: colorForItem(r.menu_item_id, itemById[r.menu_item_id]?.token_color ?? null),
   }));
 
+  // Onboarding checklist — only shown to owners and only until every step
+  // is ticked. Hides itself once complete (no manual dismiss).
+  const setup = await getSetupStatus();
+
   const data = {
     today,
     weekFrom,
@@ -78,6 +83,7 @@ export function show(_req: Request, res: Response) {
     priorTotal,
     trending,
     trendingMax,
+    setup,
   };
   res.render("dashboard", { data });
 }

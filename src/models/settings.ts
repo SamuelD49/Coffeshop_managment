@@ -1,32 +1,36 @@
-import { _legacySqliteDb } from "../lib/db";
+import { getDb, nowIso } from "../lib/kysely";
 
-export function get(key: string): string | null {
-  const row = _legacySqliteDb().prepare("SELECT value FROM settings WHERE key = ?").get(key) as { value: string } | undefined;
+export async function get(key: string): Promise<string | null> {
+  const row = await getDb()
+    .selectFrom("settings")
+    .select("value")
+    .where("key", "=", key)
+    .executeTakeFirst();
   return row?.value ?? null;
 }
 
-export function set(key: string, value: string): void {
-  _legacySqliteDb()
-    .prepare(`
-      INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
-    `)
-    .run(key, value);
+export async function set(key: string, value: string): Promise<void> {
+  const now = nowIso();
+  await getDb()
+    .insertInto("settings")
+    .values({ key, value, updated_at: now })
+    .onConflict((oc) => oc.column("key").doUpdateSet({ value, updated_at: now }))
+    .execute();
 }
 
-export function getAll(): Record<string, string> {
-  const rows = _legacySqliteDb().prepare("SELECT key, value FROM settings").all() as Array<{ key: string; value: string }>;
+export async function getAll(): Promise<Record<string, string>> {
+  const rows = await getDb().selectFrom("settings").select(["key", "value"]).execute();
   return Object.fromEntries(rows.map((r) => [r.key, r.value]));
 }
 
-export function getNumber(key: string): number {
-  const v = get(key);
+export async function getNumber(key: string): Promise<number> {
+  const v = await get(key);
   if (v === null) throw new Error(`settings.getNumber: missing key "${key}"`);
   const n = Number(v);
   if (!Number.isFinite(n)) throw new Error(`settings.getNumber: "${key}" not numeric ("${v}")`);
   return n;
 }
 
-export function getBool(key: string): boolean {
-  return get(key) === "true";
+export async function getBool(key: string): Promise<boolean> {
+  return (await get(key)) === "true";
 }
