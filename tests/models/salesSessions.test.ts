@@ -47,8 +47,8 @@ describe("SalesSessions", () => {
 
   it("withTotals() computes subtotal, total_amount, difference", async () => {
     const e = await seedEmployee();
-    const m1 = Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
-    const m2 = Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
+    const m1 = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
+    const m2 = await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
     const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "morning" });
     Lines.upsert(s.id, m1.id, 3); // 3 * 5000 = 15000
     Lines.upsert(s.id, m2.id, 2); // 2 * 3000 = 6000
@@ -61,7 +61,7 @@ describe("SalesSessions", () => {
 
   it("withTotals() computes negative difference when cash short", async () => {
     const e = await seedEmployee();
-    const m1 = Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
+    const m1 = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
     const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "morning" });
     Lines.upsert(s.id, m1.id, 2); // 10000 expected
     Sessions.updateHeader(s.id, { cash_amount: 9500, bank_transfer_amount: 0, notes: null });

@@ -30,8 +30,8 @@ function parseTokenColor(input: unknown): string | null {
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
 }
 
-export function list(_req: Request, res: Response) {
-  const items = Menu.listAll();
+export async function list(_req: Request, res: Response) {
+  const items = await Menu.listAll();
   res.render("menu/list", { items, palette: TOKEN_PALETTE });
 }
 
@@ -47,24 +47,24 @@ export async function create(req: Request, res: Response) {
   }
   const price = parsePriceMajor(req.body.price);
   const token_color = parseTokenColor(req.body.token_color);
-  const m = Menu.create({ name, price, token_color });
+  const m = await Menu.create({ name, price, token_color });
   await writeAudit({ actor_id: actor(req), action: "create_menu_item", entity: "menu_items", entity_id: m.id });
   pushFlash(req, "success", `${m.name} added to menu`);
   res.redirect("/menu");
 }
 
-export function showEdit(req: Request, res: Response) {
-  const item = Menu.findById(Number(req.params.id));
+export async function showEdit(req: Request, res: Response) {
+  const item = await Menu.findById(Number(req.params.id));
   if (!item) return res.status(404).render("errors/404");
   res.render("menu/edit", { item, palette: TOKEN_PALETTE });
 }
 
 export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const item = Menu.findById(id);
+  const item = await Menu.findById(id);
   if (!item) return res.status(404).render("errors/404");
   const name = (req.body.name ?? item.name).toString().trim() || item.name;
-  Menu.update(id, {
+  await Menu.update(id, {
     name,
     price: parsePriceMajor(req.body.price),
     token_color: parseTokenColor(req.body.token_color),
@@ -76,10 +76,10 @@ export async function update(req: Request, res: Response) {
 
 export async function toggleActive(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const item = Menu.findById(id);
+  const item = await Menu.findById(id);
   if (!item) return res.status(404).render("errors/404");
   const next = !item.is_active;
-  Menu.setActive(id, next);
+  await Menu.setActive(id, next);
   await writeAudit({ actor_id: actor(req), action: next ? "activate_menu_item" : "deactivate_menu_item", entity: "menu_items", entity_id: id });
   pushFlash(req, "success", res.locals.t(next ? "flash.menu.activated" : "flash.menu.deactivated", { name: item.name }));
   res.redirect("/menu");

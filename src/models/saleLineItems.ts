@@ -1,5 +1,4 @@
 import { _legacySqliteDb } from "../lib/db";
-import * as Menu from "./menuItems";
 
 export type SaleLineItem = {
   id: number;
@@ -31,7 +30,7 @@ export function upsert(sessionId: number, menuItemId: number, qty: number): Sale
     }
     return null;
   }
-  const menu = Menu.findById(menuItemId);
+  const menu = _legacySqliteDb().prepare("SELECT price FROM menu_items WHERE id = ?").get(menuItemId) as { price: number } | undefined;
   if (!menu) throw new Error("Menu item not found");
   const total = menu.price * qty;
 

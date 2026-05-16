@@ -55,7 +55,7 @@ export async function show(_req: Request, res: Response) {
     : null;
 
   // Trending products (top 6 by qty over the last 7 days)
-  const items = Menu.listAll();
+  const items = await Menu.listAll();
   const itemById: Record<number, { name: string; token_color: string | null }> = {};
   for (const m of items) itemById[m.id] = { name: m.name, token_color: m.token_color };
 

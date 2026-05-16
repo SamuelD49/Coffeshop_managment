@@ -93,7 +93,7 @@ export async function entry(req: Request, res: Response) {
   if (!session) return res.status(404).render("errors/404");
   if (!canView(req, session)) return res.status(403).render("errors/403", { message: "Not your shift" });
 
-  const items = Menu.listActiveByPopularity();
+  const items = await Menu.listActiveByPopularity();
   const linesArr = Lines.listForSession(id);
   const lines: Record<number, typeof linesArr[0]> = {};
   for (const l of linesArr) lines[l.menu_item_id] = l;
@@ -104,7 +104,7 @@ export async function entry(req: Request, res: Response) {
   res.render("sales/entry", { session, totals, items, lines, employee, editable, hasCashiers });
 }
 
-export function upsertLine(req: Request, res: Response) {
+export async function upsertLine(req: Request, res: Response) {
   const id = Number(req.params.id);
   const menuItemId = Number(req.params.menuItemId);
   const session = Sessions.findById(id);
@@ -113,7 +113,7 @@ export function upsertLine(req: Request, res: Response) {
   const qty = Math.max(0, Math.floor(Number(req.body.qty || 0)));
   const line = Lines.upsert(id, menuItemId, qty);
   const totals = Sessions.withTotals(id)!;
-  const item = Menu.findById(menuItemId);
+  const item = await Menu.findById(menuItemId);
 
   // Return two HTML fragments: the row total and the footer totals (out-of-band swap).
   res.render("sales/_row", { item, line, totals, layout: false }, (err, rowHtml) => {

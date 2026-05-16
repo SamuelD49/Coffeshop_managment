@@ -26,7 +26,7 @@ afterAll(async () => {
 describe("Sales reports", () => {
   it("salesByDay() sums totals per business_date", async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
-    const m = Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
+    const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
 
     const s1 = Sessions.create({ employee_id: e.id, business_date: "2026-05-10", shift: "m" });
     Lines.upsert(s1.id, m.id, 2); // 10000
@@ -47,8 +47,8 @@ describe("Sales reports", () => {
 
   it("salesByItem() sums qty + revenue per menu item", async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
-    const latte = Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
-    const espresso = Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
+    const latte = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
+    const espresso = await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
 
     const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
     Lines.upsert(s.id, latte.id, 3);     // qty 3, total 15000
@@ -66,7 +66,7 @@ describe("Sales reports", () => {
   it("salesByEmployee() sums per cashier", async () => {
     const e1 = await Employees.create({ full_name: "Almaz", username: "a", password_hash: "h", role: "employee" });
     const e2 = await Employees.create({ full_name: "Bekele", username: "b", password_hash: "h", role: "employee" });
-    const m = Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
+    const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
 
     const s1 = Sessions.create({ employee_id: e1.id, business_date: "2026-05-12", shift: "m" });
     Lines.upsert(s1.id, m.id, 4); // 20000
@@ -109,7 +109,7 @@ describe("Petty cash reports", () => {
 describe("Dashboard totals", () => {
   it("todaySalesTotal() sums only the given business date", async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
-    const m = Menu.create({ name: "L", price: 1000, sort_order: 1 });
+    const m = await Menu.create({ name: "L", price: 1000, sort_order: 1 });
     const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
     Lines.upsert(s.id, m.id, 3); // 3000
     const sOther = Sessions.create({ employee_id: e.id, business_date: "2026-05-11", shift: "m" });

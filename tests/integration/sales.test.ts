@@ -30,8 +30,8 @@ beforeEach(async () => {
   const hash = await bcrypt.hash("pw123", 12);
   await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
   await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
-  Menu.create({ name: "Latte",    price: 5000, sort_order: 1 });
-  Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
+  await Menu.create({ name: "Latte",    price: 5000, sort_order: 1 });
+  await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
 });
 
 afterAll(async () => {
@@ -57,7 +57,7 @@ describe("Sales flow", () => {
 
     // upsert a line (HTMX-style POST returns HTML fragments — we just check status)
     csrf = await csrfFrom(agent, sessionUrl); // get a fresh csrf token if needed
-    const latte = Menu.listActive().find(m => m.name === "Latte")!;
+    const latte = (await Menu.listActive()).find(m => m.name === "Latte")!;
     const post = await agent.post(`/sales/${id}/lines/${latte.id}`)
       .set("x-csrf-token", csrf)
       .type("form").send({ qty: 3 });
@@ -103,7 +103,7 @@ describe("Sales flow", () => {
     await cashierAgent.post(`/sales/${id}/close`).type("form").send({ _csrf: csrf });
 
     // try to update a line — should be 403
-    const latte = Menu.listActive().find(m => m.name === "Latte")!;
+    const latte = (await Menu.listActive()).find(m => m.name === "Latte")!;
     csrf = await csrfFrom(cashierAgent, `/sales/${id}`);
     const post = await cashierAgent.post(`/sales/${id}/lines/${latte.id}`)
       .set("x-csrf-token", csrf)

@@ -21,58 +21,59 @@ afterAll(async () => {
 });
 
 describe("MenuItems", () => {
-  it("create() and findById()", () => {
-    const m = Menu.create({ name: "Macchiato", price: 4500 });
+  it("create() and findById()", async () => {
+    const m = await Menu.create({ name: "Macchiato", price: 4500 });
     expect(m.id).toBeGreaterThan(0);
     expect(m.name).toBe("Macchiato");
     expect(m.price).toBe(4500);
-    expect(Menu.findById(m.id)?.name).toBe("Macchiato");
+    expect((await Menu.findById(m.id))?.name).toBe("Macchiato");
   });
 
-  it("listActive() returns only active rows ordered alphabetically", () => {
-    Menu.create({ name: "B", price: 100 });
-    Menu.create({ name: "A", price: 100 });
-    Menu.create({ name: "C", price: 100 });
-    expect(Menu.listActive().map(m => m.name)).toEqual(["A", "B", "C"]);
+  it("listActive() returns only active rows ordered alphabetically", async () => {
+    await Menu.create({ name: "B", price: 100 });
+    await Menu.create({ name: "A", price: 100 });
+    await Menu.create({ name: "C", price: 100 });
+    expect((await Menu.listActive()).map(m => m.name)).toEqual(["A", "B", "C"]);
   });
 
-  it("listAll() includes inactive", () => {
-    const a = Menu.create({ name: "A", price: 1 });
-    Menu.setActive(a.id, false);
-    Menu.create({ name: "B", price: 1 });
-    expect(Menu.listAll()).toHaveLength(2);
-    expect(Menu.listActive()).toHaveLength(1);
+  it("listAll() includes inactive", async () => {
+    const a = await Menu.create({ name: "A", price: 1 });
+    await Menu.setActive(a.id, false);
+    await Menu.create({ name: "B", price: 1 });
+    expect(await Menu.listAll()).toHaveLength(2);
+    expect(await Menu.listActive()).toHaveLength(1);
   });
 
-  it("update() persists changes", () => {
-    const m = Menu.create({ name: "Macchiato", price: 4500 });
-    Menu.update(m.id, { name: "Espresso", price: 3500 });
-    const got = Menu.findById(m.id);
+  it("update() persists changes", async () => {
+    const m = await Menu.create({ name: "Macchiato", price: 4500 });
+    await Menu.update(m.id, { name: "Espresso", price: 3500 });
+    const got = await Menu.findById(m.id);
     expect(got?.name).toBe("Espresso");
     expect(got?.price).toBe(3500);
   });
 
-  it("setActive() toggles is_active", () => {
-    const m = Menu.create({ name: "X", price: 1 });
-    expect(Menu.findById(m.id)?.is_active).toBe(1);
-    Menu.setActive(m.id, false);
-    expect(Menu.findById(m.id)?.is_active).toBe(0);
+  it("setActive() toggles is_active", async () => {
+    const m = await Menu.create({ name: "X", price: 1 });
+    expect((await Menu.findById(m.id))?.is_active).toBe(1);
+    await Menu.setActive(m.id, false);
+    expect((await Menu.findById(m.id))?.is_active).toBe(0);
   });
 
   it("listActiveByPopularity() orders by lifetime qty sold desc, then name asc", async () => {
     const cashier = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
-    const latte    = Menu.create({ name: "Latte",    price: 5000 });
-    const espresso = Menu.create({ name: "Espresso", price: 3000 });
-    const water    = Menu.create({ name: "Water",    price: 1000 }); // never sold
-    const tea      = Menu.create({ name: "Tea",      price: 2000 });
+    const latte    = await Menu.create({ name: "Latte",    price: 5000 });
+    const espresso = await Menu.create({ name: "Espresso", price: 3000 });
+    const water    = await Menu.create({ name: "Water",    price: 1000 }); // never sold
+    const tea      = await Menu.create({ name: "Tea",      price: 2000 });
 
     const session = Sessions.create({ employee_id: cashier.id, business_date: "2026-05-12", shift: null });
     Lines.upsert(session.id, espresso.id, 10); // top
     Lines.upsert(session.id, latte.id, 5);     // second
     Lines.upsert(session.id, tea.id, 2);       // third
     // water has no sales
+    void water;
 
-    const ordered = Menu.listActiveByPopularity().map(m => m.name);
+    const ordered = (await Menu.listActiveByPopularity()).map(m => m.name);
     expect(ordered).toEqual(["Espresso", "Latte", "Tea", "Water"]);
   });
 });
