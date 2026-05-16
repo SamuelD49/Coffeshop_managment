@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 
 export type Employee = {
   id: number;
@@ -35,7 +35,7 @@ export type CreateInput = {
 };
 
 export function count(): number {
-  const row = getDb().prepare("SELECT COUNT(*) AS c FROM employees").get() as { c: number };
+  const row = _legacySqliteDb().prepare("SELECT COUNT(*) AS c FROM employees").get() as { c: number };
   return row.c;
 }
 
@@ -43,12 +43,12 @@ export function count(): number {
 // UI: when false (solo-owner shop), the Close-entry button and the per-employee
 // filter are hidden. When the owner hires a cashier, both reappear.
 export function hasActiveCashiers(): boolean {
-  const row = getDb().prepare("SELECT COUNT(*) AS c FROM employees WHERE role = 'employee' AND is_active = 1").get() as { c: number };
+  const row = _legacySqliteDb().prepare("SELECT COUNT(*) AS c FROM employees WHERE role = 'employee' AND is_active = 1").get() as { c: number };
   return row.c > 0;
 }
 
 export function create(input: CreateInput): Employee {
-  const result = getDb()
+  const result = _legacySqliteDb()
     .prepare(`
       INSERT INTO employees (full_name, phone, username, password_hash, role)
       VALUES (@full_name, @phone, @username, @password_hash, @role)
@@ -64,25 +64,25 @@ export function create(input: CreateInput): Employee {
 }
 
 export function findByUsername(username: string): Employee | null {
-  const row = getDb()
+  const row = _legacySqliteDb()
     .prepare("SELECT * FROM employees WHERE username = ? AND is_active = 1")
     .get(username) as Employee | undefined;
   return row ?? null;
 }
 
 export function findById(id: number): Employee | null {
-  const row = getDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
+  const row = _legacySqliteDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
   return row ?? null;
 }
 
 export function updatePassword(id: number, password_hash: string): void {
-  getDb()
+  _legacySqliteDb()
     .prepare("UPDATE employees SET password_hash = ?, updated_at = datetime('now') WHERE id = ?")
     .run(password_hash, id);
 }
 
 export function setActive(id: number, active: boolean): void {
-  getDb()
+  _legacySqliteDb()
     .prepare("UPDATE employees SET is_active = ?, updated_at = datetime('now') WHERE id = ?")
     .run(active ? 1 : 0, id);
 }
@@ -113,16 +113,16 @@ export type EmploymentInput = {
 
 export function listAll(opts: { activeOnly?: boolean } = {}): Employee[] {
   const where = opts.activeOnly ? "WHERE is_active = 1" : "";
-  return getDb().prepare(`SELECT * FROM employees ${where} ORDER BY full_name`).all() as Employee[];
+  return _legacySqliteDb().prepare(`SELECT * FROM employees ${where} ORDER BY full_name`).all() as Employee[];
 }
 
 export function findFull(id: number): Employee | null {
-  const row = getDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
+  const row = _legacySqliteDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
   return row ?? null;
 }
 
 export function updatePersonal(id: number, input: PersonalInput): void {
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE employees SET
       full_name = @full_name,
       phone = @phone,
@@ -141,7 +141,7 @@ export function updatePersonal(id: number, input: PersonalInput): void {
 }
 
 export function updateEmployment(id: number, input: EmploymentInput): void {
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE employees SET
       position = @position,
       hire_date = @hire_date,
@@ -165,5 +165,5 @@ export function updateEmployment(id: number, input: EmploymentInput): void {
 }
 
 export function setOnboardingStatus(id: number, status: "incomplete" | "complete"): void {
-  getDb().prepare("UPDATE employees SET onboarding_status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+  _legacySqliteDb().prepare("UPDATE employees SET onboarding_status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
 }

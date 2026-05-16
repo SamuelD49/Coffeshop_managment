@@ -23,16 +23,16 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
 }
 
 beforeEach(async () => {
-  closeDb();
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   if (existsSync("./data/uploads")) rmSync("./data/uploads", { recursive: true, force: true });
-  runMigrations();
+  await runMigrations();
   const hash = await bcrypt.hash("secret123", 12);
   Employees.create({ full_name: "Owner", username: "owner", password_hash: hash, role: "owner" });
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   if (existsSync("./data/uploads")) rmSync("./data/uploads", { recursive: true, force: true });
 });

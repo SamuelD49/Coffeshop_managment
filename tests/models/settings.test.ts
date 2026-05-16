@@ -6,14 +6,14 @@ import * as Settings from "../../src/models/settings";
 const TEST_DB = "./data/test-settings.db";
 process.env.DB_PATH = TEST_DB;
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

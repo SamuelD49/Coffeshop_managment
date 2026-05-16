@@ -7,14 +7,14 @@ import * as Runs from "../../src/models/payrollRuns";
 const TEST_DB = "./data/test-payroll-runs.db";
 process.env.DB_PATH = TEST_DB;
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

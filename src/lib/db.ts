@@ -1,51 +1,69 @@
-import Database from "better-sqlite3";
-import { readdirSync, readFileSync, mkdirSync, existsSync } from "fs";
+import { readdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
+import { sql } from "kysely";
+import { Pool } from "pg";
+import { getDb, closeDb, currentDriver, sqliteHandle, nowIso, _legacySqliteDb } from "./kysely";
 
-let _db: Database.Database | null = null;
+export { getDb, closeDb, currentDriver, sqliteHandle, nowIso, _legacySqliteDb };
 
-export function getDb(): Database.Database {
-  if (_db) return _db;
-  const dataDir = resolve(process.cwd(), "data");
-  if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
-  const dbPath = process.env.DB_PATH ?? join(dataDir, "shop.db");
-  _db = new Database(dbPath);
-  _db.pragma("journal_mode = WAL");
-  _db.pragma("foreign_keys = ON");
-  return _db;
-}
-
-export function runMigrations(): void {
+// Migration files contain multiple statements separated by `;`. Kysely's
+// `sql.raw` routes through `prepare()` which is single-statement on
+// better-sqlite3, so we use each dialect's raw multi-statement entry point.
+export async function runMigrations(): Promise<void> {
+  const driver = currentDriver();
   const db = getDb();
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      filename TEXT PRIMARY KEY,
-      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
 
-  const migrationsDir = resolve(process.cwd(), "migrations");
+  if (driver === "sqlite") {
+    await sql`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        filename TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `.execute(db);
+  } else {
+    await sql`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        filename TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL DEFAULT to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')
+      )
+    `.execute(db);
+  }
+
+  const subdir = driver === "sqlite" ? "sqlite" : "postgres";
+  const migrationsDir = resolve(process.cwd(), "migrations", subdir);
   const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
 
-  const applied = new Set(
-    db.prepare("SELECT filename FROM schema_migrations").all().map((r: any) => r.filename)
-  );
+  const appliedRows = await db.selectFrom("schema_migrations").select("filename").execute();
+  const applied = new Set(appliedRows.map((r) => r.filename));
 
   for (const file of files) {
     if (applied.has(file)) continue;
-    const sql = readFileSync(join(migrationsDir, file), "utf-8");
-    const tx = db.transaction(() => {
-      db.exec(sql);
-      db.prepare("INSERT INTO schema_migrations (filename) VALUES (?)").run(file);
-    });
-    tx();
+    const sqlText = readFileSync(join(migrationsDir, file), "utf-8");
+    await applyMigration(driver, sqlText);
+    await db.insertInto("schema_migrations").values({ filename: file }).execute();
     console.log(`Applied migration: ${file}`);
   }
 }
 
-export function closeDb(): void {
-  if (_db) {
-    _db.close();
-    _db = null;
+async function applyMigration(driver: "sqlite" | "supabase", sqlText: string): Promise<void> {
+  if (driver === "sqlite") {
+    const handle = sqliteHandle();
+    if (!handle) throw new Error("sqlite handle not initialized");
+    handle.exec(sqlText);
+    return;
+  }
+  const url = process.env.DATABASE_URL!;
+  const pool = new Pool({ connectionString: url, max: 1 });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(sqlText);
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+    await pool.end();
   }
 }

@@ -26,9 +26,9 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
 }
 
 beforeEach(async () => {
-  closeDb();
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
   // Relax HR completeness for tests so auto-populate includes our seeded employees.
   Settings.set("require_complete_hr_before_payroll", "false");
   const hash = await bcrypt.hash("pw", 12);
@@ -37,8 +37,8 @@ beforeEach(async () => {
   Employees.updateEmployment(e1.id, { position: "Barista", hire_date: "2025-06-01", basic_salary: 500000, role: "employee", is_active: true, username: "alm" });
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

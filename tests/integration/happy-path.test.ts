@@ -7,14 +7,14 @@ const TEST_DB = "./data/test-happy.db";
 process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

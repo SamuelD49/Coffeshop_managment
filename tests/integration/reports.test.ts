@@ -21,9 +21,9 @@ async function loginAsOwner(app: any): Promise<request.SuperAgentTest> {
 }
 
 beforeEach(async () => {
-  closeDb();
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
   const hash = await bcrypt.hash("pw", 12);
   Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
   const e = Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
@@ -33,8 +33,8 @@ beforeEach(async () => {
   Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 0, notes: null });
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

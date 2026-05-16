@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 
 export type MenuItem = {
   id: number;
@@ -15,7 +15,7 @@ export type CreateInput = { name: string; price: number; sort_order?: number; to
 export type UpdateInput = { name: string; price: number; sort_order?: number; token_color?: string | null };
 
 export function create(input: CreateInput): MenuItem {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     INSERT INTO menu_items (name, price, sort_order, token_color)
     VALUES (@name, @price, @sort_order, @token_color)
   `).run({
@@ -27,23 +27,23 @@ export function create(input: CreateInput): MenuItem {
 }
 
 export function findById(id: number): MenuItem | null {
-  const r = getDb().prepare("SELECT * FROM menu_items WHERE id = ?").get(id) as MenuItem | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM menu_items WHERE id = ?").get(id) as MenuItem | undefined;
   return r ?? null;
 }
 
 export function listAll(): MenuItem[] {
-  return getDb().prepare("SELECT * FROM menu_items ORDER BY name").all() as MenuItem[];
+  return _legacySqliteDb().prepare("SELECT * FROM menu_items ORDER BY name").all() as MenuItem[];
 }
 
 export function listActive(): MenuItem[] {
-  return getDb().prepare("SELECT * FROM menu_items WHERE is_active = 1 ORDER BY name").all() as MenuItem[];
+  return _legacySqliteDb().prepare("SELECT * FROM menu_items WHERE is_active = 1 ORDER BY name").all() as MenuItem[];
 }
 
 // Active menu items ordered by lifetime qty sold (descending), then by name.
 // Items never sold appear after sold items, alphabetically. Used by the sales
 // entry page so the cashier finds the common items near the top.
 export function listActiveByPopularity(): MenuItem[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT m.*, COALESCE(SUM(l.qty), 0) AS sold_qty
     FROM menu_items m
     LEFT JOIN sale_line_items l ON l.menu_item_id = m.id
@@ -54,7 +54,7 @@ export function listActiveByPopularity(): MenuItem[] {
 }
 
 export function update(id: number, input: UpdateInput): void {
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE menu_items
     SET name = @name, price = @price, sort_order = @sort_order, token_color = @token_color, updated_at = datetime('now')
     WHERE id = @id
@@ -67,7 +67,7 @@ export function update(id: number, input: UpdateInput): void {
 }
 
 export function setActive(id: number, active: boolean): void {
-  getDb().prepare("UPDATE menu_items SET is_active = ?, updated_at = datetime('now') WHERE id = ?").run(active ? 1 : 0, id);
+  _legacySqliteDb().prepare("UPDATE menu_items SET is_active = ?, updated_at = datetime('now') WHERE id = ?").run(active ? 1 : 0, id);
 }
 
 export function remove(id: number): void {

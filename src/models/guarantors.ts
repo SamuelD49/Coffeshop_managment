@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 
 export type Guarantor = {
   id: number;
@@ -19,7 +19,7 @@ export type Guarantor = {
 export type GuarantorInput = Omit<Guarantor, "id" | "created_at" | "updated_at">;
 
 export function create(input: GuarantorInput): Guarantor {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     INSERT INTO guarantors (employee_id, full_name, phone, address, relation_to_employee, national_id_number, national_id_type, occupation, workplace, notes)
     VALUES (@employee_id, @full_name, @phone, @address, @relation_to_employee, @national_id_number, @national_id_type, @occupation, @workplace, @notes)
   `).run(input);
@@ -27,16 +27,16 @@ export function create(input: GuarantorInput): Guarantor {
 }
 
 export function listForEmployee(employeeId: number): Guarantor[] {
-  return getDb().prepare("SELECT * FROM guarantors WHERE employee_id = ? ORDER BY created_at, id").all(employeeId) as Guarantor[];
+  return _legacySqliteDb().prepare("SELECT * FROM guarantors WHERE employee_id = ? ORDER BY created_at, id").all(employeeId) as Guarantor[];
 }
 
 export function findById(id: number): Guarantor | null {
-  const r = getDb().prepare("SELECT * FROM guarantors WHERE id = ?").get(id) as Guarantor | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM guarantors WHERE id = ?").get(id) as Guarantor | undefined;
   return r ?? null;
 }
 
 export function update(id: number, input: Omit<GuarantorInput, "employee_id">): void {
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE guarantors SET
       full_name = @full_name,
       phone = @phone,
@@ -53,5 +53,5 @@ export function update(id: number, input: Omit<GuarantorInput, "employee_id">): 
 }
 
 export function remove(id: number): void {
-  getDb().prepare("DELETE FROM guarantors WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("DELETE FROM guarantors WHERE id = ?").run(id);
 }

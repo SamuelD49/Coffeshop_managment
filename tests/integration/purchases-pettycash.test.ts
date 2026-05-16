@@ -25,16 +25,16 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
 }
 
 beforeEach(async () => {
-  closeDb();
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
   const hash = await bcrypt.hash("pw", 12);
   Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
   Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

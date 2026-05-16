@@ -6,14 +6,14 @@ import * as Employees from "../../src/models/employees";
 const TEST_DB = "./data/test-employees.db";
 process.env.DB_PATH = TEST_DB;
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

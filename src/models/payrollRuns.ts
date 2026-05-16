@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 
 export type PayrollRun = {
   id: number;
@@ -14,35 +14,35 @@ export type PayrollRun = {
 export type CreateInput = { year: number; month: number; prepared_by: number | null };
 
 export function create(input: CreateInput): PayrollRun {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     INSERT INTO payroll_runs (year, month, prepared_by) VALUES (@year, @month, @prepared_by)
   `).run(input);
   return findById(Number(r.lastInsertRowid))!;
 }
 
 export function findById(id: number): PayrollRun | null {
-  const r = getDb().prepare("SELECT * FROM payroll_runs WHERE id = ?").get(id) as PayrollRun | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM payroll_runs WHERE id = ?").get(id) as PayrollRun | undefined;
   return r ?? null;
 }
 
 export function findByYearMonth(year: number, month: number): PayrollRun | null {
-  const r = getDb().prepare("SELECT * FROM payroll_runs WHERE year = ? AND month = ?").get(year, month) as PayrollRun | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM payroll_runs WHERE year = ? AND month = ?").get(year, month) as PayrollRun | undefined;
   return r ?? null;
 }
 
 export function listAll(): PayrollRun[] {
-  return getDb().prepare("SELECT * FROM payroll_runs ORDER BY year DESC, month DESC").all() as PayrollRun[];
+  return _legacySqliteDb().prepare("SELECT * FROM payroll_runs ORDER BY year DESC, month DESC").all() as PayrollRun[];
 }
 
 export function approve(id: number, approverId: number): void {
-  getDb().prepare("UPDATE payroll_runs SET status = 'approved', approved_by = ?, updated_at = datetime('now') WHERE id = ?").run(approverId, id);
+  _legacySqliteDb().prepare("UPDATE payroll_runs SET status = 'approved', approved_by = ?, updated_at = datetime('now') WHERE id = ?").run(approverId, id);
 }
 
 export function revert(id: number): void {
-  getDb().prepare("UPDATE payroll_runs SET status = 'draft', approved_by = NULL, updated_at = datetime('now') WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("UPDATE payroll_runs SET status = 'draft', approved_by = NULL, updated_at = datetime('now') WHERE id = ?").run(id);
 }
 
 // Deletes a run and (via ON DELETE CASCADE in the schema) all its entries.
 export function remove(id: number): void {
-  getDb().prepare("DELETE FROM payroll_runs WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("DELETE FROM payroll_runs WHERE id = ?").run(id);
 }

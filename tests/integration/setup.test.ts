@@ -8,23 +8,23 @@ process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
 
 async function freshApp() {
-  closeDb();
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   // Force re-import after env change
   const dbMod = await import("../../src/lib/db");
-  dbMod.runMigrations();
+  await dbMod.runMigrations();
   const { app } = await import("../../src/app");
   return app;
 }
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 

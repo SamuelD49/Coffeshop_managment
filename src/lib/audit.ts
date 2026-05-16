@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { _legacySqliteDb } from "./db";
 
 export type AuditEntry = {
   actor_id: number | null;
@@ -8,7 +8,7 @@ export type AuditEntry = {
 };
 
 export function writeAudit(entry: AuditEntry): void {
-  getDb()
+  _legacySqliteDb()
     .prepare(`
       INSERT INTO audit_log (actor_id, action, entity, entity_id)
       VALUES (@actor_id, @action, @entity, @entity_id)

@@ -1,6 +1,6 @@
 import { resolve, join } from "path";
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from "fs";
-import { getDb } from "./db";
+import { _legacySqliteDb } from "./db";
 
 function backupDir(): string {
   const dir = resolve(process.cwd(), process.env.BACKUP_DIR ?? "./data/backups");
@@ -23,7 +23,7 @@ export async function runBackup(): Promise<string> {
   const filename = `shop-${timestamp()}.db`;
   const dest = join(dir, filename);
   // better-sqlite3's backup() is a Promise-returning method that uses SQLite's online backup API.
-  await getDb().backup(dest);
+  await _legacySqliteDb().backup(dest);
   return dest;
 }
 

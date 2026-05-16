@@ -1,4 +1,4 @@
-import { getDb } from "./db";
+import { _legacySqliteDb } from "./db";
 
 export type DateRange = { from: string; to: string };
 
@@ -17,7 +17,7 @@ export type PettyCashSummary = {
 };
 
 export function salesByDay(range: DateRange): SalesByDayRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT s.business_date,
            COALESCE(SUM(l.total), 0) AS subtotal,
            COUNT(DISTINCT s.id) AS session_count
@@ -58,7 +58,7 @@ export function shiftDate(yyyymmdd: string, days: number): string {
 }
 
 export function salesByItem(range: DateRange): SalesByItemRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT l.menu_item_id, m.name,
            COALESCE(SUM(l.qty), 0)   AS qty,
            COALESCE(SUM(l.total), 0) AS revenue
@@ -72,7 +72,7 @@ export function salesByItem(range: DateRange): SalesByItemRow[] {
 }
 
 export function salesByEmployee(range: DateRange): SalesByEmployeeRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT s.employee_id, e.full_name,
            COALESCE(SUM(l.total), 0) AS subtotal,
            COUNT(DISTINCT s.id)      AS session_count
@@ -86,7 +86,7 @@ export function salesByEmployee(range: DateRange): SalesByEmployeeRow[] {
 }
 
 export function purchasesByDay(range: DateRange): PurchasesByDayRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT purchase_date,
            COALESCE(SUM(total), 0) AS total,
            COUNT(*) AS row_count
@@ -100,7 +100,7 @@ export function purchasesByDay(range: DateRange): PurchasesByDayRow[] {
 // Monthly aggregations — group by the YYYY-MM prefix of the date string.
 // SQLite's substr() is 1-indexed, so substr(date, 1, 7) gives "2026-05".
 export function salesByMonth(range: DateRange): SalesByMonthRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT substr(s.business_date, 1, 7) AS month,
            COALESCE(SUM(l.total), 0) AS subtotal,
            COUNT(DISTINCT s.id) AS session_count
@@ -113,7 +113,7 @@ export function salesByMonth(range: DateRange): SalesByMonthRow[] {
 }
 
 export function purchasesByMonth(range: DateRange): PurchasesByMonthRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT substr(purchase_date, 1, 7) AS month,
            COALESCE(SUM(total), 0) AS total,
            COUNT(*) AS row_count
@@ -125,7 +125,7 @@ export function purchasesByMonth(range: DateRange): PurchasesByMonthRow[] {
 }
 
 export function pettyCashByMonth(range: DateRange): PettyCashByMonthRow[] {
-  const raw = getDb().prepare(`
+  const raw = _legacySqliteDb().prepare(`
     SELECT substr(entry_date, 1, 7) AS month,
            COALESCE(SUM(CASE WHEN type IN ('refund','replenishment') THEN amount ELSE 0 END), 0) AS total_in,
            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_out
@@ -138,7 +138,7 @@ export function pettyCashByMonth(range: DateRange): PettyCashByMonthRow[] {
 }
 
 export function pettyCashSummary(range: DateRange): PettyCashSummary {
-  const rows = getDb().prepare(`
+  const rows = _legacySqliteDb().prepare(`
     SELECT type, COALESCE(SUM(amount), 0) AS total
     FROM petty_cash_entries
     WHERE entry_date BETWEEN @from AND @to
@@ -155,7 +155,7 @@ export function pettyCashSummary(range: DateRange): PettyCashSummary {
 // Dashboard helpers
 
 export function todaySalesTotal(businessDate: string): number {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     SELECT COALESCE(SUM(l.total), 0) AS subtotal
     FROM sales_sessions s
     LEFT JOIN sale_line_items l ON l.sales_session_id = s.id
@@ -165,7 +165,7 @@ export function todaySalesTotal(businessDate: string): number {
 }
 
 export function todayCashVsBank(businessDate: string): { cash: number; bank: number } {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     SELECT COALESCE(SUM(cash_amount), 0)         AS cash,
            COALESCE(SUM(bank_transfer_amount), 0) AS bank
     FROM sales_sessions
@@ -175,17 +175,17 @@ export function todayCashVsBank(businessDate: string): { cash: number; bank: num
 }
 
 export function todayPurchasesTotal(businessDate: string): number {
-  const r = getDb().prepare("SELECT COALESCE(SUM(total), 0) AS s FROM purchase_requisitions WHERE purchase_date = ?").get(businessDate) as { s: number };
+  const r = _legacySqliteDb().prepare("SELECT COALESCE(SUM(total), 0) AS s FROM purchase_requisitions WHERE purchase_date = ?").get(businessDate) as { s: number };
   return r.s;
 }
 
 export function todayPettyCashSpent(businessDate: string): number {
-  const r = getDb().prepare("SELECT COALESCE(SUM(amount), 0) AS s FROM petty_cash_entries WHERE entry_date = ? AND type = 'expense'").get(businessDate) as { s: number };
+  const r = _legacySqliteDb().prepare("SELECT COALESCE(SUM(amount), 0) AS s FROM petty_cash_entries WHERE entry_date = ? AND type = 'expense'").get(businessDate) as { s: number };
   return r.s;
 }
 
 export function topItemsToday(businessDate: string, limit: number = 5): SalesByItemRow[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT l.menu_item_id, m.name,
            COALESCE(SUM(l.qty), 0)   AS qty,
            COALESCE(SUM(l.total), 0) AS revenue

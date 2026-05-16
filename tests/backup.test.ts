@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { unlinkSync, existsSync, readdirSync, rmSync, statSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { closeDb, runMigrations, getDb } from "../src/lib/db";
+import { closeDb, runMigrations, _legacySqliteDb } from "../src/lib/db";
 import { runBackup, pruneOldBackups } from "../src/lib/backup";
 
 const TEST_DB = "./data/test-backup.db";
@@ -9,15 +9,15 @@ const TEST_DIR = "./data/test-backups";
 process.env.DB_PATH = TEST_DB;
 process.env.BACKUP_DIR = TEST_DIR;
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true });
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true });
 });
@@ -25,7 +25,7 @@ afterAll(() => {
 describe("backup", () => {
   it("runBackup() writes a copy to BACKUP_DIR with a timestamp filename", async () => {
     // Add some data so the backup is non-trivial
-    getDb().prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run("test_key", "hello");
+    _legacySqliteDb().prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run("test_key", "hello");
     const path = await runBackup();
     expect(existsSync(path)).toBe(true);
     expect(path).toMatch(/test-backups\/shop-\d{4}-\d{2}-\d{2}.*\.db$/);

@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 
 export type PettyType = "expense" | "refund" | "replenishment";
 
@@ -25,7 +25,7 @@ export function signedAmount(e: Pick<PettyEntry, "amount" | "type">): number {
 }
 
 export function create(input: CreateInput): PettyEntry {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     INSERT INTO petty_cash_entries (entry_date, description, payer_name, amount, type, remark, entered_by)
     VALUES (@entry_date, @description, @payer_name, @amount, @type, @remark, @entered_by)
   `).run(input);
@@ -33,12 +33,12 @@ export function create(input: CreateInput): PettyEntry {
 }
 
 export function findById(id: number): PettyEntry | null {
-  const r = getDb().prepare("SELECT * FROM petty_cash_entries WHERE id = ?").get(id) as PettyEntry | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM petty_cash_entries WHERE id = ?").get(id) as PettyEntry | undefined;
   return r ?? null;
 }
 
 export function update(id: number, input: UpdateInput): void {
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE petty_cash_entries
     SET entry_date = @entry_date, description = @description, payer_name = @payer_name,
         amount = @amount, type = @type, remark = @remark, updated_at = datetime('now')
@@ -47,7 +47,7 @@ export function update(id: number, input: UpdateInput): void {
 }
 
 export function remove(id: number): void {
-  getDb().prepare("DELETE FROM petty_cash_entries WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("DELETE FROM petty_cash_entries WHERE id = ?").run(id);
 }
 
 // Returns rows newest-first, but with running_balance computed chronologically
@@ -60,7 +60,7 @@ export function listWithBalance(filters: { from?: string; to?: string } = {}): P
   const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
 
   // Fetch chronologically to build the balance, then reverse for display.
-  const asc = getDb().prepare(`SELECT * FROM petty_cash_entries ${whereSql} ORDER BY entry_date ASC, id ASC`).all(params) as PettyEntry[];
+  const asc = _legacySqliteDb().prepare(`SELECT * FROM petty_cash_entries ${whereSql} ORDER BY entry_date ASC, id ASC`).all(params) as PettyEntry[];
   let bal = 0;
   const annotated: PettyEntryWithBalance[] = asc.map(row => {
     bal += signedAmount(row);
@@ -70,7 +70,7 @@ export function listWithBalance(filters: { from?: string; to?: string } = {}): P
 }
 
 export function currentBalance(): number {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     SELECT COALESCE(SUM(CASE WHEN type = 'expense' THEN -amount ELSE amount END), 0) AS bal
     FROM petty_cash_entries
   `).get() as { bal: number };

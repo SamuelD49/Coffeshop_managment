@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 import { computeEntry } from "../lib/payrollMath";
 
 export type PayrollEntry = {
@@ -64,7 +64,7 @@ export function createFromEmployee(input: CreateInput): PayrollEntry {
     bonus,
     penalty,
   });
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     INSERT INTO payroll_entries (
       payroll_run_id, employee_id, days_worked, basic_salary,
       pension_employer_pct, pension_employee_pct,
@@ -124,7 +124,7 @@ export function update(id: number, input: UpdateInput): void {
     bonus,
     penalty,
   });
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE payroll_entries SET
       days_worked = @days_worked,
       income_tax = @income_tax,
@@ -154,12 +154,12 @@ export function update(id: number, input: UpdateInput): void {
 }
 
 export function findById(id: number): PayrollEntry | null {
-  const r = getDb().prepare("SELECT * FROM payroll_entries WHERE id = ?").get(id) as PayrollEntry | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM payroll_entries WHERE id = ?").get(id) as PayrollEntry | undefined;
   return r ?? null;
 }
 
 export function listForRun(runId: number): PayrollEntryWithEmployee[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT e.*, emp.full_name, emp.position
     FROM payroll_entries e
     JOIN employees emp ON emp.id = e.employee_id
@@ -169,7 +169,7 @@ export function listForRun(runId: number): PayrollEntryWithEmployee[] {
 }
 
 export function listForEmployee(employeeId: number): PayrollEntryWithRun[] {
-  return getDb().prepare(`
+  return _legacySqliteDb().prepare(`
     SELECT e.*, r.year, r.month, r.status
     FROM payroll_entries e
     JOIN payroll_runs r ON r.id = e.payroll_run_id
@@ -179,5 +179,5 @@ export function listForEmployee(employeeId: number): PayrollEntryWithRun[] {
 }
 
 export function removeForRun(runId: number): void {
-  getDb().prepare("DELETE FROM payroll_entries WHERE payroll_run_id = ?").run(runId);
+  _legacySqliteDb().prepare("DELETE FROM payroll_entries WHERE payroll_run_id = ?").run(runId);
 }

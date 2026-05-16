@@ -1,4 +1,4 @@
-import { getDb } from "../lib/db";
+import { _legacySqliteDb } from "../lib/db";
 
 export type SalesSession = {
   id: number;
@@ -23,7 +23,7 @@ export type CreateInput = { employee_id: number; business_date: string; shift: s
 export type HeaderInput = { cash_amount: number; bank_transfer_amount: number; notes: string | null };
 
 export function create(input: CreateInput): SalesSession {
-  const r = getDb().prepare(`
+  const r = _legacySqliteDb().prepare(`
     INSERT INTO sales_sessions (employee_id, business_date, shift)
     VALUES (@employee_id, @business_date, @shift)
   `).run(input);
@@ -31,21 +31,21 @@ export function create(input: CreateInput): SalesSession {
 }
 
 export function findById(id: number): SalesSession | null {
-  const r = getDb().prepare("SELECT * FROM sales_sessions WHERE id = ?").get(id) as SalesSession | undefined;
+  const r = _legacySqliteDb().prepare("SELECT * FROM sales_sessions WHERE id = ?").get(id) as SalesSession | undefined;
   return r ?? null;
 }
 
 export function withTotals(id: number): SessionTotals | null {
   const s = findById(id);
   if (!s) return null;
-  const row = getDb().prepare("SELECT COALESCE(SUM(total), 0) AS subtotal FROM sale_line_items WHERE sales_session_id = ?").get(id) as { subtotal: number };
+  const row = _legacySqliteDb().prepare("SELECT COALESCE(SUM(total), 0) AS subtotal FROM sale_line_items WHERE sales_session_id = ?").get(id) as { subtotal: number };
   const subtotal = row.subtotal;
   const total_amount = s.cash_amount + s.bank_transfer_amount;
   return { ...s, subtotal, total_amount, difference: total_amount - subtotal };
 }
 
 export function updateHeader(id: number, input: HeaderInput): void {
-  getDb().prepare(`
+  _legacySqliteDb().prepare(`
     UPDATE sales_sessions
     SET cash_amount = @cash_amount, bank_transfer_amount = @bank_transfer_amount, notes = @notes, updated_at = datetime('now')
     WHERE id = @id
@@ -53,16 +53,16 @@ export function updateHeader(id: number, input: HeaderInput): void {
 }
 
 export function close(id: number): void {
-  getDb().prepare("UPDATE sales_sessions SET status = 'closed', updated_at = datetime('now') WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("UPDATE sales_sessions SET status = 'closed', updated_at = datetime('now') WHERE id = ?").run(id);
 }
 
 export function reopen(id: number): void {
-  getDb().prepare("UPDATE sales_sessions SET status = 'open', updated_at = datetime('now') WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("UPDATE sales_sessions SET status = 'open', updated_at = datetime('now') WHERE id = ?").run(id);
 }
 
 // Deletes a session and (via ON DELETE CASCADE in the schema) all its sale_line_items.
 export function remove(id: number): void {
-  getDb().prepare("DELETE FROM sales_sessions WHERE id = ?").run(id);
+  _legacySqliteDb().prepare("DELETE FROM sales_sessions WHERE id = ?").run(id);
 }
 
 export function listAll(filters: { from?: string; to?: string; employeeId?: number; status?: "open" | "closed" } = {}): SalesSession[] {
@@ -73,7 +73,7 @@ export function listAll(filters: { from?: string; to?: string; employeeId?: numb
   if (filters.employeeId) { where.push("employee_id = ?"); params.push(filters.employeeId); }
   if (filters.status)     { where.push("status = ?");      params.push(filters.status); }
   const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-  return getDb().prepare(`SELECT * FROM sales_sessions ${whereSql} ORDER BY business_date DESC, id DESC`).all(...params) as SalesSession[];
+  return _legacySqliteDb().prepare(`SELECT * FROM sales_sessions ${whereSql} ORDER BY business_date DESC, id DESC`).all(...params) as SalesSession[];
 }
 
 export function listForEmployee(employeeId: number): SalesSession[] {

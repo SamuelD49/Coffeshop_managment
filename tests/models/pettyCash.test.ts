@@ -6,14 +6,14 @@ import * as Petty from "../../src/models/pettyCash";
 const TEST_DB = "./data/test-petty.db";
 process.env.DB_PATH = TEST_DB;
 
-beforeEach(() => {
-  closeDb();
+beforeEach(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
-  runMigrations();
+  await runMigrations();
 });
 
-afterAll(() => {
-  closeDb();
+afterAll(async () => {
+  await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
 });
 
