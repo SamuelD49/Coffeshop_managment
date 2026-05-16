@@ -25,7 +25,9 @@ export const TOKEN_PALETTE = [
 function parseTokenColor(input: unknown): string | null {
   const v = (input ?? "").toString().trim();
   if (v === "") return null; // "auto" — server falls back to deterministic palette
-  return (TOKEN_PALETTE as readonly string[]).includes(v) ? v : null;
+  if ((TOKEN_PALETTE as readonly string[]).includes(v)) return v;
+  // Accept any well-formed #RRGGBB hex chosen via the custom color picker.
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null;
 }
 
 export function list(_req: Request, res: Response) {
@@ -37,7 +39,7 @@ export function showNew(_req: Request, res: Response) {
   res.render("menu/new", { palette: TOKEN_PALETTE });
 }
 
-export function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response) {
   const name = (req.body.name ?? "").toString().trim();
   if (!name) {
     pushFlash(req, "error", "Name is required");
@@ -46,7 +48,7 @@ export function create(req: Request, res: Response) {
   const price = parsePriceMajor(req.body.price);
   const token_color = parseTokenColor(req.body.token_color);
   const m = Menu.create({ name, price, token_color });
-  writeAudit({ actor_id: actor(req), action: "create_menu_item", entity: "menu_items", entity_id: m.id });
+  await writeAudit({ actor_id: actor(req), action: "create_menu_item", entity: "menu_items", entity_id: m.id });
   pushFlash(req, "success", `${m.name} added to menu`);
   res.redirect("/menu");
 }
@@ -57,7 +59,7 @@ export function showEdit(req: Request, res: Response) {
   res.render("menu/edit", { item, palette: TOKEN_PALETTE });
 }
 
-export function update(req: Request, res: Response) {
+export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
   const item = Menu.findById(id);
   if (!item) return res.status(404).render("errors/404");
@@ -67,18 +69,18 @@ export function update(req: Request, res: Response) {
     price: parsePriceMajor(req.body.price),
     token_color: parseTokenColor(req.body.token_color),
   });
-  writeAudit({ actor_id: actor(req), action: "update_menu_item", entity: "menu_items", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "update_menu_item", entity: "menu_items", entity_id: id });
   pushFlash(req, "success", `${name} updated`);
   res.redirect("/menu");
 }
 
-export function toggleActive(req: Request, res: Response) {
+export async function toggleActive(req: Request, res: Response) {
   const id = Number(req.params.id);
   const item = Menu.findById(id);
   if (!item) return res.status(404).render("errors/404");
   const next = !item.is_active;
   Menu.setActive(id, next);
-  writeAudit({ actor_id: actor(req), action: next ? "activate_menu_item" : "deactivate_menu_item", entity: "menu_items", entity_id: id });
-  pushFlash(req, "success", `${item.name} ${next ? "activated" : "deactivated"}`);
+  await writeAudit({ actor_id: actor(req), action: next ? "activate_menu_item" : "deactivate_menu_item", entity: "menu_items", entity_id: id });
+  pushFlash(req, "success", res.locals.t(next ? "flash.menu.activated" : "flash.menu.deactivated", { name: item.name }));
   res.redirect("/menu");
 }

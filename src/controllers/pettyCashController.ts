@@ -29,7 +29,7 @@ export function list(req: Request, res: Response) {
   res.render("petty-cash/list", { entries, balance, filters, today: todayDate() });
 }
 
-export function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response) {
   const description = (req.body.description ?? "").toString().trim();
   if (!description) {
     pushFlash(req, "error", "Description is required");
@@ -44,7 +44,7 @@ export function create(req: Request, res: Response) {
     remark: (req.body.remark || null) as string | null,
     entered_by: actor(req),
   });
-  writeAudit({ actor_id: actor(req), action: "create_petty_cash", entity: "petty_cash_entries", entity_id: e.id });
+  await writeAudit({ actor_id: actor(req), action: "create_petty_cash", entity: "petty_cash_entries", entity_id: e.id });
   pushFlash(req, "success", "Petty cash entry logged");
   res.redirect("/petty-cash");
 }
@@ -55,7 +55,7 @@ export function showEdit(req: Request, res: Response) {
   res.render("petty-cash/edit", { entry: e });
 }
 
-export function update(req: Request, res: Response) {
+export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
   const e = Petty.findById(id);
   if (!e) return res.status(404).render("errors/404");
@@ -67,16 +67,16 @@ export function update(req: Request, res: Response) {
     type: safeType(req.body.type),
     remark: (req.body.remark || null) as string | null,
   });
-  writeAudit({ actor_id: actor(req), action: "update_petty_cash", entity: "petty_cash_entries", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "update_petty_cash", entity: "petty_cash_entries", entity_id: id });
   pushFlash(req, "success", "Entry updated");
   res.redirect("/petty-cash");
 }
 
-export function remove(req: Request, res: Response) {
+export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Petty.findById(id)) return res.status(404).render("errors/404");
   Petty.remove(id);
-  writeAudit({ actor_id: actor(req), action: "delete_petty_cash", entity: "petty_cash_entries", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "delete_petty_cash", entity: "petty_cash_entries", entity_id: id });
   pushFlash(req, "success", "Entry removed");
   res.redirect("/petty-cash");
 }

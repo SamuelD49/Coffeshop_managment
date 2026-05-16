@@ -33,7 +33,7 @@ export function list(req: Request, res: Response) {
   res.render("purchases/list", { purchases, filters, sumTotal, today, showAll });
 }
 
-export function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response) {
   const description = (req.body.description ?? "").toString().trim();
   if (!description) {
     pushFlash(req, "error", "Description is required");
@@ -50,7 +50,7 @@ export function create(req: Request, res: Response) {
     remark: (req.body.remark || null) as string | null,
     entered_by: actor(req),
   });
-  writeAudit({ actor_id: actor(req), action: "create_purchase", entity: "purchase_requisitions", entity_id: p.id });
+  await writeAudit({ actor_id: actor(req), action: "create_purchase", entity: "purchase_requisitions", entity_id: p.id });
   pushFlash(req, "success", "Purchase logged");
   res.redirect("/purchases");
 }
@@ -61,7 +61,7 @@ export function showEdit(req: Request, res: Response) {
   res.render("purchases/edit", { purchase: p });
 }
 
-export function update(req: Request, res: Response) {
+export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
   const p = Purchases.findById(id);
   if (!p) return res.status(404).render("errors/404");
@@ -73,16 +73,16 @@ export function update(req: Request, res: Response) {
     unit_price: parseMajor(req.body.unit_price),
     remark: (req.body.remark || null) as string | null,
   });
-  writeAudit({ actor_id: actor(req), action: "update_purchase", entity: "purchase_requisitions", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "update_purchase", entity: "purchase_requisitions", entity_id: id });
   pushFlash(req, "success", "Purchase updated");
   res.redirect("/purchases");
 }
 
-export function remove(req: Request, res: Response) {
+export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Purchases.findById(id)) return res.status(404).render("errors/404");
   Purchases.remove(id);
-  writeAudit({ actor_id: actor(req), action: "delete_purchase", entity: "purchase_requisitions", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "delete_purchase", entity: "purchase_requisitions", entity_id: id });
   pushFlash(req, "success", "Purchase removed");
   res.redirect("/purchases");
 }

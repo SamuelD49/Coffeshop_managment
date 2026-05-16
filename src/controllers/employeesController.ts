@@ -28,7 +28,7 @@ export function showNew(_req: Request, res: Response) {
   res.render("employees/new");
 }
 
-export function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response) {
   const { full_name, phone, role } = req.body as Record<string, string>;
   if (!full_name || full_name.trim() === "") {
     pushFlash(req, "error", "Full name is required");
@@ -36,7 +36,7 @@ export function create(req: Request, res: Response) {
   }
   const safeRole: "owner" | "employee" = role === "owner" ? "owner" : "employee";
   const e = Employees.create({ full_name: full_name.trim(), phone: phone ?? null, role: safeRole });
-  writeAudit({ actor_id: actor(req), action: "create_employee", entity: "employees", entity_id: e.id });
+  await writeAudit({ actor_id: actor(req), action: "create_employee", entity: "employees", entity_id: e.id });
   pushFlash(req, "success", `${e.full_name} added — fill out the profile next.`);
   res.redirect(`/employees/${e.id}`);
 }
@@ -62,7 +62,7 @@ function refreshOnboardingStatus(id: number) {
   Employees.setOnboardingStatus(id, status);
 }
 
-export function updatePersonal(req: Request, res: Response) {
+export async function updatePersonal(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Employees.findFull(id)) return res.status(404).render("errors/404");
   Employees.updatePersonal(id, {
@@ -79,12 +79,12 @@ export function updatePersonal(req: Request, res: Response) {
     emergency_contact_relation: req.body.emergency_contact_relation || null,
   });
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: "update_employee_personal", entity: "employees", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "update_employee_personal", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Personal info saved");
   res.redirect(`/employees/${id}?tab=personal`);
 }
 
-export function updateEmployment(req: Request, res: Response) {
+export async function updateEmployment(req: Request, res: Response) {
   const id = Number(req.params.id);
   const current = Employees.findFull(id);
   if (!current) return res.status(404).render("errors/404");
@@ -103,26 +103,26 @@ export function updateEmployment(req: Request, res: Response) {
     username: req.body.username || null,
   });
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: "update_employee_employment", entity: "employees", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "update_employee_employment", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Employment info saved");
   res.redirect(`/employees/${id}?tab=employment`);
 }
 
 // Owner-only soft-delete (and reactivate). is_active=0 keeps history intact:
 // payroll runs, sales, audit log all keep referring to the row by id.
-export function toggleActive(req: Request, res: Response) {
+export async function toggleActive(req: Request, res: Response) {
   const id = Number(req.params.id);
   const current = Employees.findFull(id);
   if (!current) return res.status(404).render("errors/404");
   const next = !current.is_active;
   Employees.setActive(id, next);
-  writeAudit({
+  await writeAudit({
     actor_id: actor(req),
     action: next ? "activate_employee" : "deactivate_employee",
     entity: "employees",
     entity_id: id,
   });
-  pushFlash(req, "success", `${current.full_name} ${next ? "reactivated" : "deactivated"}`);
+  pushFlash(req, "success", res.locals.t(next ? "flash.employees.reactivated" : "flash.employees.deactivated", { name: current.full_name }));
   res.redirect(`/employees/${id}`);
 }
 
@@ -160,7 +160,7 @@ export async function uploadDocument(req: Request, res: Response) {
     uploaded_by: actor(req),
   });
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: `upload_${kind}`, entity: "employees", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: `upload_${kind}`, entity: "employees", entity_id: id });
   pushFlash(req, "success", "File uploaded");
   res.redirect(`/employees/${id}?tab=documents`);
 }
@@ -173,12 +173,12 @@ export async function deleteDocument(req: Request, res: Response) {
   await deleteFile("employee", id, att.filename, null);
   Attachments.remove(attId);
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: "delete_document", entity: "attachments", entity_id: attId });
+  await writeAudit({ actor_id: actor(req), action: "delete_document", entity: "attachments", entity_id: attId });
   pushFlash(req, "success", "File removed");
   res.redirect(`/employees/${id}?tab=documents`);
 }
 
-export function addGuarantor(req: Request, res: Response) {
+export async function addGuarantor(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!Employees.findFull(id)) return res.status(404).render("errors/404");
   const g = Guarantors.create({
@@ -194,12 +194,12 @@ export function addGuarantor(req: Request, res: Response) {
     notes: req.body.notes || null,
   });
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: "add_guarantor", entity: "guarantors", entity_id: g.id });
+  await writeAudit({ actor_id: actor(req), action: "add_guarantor", entity: "guarantors", entity_id: g.id });
   pushFlash(req, "success", "Guarantor added");
   res.redirect(`/employees/${id}?tab=guarantors`);
 }
 
-export function updateGuarantor(req: Request, res: Response) {
+export async function updateGuarantor(req: Request, res: Response) {
   const id = Number(req.params.id);
   const gid = Number(req.params.gid);
   const g = Guarantors.findById(gid);
@@ -215,7 +215,7 @@ export function updateGuarantor(req: Request, res: Response) {
     workplace: req.body.workplace || null,
     notes: req.body.notes || null,
   });
-  writeAudit({ actor_id: actor(req), action: "update_guarantor", entity: "guarantors", entity_id: gid });
+  await writeAudit({ actor_id: actor(req), action: "update_guarantor", entity: "guarantors", entity_id: gid });
   pushFlash(req, "success", "Guarantor updated");
   res.redirect(`/employees/${id}?tab=guarantors`);
 }
@@ -231,7 +231,7 @@ export async function removeGuarantor(req: Request, res: Response) {
   Attachments.removeByOwner("guarantor", gid);
   Guarantors.remove(gid);
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: "delete_guarantor", entity: "guarantors", entity_id: gid });
+  await writeAudit({ actor_id: actor(req), action: "delete_guarantor", entity: "guarantors", entity_id: gid });
   pushFlash(req, "success", "Guarantor removed");
   res.redirect(`/employees/${id}?tab=guarantors`);
 }
@@ -271,7 +271,7 @@ export async function uploadGuarantorDocument(req: Request, res: Response) {
     uploaded_by: actor(req),
   });
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: `upload_guarantor_${kind}`, entity: "guarantors", entity_id: gid });
+  await writeAudit({ actor_id: actor(req), action: `upload_guarantor_${kind}`, entity: "guarantors", entity_id: gid });
   pushFlash(req, "success", "File uploaded");
   res.redirect(`/employees/${id}?tab=guarantors`);
 }
@@ -287,7 +287,7 @@ export async function deleteGuarantorDocument(req: Request, res: Response) {
   await deleteFile("guarantor", gid, att.filename, null);
   Attachments.remove(attId);
   refreshOnboardingStatus(id);
-  writeAudit({ actor_id: actor(req), action: "delete_guarantor_document", entity: "attachments", entity_id: attId });
+  await writeAudit({ actor_id: actor(req), action: "delete_guarantor_document", entity: "attachments", entity_id: attId });
   pushFlash(req, "success", "File removed");
   res.redirect(`/employees/${id}?tab=guarantors`);
 }

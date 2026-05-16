@@ -26,7 +26,7 @@ export async function submit(req: Request, res: Response) {
     password_hash: hash,
     role: "owner",
   });
-  writeAudit({ actor_id: owner.id, action: "setup_owner", entity: "employees", entity_id: owner.id });
+  await writeAudit({ actor_id: owner.id, action: "setup_owner", entity: "employees", entity_id: owner.id });
   req.session.employeeId = owner.id;
   req.session.role = "owner";
   pushFlash(req, "success", `${trimmedShop} is ready`);

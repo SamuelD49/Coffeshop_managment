@@ -1,4 +1,4 @@
-import { _legacySqliteDb } from "./db";
+import { getDb, nowIso } from "./kysely";
 
 export type AuditEntry = {
   actor_id: number | null;
@@ -7,11 +7,12 @@ export type AuditEntry = {
   entity_id: number | null;
 };
 
-export function writeAudit(entry: AuditEntry): void {
-  _legacySqliteDb()
-    .prepare(`
-      INSERT INTO audit_log (actor_id, action, entity, entity_id)
-      VALUES (@actor_id, @action, @entity, @entity_id)
-    `)
-    .run(entry);
+export async function writeAudit(entry: AuditEntry): Promise<void> {
+  await getDb().insertInto("audit_log").values({
+    actor_id: entry.actor_id,
+    action: entry.action,
+    entity: entry.entity,
+    entity_id: entry.entity_id,
+    at: nowIso(),
+  }).execute();
 }

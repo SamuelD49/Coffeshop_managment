@@ -19,13 +19,13 @@ export function show(_req: Request, res: Response) {
   res.render("settings/index", { settings, backups, backupDir });
 }
 
-export function update(req: Request, res: Response) {
+export async function update(req: Request, res: Response) {
   for (const key of ALLOWED_KEYS) {
     if (typeof req.body[key] === "string") Settings.set(key, req.body[key]);
   }
   // Checkbox: present means "true", absent means "false"
   Settings.set("require_complete_hr_before_payroll", req.body.require_complete_hr_before_payroll === "true" ? "true" : "false");
-  writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_settings", entity: "settings", entity_id: null });
+  await writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_settings", entity: "settings", entity_id: null });
   pushFlash(req, "success", "Settings saved");
   res.redirect("/settings");
 }
@@ -54,11 +54,11 @@ export function downloadBackup(req: Request, res: Response) {
 const MAX_SIG_BYTES = 200 * 1024; // 200 KB base64 ≈ 150 KB PNG, way more than enough
 const SIG_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 
-export function saveSignature(req: Request, res: Response) {
+export async function saveSignature(req: Request, res: Response) {
   const raw = (req.body.signature_data_url ?? "").toString();
   if (raw === "") {
     Settings.set("shop_signature", "");
-    writeAudit({ actor_id: req.session.employeeId ?? null, action: "clear_shop_signature", entity: "settings", entity_id: null });
+    await writeAudit({ actor_id: req.session.employeeId ?? null, action: "clear_shop_signature", entity: "settings", entity_id: null });
     pushFlash(req, "success", "Signature cleared");
     return res.redirect("/settings");
   }
@@ -67,7 +67,7 @@ export function saveSignature(req: Request, res: Response) {
     return res.redirect("/settings");
   }
   Settings.set("shop_signature", raw);
-  writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_shop_signature", entity: "settings", entity_id: null });
+  await writeAudit({ actor_id: req.session.employeeId ?? null, action: "update_shop_signature", entity: "settings", entity_id: null });
   pushFlash(req, "success", "Signature saved");
   res.redirect("/settings");
 }

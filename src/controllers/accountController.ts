@@ -27,7 +27,7 @@ export async function changePassword(req: Request, res: Response) {
   }
   const newHash = await bcrypt.hash(next, 12);
   Employees.updatePassword(id, newHash);
-  writeAudit({ actor_id: id, action: "change_own_password", entity: "employees", entity_id: id });
+  await writeAudit({ actor_id: id, action: "change_own_password", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Password updated");
   res.redirect("/account");
 }

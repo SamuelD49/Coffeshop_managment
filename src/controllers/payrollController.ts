@@ -56,7 +56,7 @@ export function showNew(_req: Request, res: Response) {
   res.render("payroll/new", { defaultYear, defaultMonth, monthNames: MONTH_NAMES, eligible, incomplete, requireComplete });
 }
 
-export function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response) {
   const year = Number(req.body.year);
   const month = Number(req.body.month);
   if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
@@ -69,7 +69,7 @@ export function create(req: Request, res: Response) {
   }
 
   const run = Runs.create({ year, month, prepared_by: actor(req) });
-  writeAudit({ actor_id: actor(req), action: "create_payroll_run", entity: "payroll_runs", entity_id: run.id });
+  await writeAudit({ actor_id: actor(req), action: "create_payroll_run", entity: "payroll_runs", entity_id: run.id });
 
   // Auto-populate entries for active employees
   const requireComplete = Settings.getBool("require_complete_hr_before_payroll");
@@ -115,7 +115,7 @@ export function run(req: Request, res: Response) {
   res.render("payroll/run", { run: r, entries, totals, month_name, stdDays, locked: r.status === "approved" });
 }
 
-export function updateEntry(req: Request, res: Response) {
+export async function updateEntry(req: Request, res: Response) {
   const runId = Number(req.params.id);
   const entryId = Number(req.params.entryId);
   const r = Runs.findById(runId);
@@ -136,38 +136,38 @@ export function updateEntry(req: Request, res: Response) {
     penalty: parseMajor(req.body.penalty),
     standard_days_in_month: stdDays,
   });
-  writeAudit({ actor_id: actor(req), action: "update_payroll_entry", entity: "payroll_entries", entity_id: entryId });
+  await writeAudit({ actor_id: actor(req), action: "update_payroll_entry", entity: "payroll_entries", entity_id: entryId });
   pushFlash(req, "success", "Entry updated");
   res.redirect(`/payroll/${runId}`);
 }
 
-export function approve(req: Request, res: Response) {
+export async function approve(req: Request, res: Response) {
   const id = Number(req.params.id);
   const r = Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
   Runs.approve(id, actor(req));
-  writeAudit({ actor_id: actor(req), action: "approve_payroll_run", entity: "payroll_runs", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "approve_payroll_run", entity: "payroll_runs", entity_id: id });
   pushFlash(req, "success", "Payroll approved and locked");
   res.redirect(`/payroll/${id}`);
 }
 
-export function revert(req: Request, res: Response) {
+export async function revert(req: Request, res: Response) {
   const id = Number(req.params.id);
   const r = Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
   Runs.revert(id);
-  writeAudit({ actor_id: actor(req), action: "revert_payroll_run", entity: "payroll_runs", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "revert_payroll_run", entity: "payroll_runs", entity_id: id });
   pushFlash(req, "success", "Payroll reopened for edits");
   res.redirect(`/payroll/${id}`);
 }
 
-export function remove(req: Request, res: Response) {
+export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
   const r = Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
   const label = `${r.year}-${String(r.month).padStart(2, "0")}`;
   Runs.remove(id);
-  writeAudit({ actor_id: actor(req), action: "delete_payroll_run", entity: "payroll_runs", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "delete_payroll_run", entity: "payroll_runs", entity_id: id });
   pushFlash(req, "success", `Payroll for ${label} deleted`);
   res.redirect("/payroll");
 }

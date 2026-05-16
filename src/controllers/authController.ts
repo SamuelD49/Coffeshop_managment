@@ -23,14 +23,14 @@ export async function submitLogin(req: Request, res: Response) {
   }
   req.session.employeeId = user.id;
   req.session.role = user.role;
-  writeAudit({ actor_id: user.id, action: "login", entity: "session", entity_id: null });
+  await writeAudit({ actor_id: user.id, action: "login", entity: "session", entity_id: null });
   res.redirect("/");
 }
 
 export function logout(req: Request, res: Response) {
   const id = req.session.employeeId ?? null;
-  req.session.destroy(() => {
-    if (id) writeAudit({ actor_id: id, action: "logout", entity: "session", entity_id: null });
+  req.session.destroy(async () => {
+    if (id) await writeAudit({ actor_id: id, action: "logout", entity: "session", entity_id: null });
     res.redirect("/login");
   });
 }

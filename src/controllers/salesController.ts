@@ -75,7 +75,7 @@ export function showNew(_req: Request, res: Response) {
   res.render("sales/new", { today });
 }
 
-export function create(req: Request, res: Response) {
+export async function create(req: Request, res: Response) {
   const business_date = (req.body.business_date ?? "").toString();
   const shift = (req.body.shift ?? "").toString().trim() || null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(business_date)) {
@@ -83,7 +83,7 @@ export function create(req: Request, res: Response) {
     return res.redirect("/sales/new");
   }
   const s = Sessions.create({ employee_id: actor(req), business_date, shift });
-  writeAudit({ actor_id: actor(req), action: "create_sales_session", entity: "sales_sessions", entity_id: s.id });
+  await writeAudit({ actor_id: actor(req), action: "create_sales_session", entity: "sales_sessions", entity_id: s.id });
   res.redirect(`/sales/${s.id}`);
 }
 
@@ -147,34 +147,34 @@ export function updateHeader(req: Request, res: Response) {
   });
 }
 
-export function close(req: Request, res: Response) {
+export async function close(req: Request, res: Response) {
   const id = Number(req.params.id);
   const session = Sessions.findById(id);
   if (!session || !canEdit(req, session)) return res.status(403).render("errors/403", { message: "Cannot close this shift" });
   Sessions.close(id);
-  writeAudit({ actor_id: actor(req), action: "close_sales_session", entity: "sales_sessions", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "close_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Shift closed");
   res.redirect(`/sales/${id}`);
 }
 
-export function reopen(req: Request, res: Response) {
+export async function reopen(req: Request, res: Response) {
   const id = Number(req.params.id);
   const session = Sessions.findById(id);
   if (!session) return res.status(404).render("errors/404");
   if (role(req) !== "owner") return res.status(403).render("errors/403", { message: "Only the owner can reopen a shift" });
   Sessions.reopen(id);
-  writeAudit({ actor_id: actor(req), action: "reopen_sales_session", entity: "sales_sessions", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "reopen_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Shift reopened");
   res.redirect(`/sales/${id}`);
 }
 
-export function remove(req: Request, res: Response) {
+export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
   const session = Sessions.findById(id);
   if (!session) return res.status(404).render("errors/404");
   if (role(req) !== "owner") return res.status(403).render("errors/403", { message: "Only the owner can delete a sales record" });
   Sessions.remove(id);
-  writeAudit({ actor_id: actor(req), action: "delete_sales_session", entity: "sales_sessions", entity_id: id });
+  await writeAudit({ actor_id: actor(req), action: "delete_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Sales record deleted");
   res.redirect("/sales");
 }

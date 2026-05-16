@@ -18,8 +18,8 @@ afterAll(async () => {
 });
 
 describe("writeAudit", () => {
-  it("inserts a row", () => {
-    writeAudit({ actor_id: null, action: "login", entity: "session", entity_id: null });
+  it("inserts a row", async () => {
+    await writeAudit({ actor_id: null, action: "login", entity: "session", entity_id: null });
     const rows = _legacySqliteDb().prepare("SELECT * FROM audit_log").all() as any[];
     expect(rows.length).toBe(1);
     expect(rows[0].action).toBe("login");
