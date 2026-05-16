@@ -64,15 +64,15 @@ describe("Purchases", () => {
   it("update + delete cycle", async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "owner", "pw");
-    const p = Purchases.create({ purchase_date: "2026-05-12", description: "X", unit: null, qty: 1, unit_price: 10000, remark: null, entered_by: null });
+    const p = await Purchases.create({ purchase_date: "2026-05-12", description: "X", unit: null, qty: 1, unit_price: 10000, remark: null, entered_by: null });
     let csrf = await csrfFrom(agent, `/purchases/${p.id}/edit`);
     await agent.post(`/purchases/${p.id}`).type("form").send({
       _csrf: csrf, purchase_date: "2026-05-13", description: "Y", unit: "kg", qty: "3", unit_price: "50.00", remark: "",
     });
-    expect(Purchases.findById(p.id)?.description).toBe("Y");
+    expect((await Purchases.findById(p.id))?.description).toBe("Y");
     csrf = await csrfFrom(agent, "/purchases");
     await agent.post(`/purchases/${p.id}/delete`).type("form").send({ _csrf: csrf });
-    expect(Purchases.findById(p.id)).toBeNull();
+    expect(await Purchases.findById(p.id)).toBeNull();
   });
 });
 

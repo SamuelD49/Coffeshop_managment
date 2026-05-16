@@ -28,7 +28,7 @@ export async function list(req: Request, res: Response) {
     filters.from = today;
     filters.to   = today;
   }
-  const purchases = Purchases.listAll(filters);
+  const purchases = await Purchases.listAll(filters);
   const sumTotal = purchases.reduce((acc, p) => acc + p.total, 0);
   res.render("purchases/list", { purchases, filters, sumTotal, today, showAll });
 }
@@ -41,7 +41,7 @@ export async function create(req: Request, res: Response) {
   }
   const purchase_date = (req.body.purchase_date ?? (await todayDate())).toString();
   const qty = Number(req.body.qty || 0);
-  const p = Purchases.create({
+  const p = await Purchases.create({
     purchase_date,
     description,
     unit: (req.body.unit || null) as string | null,
@@ -55,17 +55,17 @@ export async function create(req: Request, res: Response) {
   res.redirect("/purchases");
 }
 
-export function showEdit(req: Request, res: Response) {
-  const p = Purchases.findById(Number(req.params.id));
+export async function showEdit(req: Request, res: Response) {
+  const p = await Purchases.findById(Number(req.params.id));
   if (!p) return res.status(404).render("errors/404");
   res.render("purchases/edit", { purchase: p });
 }
 
 export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const p = Purchases.findById(id);
+  const p = await Purchases.findById(id);
   if (!p) return res.status(404).render("errors/404");
-  Purchases.update(id, {
+  await Purchases.update(id, {
     purchase_date: (req.body.purchase_date || p.purchase_date).toString(),
     description: (req.body.description || p.description).toString(),
     unit: (req.body.unit || null) as string | null,
@@ -80,8 +80,8 @@ export async function update(req: Request, res: Response) {
 
 export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
-  if (!Purchases.findById(id)) return res.status(404).render("errors/404");
-  Purchases.remove(id);
+  if (!(await Purchases.findById(id))) return res.status(404).render("errors/404");
+  await Purchases.remove(id);
   await writeAudit({ actor_id: actor(req), action: "delete_purchase", entity: "purchase_requisitions", entity_id: id });
   pushFlash(req, "success", "Purchase removed");
   res.redirect("/purchases");

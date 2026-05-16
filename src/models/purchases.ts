@@ -1,61 +1,54 @@
-import { _legacySqliteDb } from "../lib/db";
+import { getDb, nowIso } from "../lib/kysely";
+import type { PurchaseRequisitionsTable } from "../lib/db-types";
+import type { Selectable } from "kysely";
 
-export type Purchase = {
-  id: number;
-  purchase_date: string;
-  description: string;
-  unit: string | null;
-  qty: number;
-  unit_price: number;
-  total: number;
-  remark: string | null;
-  entered_by: number | null;
-  created_at: string;
-  updated_at: string;
-};
+export type Purchase = Selectable<PurchaseRequisitionsTable>;
 
 export type CreateInput = Omit<Purchase, "id" | "total" | "created_at" | "updated_at">;
 export type UpdateInput = Omit<CreateInput, "entered_by">;
 
-export function create(input: CreateInput): Purchase {
+export async function create(input: CreateInput): Promise<Purchase> {
   const total = Math.round(input.qty * input.unit_price);
-  const r = _legacySqliteDb().prepare(`
-    INSERT INTO purchase_requisitions (purchase_date, description, unit, qty, unit_price, total, remark, entered_by)
-    VALUES (@purchase_date, @description, @unit, @qty, @unit_price, @total, @remark, @entered_by)
-  `).run({ ...input, total });
-  return findById(Number(r.lastInsertRowid))!;
+  const now = nowIso();
+  const r = await getDb()
+    .insertInto("purchase_requisitions")
+    .values({ ...input, total, created_at: now, updated_at: now })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return (await findById(r.id))!;
 }
 
-export function findById(id: number): Purchase | null {
-  const r = _legacySqliteDb().prepare("SELECT * FROM purchase_requisitions WHERE id = ?").get(id) as Purchase | undefined;
+export async function findById(id: number): Promise<Purchase | null> {
+  const r = await getDb().selectFrom("purchase_requisitions").selectAll().where("id", "=", id).executeTakeFirst();
   return r ?? null;
 }
 
-export function update(id: number, input: UpdateInput): void {
+export async function update(id: number, input: UpdateInput): Promise<void> {
   const total = Math.round(input.qty * input.unit_price);
-  _legacySqliteDb().prepare(`
-    UPDATE purchase_requisitions
-    SET purchase_date = @purchase_date, description = @description, unit = @unit,
-        qty = @qty, unit_price = @unit_price, total = @total, remark = @remark,
-        updated_at = datetime('now')
-    WHERE id = @id
-  `).run({ ...input, total, id });
+  await getDb()
+    .updateTable("purchase_requisitions")
+    .set({ ...input, total, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function remove(id: number): void {
-  _legacySqliteDb().prepare("DELETE FROM purchase_requisitions WHERE id = ?").run(id);
+export async function remove(id: number): Promise<void> {
+  await getDb().deleteFrom("purchase_requisitions").where("id", "=", id).execute();
 }
 
-export function listAll(filters: { from?: string; to?: string } = {}): Purchase[] {
-  const where: string[] = [];
-  const params: any = {};
-  if (filters.from) { where.push("purchase_date >= @from"); params.from = filters.from; }
-  if (filters.to)   { where.push("purchase_date <= @to");   params.to = filters.to; }
-  const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-  return _legacySqliteDb().prepare(`SELECT * FROM purchase_requisitions ${whereSql} ORDER BY purchase_date DESC, id DESC`).all(params) as Purchase[];
+export async function listAll(filters: { from?: string; to?: string } = {}): Promise<Purchase[]> {
+  let q = getDb().selectFrom("purchase_requisitions").selectAll();
+  if (filters.from) q = q.where("purchase_date", ">=", filters.from);
+  if (filters.to)   q = q.where("purchase_date", "<=", filters.to);
+  return await q.orderBy("purchase_date", "desc").orderBy("id", "desc").execute();
 }
 
-export function sumTotalInRange(from: string, to: string): number {
-  const r = _legacySqliteDb().prepare("SELECT COALESCE(SUM(total), 0) AS s FROM purchase_requisitions WHERE purchase_date BETWEEN ? AND ?").get(from, to) as { s: number };
-  return r.s;
+export async function sumTotalInRange(from: string, to: string): Promise<number> {
+  const r = await getDb()
+    .selectFrom("purchase_requisitions")
+    .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("s"))
+    .where("purchase_date", ">=", from)
+    .where("purchase_date", "<=", to)
+    .executeTakeFirstOrThrow();
+  return Number(r.s);
 }

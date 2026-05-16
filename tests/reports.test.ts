@@ -80,10 +80,10 @@ describe("Sales reports", () => {
 });
 
 describe("Purchases reports", () => {
-  it("purchasesByDay() sums totals per date", () => {
-    Purchases.create({ purchase_date: "2026-05-10", description: "Beans", unit: "kg", qty: 2, unit_price: 50000, remark: null, entered_by: null });
-    Purchases.create({ purchase_date: "2026-05-10", description: "Milk",  unit: "L",  qty: 5, unit_price: 4000,  remark: null, entered_by: null });
-    Purchases.create({ purchase_date: "2026-05-12", description: "Sugar", unit: "kg", qty: 1, unit_price: 6000,  remark: null, entered_by: null });
+  it("purchasesByDay() sums totals per date", async () => {
+    await Purchases.create({ purchase_date: "2026-05-10", description: "Beans", unit: "kg", qty: 2, unit_price: 50000, remark: null, entered_by: null });
+    await Purchases.create({ purchase_date: "2026-05-10", description: "Milk",  unit: "L",  qty: 5, unit_price: 4000,  remark: null, entered_by: null });
+    await Purchases.create({ purchase_date: "2026-05-12", description: "Sugar", unit: "kg", qty: 1, unit_price: 6000,  remark: null, entered_by: null });
     const r = Reports.purchasesByDay({ from: "2026-05-01", to: "2026-05-31" });
     expect(r.find(d => d.purchase_date === "2026-05-10")?.total).toBe(120000);
     expect(r.find(d => d.purchase_date === "2026-05-12")?.total).toBe(6000);

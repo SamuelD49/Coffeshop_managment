@@ -29,7 +29,7 @@ function safeTab(input: unknown): Tab {
   return (TABS as readonly string[]).includes(String(input)) ? input as Tab : "sales";
 }
 
-function loadTabData(tab: Tab, range: { from: string; to: string }) {
+async function loadTabData(tab: Tab, range: { from: string; to: string }) {
   if (tab === "sales") {
     return {
       byDay: Reports.salesByDay(range),
@@ -42,7 +42,7 @@ function loadTabData(tab: Tab, range: { from: string; to: string }) {
     return {
       byDay: Reports.purchasesByDay(range),
       byMonth: Reports.purchasesByMonth(range),
-      details: Purchases.listAll(range), // every line item in the range
+      details: await Purchases.listAll(range), // every line item in the range
     };
   }
   if (tab === "petty-cash") {
@@ -67,7 +67,7 @@ function loadTabData(tab: Tab, range: { from: string; to: string }) {
 export async function show(req: Request, res: Response) {
   const tab = safeTab(req.query.tab);
   const range = await rangeFromReq(req);
-  const data = loadTabData(tab, range);
+  const data = await loadTabData(tab, range);
   res.render("reports/index", { tab, range, data });
 }
 
@@ -104,7 +104,7 @@ export async function exportCsv(req: Request, res: Response) {
       csv = toCsv(["month", "row_count", "total"], rows);
       filename = `purchases-by-month-${range.from}-to-${range.to}.csv`;
     } else if (grouping === "detail") {
-      const rows = Purchases.listAll(range).map(r => ({
+      const rows = (await Purchases.listAll(range)).map(r => ({
         date: r.purchase_date,
         description: r.description,
         unit: r.unit ?? "",
@@ -168,7 +168,7 @@ export async function exportCsv(req: Request, res: Response) {
 export async function print(req: Request, res: Response) {
   const tab = safeTab(req.query.tab);
   const range = await rangeFromReq(req);
-  const data = loadTabData(tab, range);
+  const data = await loadTabData(tab, range);
   const shopName = (await Settings.get("shop_name")) ?? "Coffee Shop";
   res.render("reports/print", { tab, range, data, shopName });
 }
