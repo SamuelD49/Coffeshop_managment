@@ -1,57 +1,75 @@
-import { _legacySqliteDb } from "../lib/db";
+import { getDb, nowIso } from "../lib/kysely";
+import type { GuarantorsTable } from "../lib/db-types";
+import type { Selectable } from "kysely";
 
-export type Guarantor = {
-  id: number;
-  employee_id: number;
-  full_name: string;
-  phone: string | null;
-  address: string | null;
-  relation_to_employee: string | null;
-  national_id_number: string | null;
-  national_id_type: string | null;
-  occupation: string | null;
-  workplace: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-};
+export type Guarantor = Selectable<GuarantorsTable>;
 
 export type GuarantorInput = Omit<Guarantor, "id" | "created_at" | "updated_at">;
 
-export function create(input: GuarantorInput): Guarantor {
-  const r = _legacySqliteDb().prepare(`
-    INSERT INTO guarantors (employee_id, full_name, phone, address, relation_to_employee, national_id_number, national_id_type, occupation, workplace, notes)
-    VALUES (@employee_id, @full_name, @phone, @address, @relation_to_employee, @national_id_number, @national_id_type, @occupation, @workplace, @notes)
-  `).run(input);
-  return findById(Number(r.lastInsertRowid))!;
+export async function create(input: GuarantorInput): Promise<Guarantor> {
+  const now = nowIso();
+  const result = await getDb()
+    .insertInto("guarantors")
+    .values({
+      employee_id: input.employee_id,
+      full_name: input.full_name,
+      phone: input.phone,
+      address: input.address,
+      relation_to_employee: input.relation_to_employee,
+      national_id_number: input.national_id_number,
+      national_id_type: input.national_id_type,
+      occupation: input.occupation,
+      workplace: input.workplace,
+      notes: input.notes,
+      created_at: now,
+      updated_at: now,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return (await findById(result.id))!;
 }
 
-export function listForEmployee(employeeId: number): Guarantor[] {
-  return _legacySqliteDb().prepare("SELECT * FROM guarantors WHERE employee_id = ? ORDER BY created_at, id").all(employeeId) as Guarantor[];
+export async function listForEmployee(employeeId: number): Promise<Guarantor[]> {
+  return await getDb()
+    .selectFrom("guarantors")
+    .selectAll()
+    .where("employee_id", "=", employeeId)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
 }
 
-export function findById(id: number): Guarantor | null {
-  const r = _legacySqliteDb().prepare("SELECT * FROM guarantors WHERE id = ?").get(id) as Guarantor | undefined;
-  return r ?? null;
+export async function findById(id: number): Promise<Guarantor | null> {
+  const row = await getDb()
+    .selectFrom("guarantors")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
+  return row ?? null;
 }
 
-export function update(id: number, input: Omit<GuarantorInput, "employee_id">): void {
-  _legacySqliteDb().prepare(`
-    UPDATE guarantors SET
-      full_name = @full_name,
-      phone = @phone,
-      address = @address,
-      relation_to_employee = @relation_to_employee,
-      national_id_number = @national_id_number,
-      national_id_type = @national_id_type,
-      occupation = @occupation,
-      workplace = @workplace,
-      notes = @notes,
-      updated_at = datetime('now')
-    WHERE id = @id
-  `).run({ ...input, id });
+export async function update(id: number, input: Omit<GuarantorInput, "employee_id">): Promise<void> {
+  await getDb()
+    .updateTable("guarantors")
+    .set({
+      full_name: input.full_name,
+      phone: input.phone,
+      address: input.address,
+      relation_to_employee: input.relation_to_employee,
+      national_id_number: input.national_id_number,
+      national_id_type: input.national_id_type,
+      occupation: input.occupation,
+      workplace: input.workplace,
+      notes: input.notes,
+      updated_at: nowIso(),
+    })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function remove(id: number): void {
-  _legacySqliteDb().prepare("DELETE FROM guarantors WHERE id = ?").run(id);
+export async function remove(id: number): Promise<void> {
+  await getDb()
+    .deleteFrom("guarantors")
+    .where("id", "=", id)
+    .execute();
 }

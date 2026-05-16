@@ -32,7 +32,7 @@ export async function calculateCompleteness(employeeId: number): Promise<Complet
     }
   }
 
-  const guarantors = Guarantors.listForEmployee(employeeId);
+  const guarantors = await Guarantors.listForEmployee(employeeId);
   if (guarantors.length === 0) {
     missing.push("guarantor");
   } else {

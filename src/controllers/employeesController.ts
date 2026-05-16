@@ -46,7 +46,7 @@ export async function profile(req: Request, res: Response) {
   const employee = await Employees.findFull(id);
   if (!employee) return res.status(404).render("errors/404");
   const tab = (req.query.tab as string) || "personal";
-  const guarantors = Guarantors.listForEmployee(id);
+  const guarantors = await Guarantors.listForEmployee(id);
   const attachments = Attachments.findByOwner("employee", id);
   const completeness = await calculateCompleteness(id);
   const guarantorAttachments: Record<number, ReturnType<typeof Attachments.findByOwner>> = {};
@@ -181,7 +181,7 @@ export async function deleteDocument(req: Request, res: Response) {
 export async function addGuarantor(req: Request, res: Response) {
   const id = Number(req.params.id);
   if (!(await Employees.findFull(id))) return res.status(404).render("errors/404");
-  const g = Guarantors.create({
+  const g = await Guarantors.create({
     employee_id: id,
     full_name: (req.body.full_name ?? "").toString().trim() || "Unnamed guarantor",
     phone: req.body.phone || null,
@@ -202,9 +202,9 @@ export async function addGuarantor(req: Request, res: Response) {
 export async function updateGuarantor(req: Request, res: Response) {
   const id = Number(req.params.id);
   const gid = Number(req.params.gid);
-  const g = Guarantors.findById(gid);
+  const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
-  Guarantors.update(gid, {
+  await Guarantors.update(gid, {
     full_name: (req.body.full_name ?? g.full_name).toString().trim(),
     phone: req.body.phone || null,
     address: req.body.address || null,
@@ -223,13 +223,13 @@ export async function updateGuarantor(req: Request, res: Response) {
 export async function removeGuarantor(req: Request, res: Response) {
   const id = Number(req.params.id);
   const gid = Number(req.params.gid);
-  const g = Guarantors.findById(gid);
+  const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   // delete guarantor files first
   const atts = Attachments.findByOwner("guarantor", gid);
   for (const a of atts) await deleteFile("guarantor", gid, a.filename, null);
   Attachments.removeByOwner("guarantor", gid);
-  Guarantors.remove(gid);
+  await Guarantors.remove(gid);
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_guarantor", entity: "guarantors", entity_id: gid });
   pushFlash(req, "success", "Guarantor removed");
@@ -242,7 +242,7 @@ type GKind = typeof ALLOWED_GUARANTOR_KINDS[number];
 export async function uploadGuarantorDocument(req: Request, res: Response) {
   const id = Number(req.params.id);
   const gid = Number(req.params.gid);
-  const g = Guarantors.findById(gid);
+  const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   if (!req.file) {
     pushFlash(req, "error", "No file uploaded");
@@ -282,7 +282,7 @@ export async function deleteGuarantorDocument(req: Request, res: Response) {
   const attId = Number(req.params.attId);
   const att = Attachments.findById(attId);
   if (!att || att.owner_type !== "guarantor" || att.owner_id !== gid) return res.status(404).render("errors/404");
-  const g = Guarantors.findById(gid);
+  const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   await deleteFile("guarantor", gid, att.filename, null);
   Attachments.remove(attId);
@@ -301,12 +301,12 @@ export function serveEmployeeFile(req: Request, res: Response) {
   res.sendFile(resolve(full));
 }
 
-export function serveGuarantorFile(req: Request, res: Response) {
+export async function serveGuarantorFile(req: Request, res: Response) {
   const id = Number(req.params.id);
   const gid = Number(req.params.gid);
   const filename = String(req.params.filename);
   if (!/^[\w\-.]+$/.test(filename)) return res.status(400).send("Invalid filename");
-  const g = Guarantors.findById(gid);
+  const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).send("Not found");
   const full = pathFor("guarantor", gid, filename);
   res.sendFile(resolve(full));

@@ -21,7 +21,7 @@ afterAll(async () => {
 describe("Guarantors", () => {
   it("create() inserts and returns the row", async () => {
     const e = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
-    const g = Guarantors.create({
+    const g = await Guarantors.create({
       employee_id: e.id,
       full_name: "Mulu",
       phone: "+251911000111",
@@ -40,30 +40,30 @@ describe("Guarantors", () => {
 
   it("listForEmployee() returns rows ordered by created_at", async () => {
     const e = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
-    Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
-    Guarantors.create({ employee_id: e.id, full_name: "Hanna", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
-    expect(Guarantors.listForEmployee(e.id).map(g => g.full_name)).toEqual(["Mulu", "Hanna"]);
+    await Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
+    await Guarantors.create({ employee_id: e.id, full_name: "Hanna", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
+    expect((await Guarantors.listForEmployee(e.id)).map(g => g.full_name)).toEqual(["Mulu", "Hanna"]);
   });
 
   it("findById() returns row or null", async () => {
     const e = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
-    const g = Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
-    expect(Guarantors.findById(g.id)?.full_name).toBe("Mulu");
-    expect(Guarantors.findById(999)).toBeNull();
+    const g = await Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
+    expect((await Guarantors.findById(g.id))?.full_name).toBe("Mulu");
+    expect(await Guarantors.findById(999)).toBeNull();
   });
 
   it("update() persists changes", async () => {
     const e = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
-    const g = Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
-    Guarantors.update(g.id, { full_name: "Mulu Bekele", phone: "+251911", address: "Bole", relation_to_employee: "Aunt", national_id_number: "G1", national_id_type: "Kebele", occupation: "Teacher", workplace: "Bole School", notes: null });
-    expect(Guarantors.findById(g.id)?.full_name).toBe("Mulu Bekele");
-    expect(Guarantors.findById(g.id)?.phone).toBe("+251911");
+    const g = await Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
+    await Guarantors.update(g.id, { full_name: "Mulu Bekele", phone: "+251911", address: "Bole", relation_to_employee: "Aunt", national_id_number: "G1", national_id_type: "Kebele", occupation: "Teacher", workplace: "Bole School", notes: null });
+    expect((await Guarantors.findById(g.id))?.full_name).toBe("Mulu Bekele");
+    expect((await Guarantors.findById(g.id))?.phone).toBe("+251911");
   });
 
   it("remove() deletes the row", async () => {
     const e = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: "h", role: "employee" });
-    const g = Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
-    Guarantors.remove(g.id);
-    expect(Guarantors.findById(g.id)).toBeNull();
+    const g = await Guarantors.create({ employee_id: e.id, full_name: "Mulu", phone: null, address: null, relation_to_employee: null, national_id_number: null, national_id_type: null, occupation: null, workplace: null, notes: null });
+    await Guarantors.remove(g.id);
+    expect(await Guarantors.findById(g.id)).toBeNull();
   });
 });
