@@ -47,11 +47,11 @@ export async function profile(req: Request, res: Response) {
   if (!employee) return res.status(404).render("errors/404");
   const tab = (req.query.tab as string) || "personal";
   const guarantors = await Guarantors.listForEmployee(id);
-  const attachments = Attachments.findByOwner("employee", id);
+  const attachments = await Attachments.findByOwner("employee", id);
   const completeness = await calculateCompleteness(id);
-  const guarantorAttachments: Record<number, ReturnType<typeof Attachments.findByOwner>> = {};
+  const guarantorAttachments: Record<number, Awaited<ReturnType<typeof Attachments.findByOwner>>> = {};
   for (const g of guarantors) {
-    guarantorAttachments[g.id] = Attachments.findByOwner("guarantor", g.id);
+    guarantorAttachments[g.id] = await Attachments.findByOwner("guarantor", g.id);
   }
   const payrollHistory = PayrollEntries.listForEmployee(id);
   res.render("employees/profile", { employee, guarantors, attachments, guarantorAttachments, completeness, tab, payrollHistory });
@@ -141,15 +141,15 @@ export async function uploadDocument(req: Request, res: Response) {
 
   // Replace previous of same kind (we only keep the latest per kind for required slots)
   if (kind !== "other") {
-    const existing = Attachments.findOneByKind("employee", id, kind);
+    const existing = await Attachments.findOneByKind("employee", id, kind);
     if (existing) {
       await deleteFile("employee", id, existing.filename, null);
-      Attachments.remove(existing.id);
+      await Attachments.remove(existing.id);
     }
   }
 
   const stored = await storeFile("employee", id, req.file);
-  Attachments.create({
+  await Attachments.create({
     owner_type: "employee",
     owner_id: id,
     kind,
@@ -158,6 +158,7 @@ export async function uploadDocument(req: Request, res: Response) {
     mime_type: stored.mime,
     size_bytes: stored.size,
     uploaded_by: actor(req),
+    thumbnail: stored.thumbnail,
   });
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: `upload_${kind}`, entity: "employees", entity_id: id });
@@ -168,10 +169,10 @@ export async function uploadDocument(req: Request, res: Response) {
 export async function deleteDocument(req: Request, res: Response) {
   const id = Number(req.params.id);
   const attId = Number(req.params.attId);
-  const att = Attachments.findById(attId);
+  const att = await Attachments.findById(attId);
   if (!att || att.owner_id !== id || att.owner_type !== "employee") return res.status(404).render("errors/404");
   await deleteFile("employee", id, att.filename, null);
-  Attachments.remove(attId);
+  await Attachments.remove(attId);
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_document", entity: "attachments", entity_id: attId });
   pushFlash(req, "success", "File removed");
@@ -226,9 +227,9 @@ export async function removeGuarantor(req: Request, res: Response) {
   const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   // delete guarantor files first
-  const atts = Attachments.findByOwner("guarantor", gid);
+  const atts = await Attachments.findByOwner("guarantor", gid);
   for (const a of atts) await deleteFile("guarantor", gid, a.filename, null);
-  Attachments.removeByOwner("guarantor", gid);
+  await Attachments.removeByOwner("guarantor", gid);
   await Guarantors.remove(gid);
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_guarantor", entity: "guarantors", entity_id: gid });
@@ -252,15 +253,15 @@ export async function uploadGuarantorDocument(req: Request, res: Response) {
   const kind: GKind = (ALLOWED_GUARANTOR_KINDS as readonly string[]).includes(kindRaw) ? kindRaw : "other";
 
   if (kind !== "other") {
-    const existing = Attachments.findOneByKind("guarantor", gid, kind);
+    const existing = await Attachments.findOneByKind("guarantor", gid, kind);
     if (existing) {
       await deleteFile("guarantor", gid, existing.filename, null);
-      Attachments.remove(existing.id);
+      await Attachments.remove(existing.id);
     }
   }
 
   const stored = await storeFile("guarantor", gid, req.file);
-  Attachments.create({
+  await Attachments.create({
     owner_type: "guarantor",
     owner_id: gid,
     kind,
@@ -269,6 +270,7 @@ export async function uploadGuarantorDocument(req: Request, res: Response) {
     mime_type: stored.mime,
     size_bytes: stored.size,
     uploaded_by: actor(req),
+    thumbnail: stored.thumbnail,
   });
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: `upload_guarantor_${kind}`, entity: "guarantors", entity_id: gid });
@@ -280,12 +282,12 @@ export async function deleteGuarantorDocument(req: Request, res: Response) {
   const id = Number(req.params.id);
   const gid = Number(req.params.gid);
   const attId = Number(req.params.attId);
-  const att = Attachments.findById(attId);
+  const att = await Attachments.findById(attId);
   if (!att || att.owner_type !== "guarantor" || att.owner_id !== gid) return res.status(404).render("errors/404");
   const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   await deleteFile("guarantor", gid, att.filename, null);
-  Attachments.remove(attId);
+  await Attachments.remove(attId);
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_guarantor_document", entity: "attachments", entity_id: attId });
   pushFlash(req, "success", "File removed");

@@ -27,7 +27,7 @@ export async function calculateCompleteness(employeeId: number): Promise<Complet
   }
 
   for (const kind of REQUIRED_DOCS) {
-    if (!Attachments.findOneByKind("employee", employeeId, kind)) {
+    if (!(await Attachments.findOneByKind("employee", employeeId, kind))) {
       missing.push(kind);
     }
   }
@@ -36,7 +36,13 @@ export async function calculateCompleteness(employeeId: number): Promise<Complet
   if (guarantors.length === 0) {
     missing.push("guarantor");
   } else {
-    const firstWithId = guarantors.find(g => Attachments.findOneByKind("guarantor", g.id, "id_front") !== null);
+    let firstWithId = false;
+    for (const g of guarantors) {
+      if (await Attachments.findOneByKind("guarantor", g.id, "id_front")) {
+        firstWithId = true;
+        break;
+      }
+    }
     if (!firstWithId) missing.push("guarantor_id");
   }
 

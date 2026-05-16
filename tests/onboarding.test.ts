@@ -64,7 +64,7 @@ describe("calculateCompleteness", () => {
     const e = await seedEmployee();
     await fillPersonal(e.id);
     for (const k of ["profile_photo", "id_front", "id_back", "contract"] as const) {
-      Attachments.create({ owner_type: "employee", owner_id: e.id, kind: k, filename: "x", original_name: "x", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
+      await Attachments.create({ owner_type: "employee", owner_id: e.id, kind: k, filename: "x", original_name: "x", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
     }
     const r = await calculateCompleteness(e.id);
     expect(r.missing).toContain("guarantor");
@@ -74,14 +74,14 @@ describe("calculateCompleteness", () => {
     const e = await seedEmployee();
     await fillPersonal(e.id);
     for (const k of ["profile_photo", "id_front", "id_back", "contract"] as const) {
-      Attachments.create({ owner_type: "employee", owner_id: e.id, kind: k, filename: "x", original_name: "x", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
+      await Attachments.create({ owner_type: "employee", owner_id: e.id, kind: k, filename: "x", original_name: "x", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
     }
     const g = await Guarantors.create({
       employee_id: e.id, full_name: "Mulu", phone: "+251", address: "Addis",
       relation_to_employee: "Aunt", national_id_number: "G1", national_id_type: "Kebele",
       occupation: "T", workplace: "S", notes: null,
     });
-    Attachments.create({ owner_type: "guarantor", owner_id: g.id, kind: "id_front", filename: "g", original_name: "g", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
+    await Attachments.create({ owner_type: "guarantor", owner_id: g.id, kind: "id_front", filename: "g", original_name: "g", mime_type: "image/png", size_bytes: 1, uploaded_by: null });
     const r = await calculateCompleteness(e.id);
     expect(r.complete).toBe(true);
     expect(r.missing).toEqual([]);
