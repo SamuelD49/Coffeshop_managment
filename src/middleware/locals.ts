@@ -7,7 +7,7 @@ export async function localsMiddleware(req: Request, res: Response, next: NextFu
   res.locals.currentUser = null;
   res.locals.currentRole = null;
   if (req.session.employeeId) {
-    const u = Employees.findById(req.session.employeeId);
+    const u = await Employees.findById(req.session.employeeId);
     if (u) {
       res.locals.currentUser = u;
       res.locals.currentRole = u.role;

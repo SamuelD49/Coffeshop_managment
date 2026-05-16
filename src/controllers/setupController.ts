@@ -5,13 +5,13 @@ import * as Settings from "../models/settings";
 import { writeAudit } from "../lib/audit";
 import { pushFlash } from "../lib/flash";
 
-export function showForm(req: Request, res: Response) {
-  if (Employees.count() > 0) return res.redirect("/");
+export async function showForm(req: Request, res: Response) {
+  if ((await Employees.count()) > 0) return res.redirect("/");
   res.render("setup");
 }
 
 export async function submit(req: Request, res: Response) {
-  if (Employees.count() > 0) return res.redirect("/");
+  if ((await Employees.count()) > 0) return res.redirect("/");
   const { shop_name, full_name, username, password } = req.body as Record<string, string>;
   const trimmedShop = (shop_name ?? "").toString().trim();
   if (!trimmedShop || !full_name || !username || !password || password.length < 6) {
@@ -20,7 +20,7 @@ export async function submit(req: Request, res: Response) {
   }
   await Settings.set("shop_name", trimmedShop);
   const hash = await bcrypt.hash(password, 12);
-  const owner = Employees.create({
+  const owner = await Employees.create({
     full_name,
     username,
     password_hash: hash,

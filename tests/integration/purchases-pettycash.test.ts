@@ -29,8 +29,8 @@ beforeEach(async () => {
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
   const hash = await bcrypt.hash("pw", 12);
-  Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
-  Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
+  await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
+  await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
 });
 
 afterAll(async () => {

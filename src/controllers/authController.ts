@@ -11,7 +11,7 @@ export function showLogin(req: Request, res: Response) {
 
 export async function submitLogin(req: Request, res: Response) {
   const { username, password } = req.body as Record<string, string>;
-  const user = username ? Employees.findByUsername(username) : null;
+  const user = username ? await Employees.findByUsername(username) : null;
   if (!user || !user.password_hash) {
     pushFlash(req, "error", "Invalid username or password");
     return res.redirect("/login");

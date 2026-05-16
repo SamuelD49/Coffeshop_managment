@@ -32,9 +32,9 @@ beforeEach(async () => {
   // Relax HR completeness for tests so auto-populate includes our seeded employees.
   await Settings.set("require_complete_hr_before_payroll", "false");
   const hash = await bcrypt.hash("pw", 12);
-  Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
-  const e1 = Employees.create({ full_name: "Almaz", username: "alm", password_hash: hash, role: "employee" });
-  Employees.updateEmployment(e1.id, { position: "Barista", hire_date: "2025-06-01", basic_salary: 500000, role: "employee", is_active: true, username: "alm" });
+  await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
+  const e1 = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: hash, role: "employee" });
+  await Employees.updateEmployment(e1.id, { position: "Barista", hire_date: "2025-06-01", basic_salary: 500000, role: "employee", is_active: true, username: "alm" });
 });
 
 afterAll(async () => {

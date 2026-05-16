@@ -28,7 +28,7 @@ beforeEach(async () => {
   if (existsSync("./data/uploads")) rmSync("./data/uploads", { recursive: true, force: true });
   await runMigrations();
   const hash = await bcrypt.hash("secret123", 12);
-  Employees.create({ full_name: "Owner", username: "owner", password_hash: hash, role: "owner" });
+  await Employees.create({ full_name: "Owner", username: "owner", password_hash: hash, role: "owner" });
 });
 
 afterAll(async () => {
@@ -99,7 +99,7 @@ describe("Employees onboarding flow", () => {
       emergency_contact_relation: "Sister",
     });
 
-    const full = Employees.findFull(id);
+    const full = await Employees.findFull(id);
     expect(full?.phone).toBe("+251911234567");
     expect(full?.onboarding_status).toBe("incomplete"); // docs + guarantor still missing
   });
@@ -108,7 +108,7 @@ describe("Employees onboarding flow", () => {
     const { app } = await import("../../src/app");
     // employee account
     const hash = await bcrypt.hash("emp123", 12);
-    Employees.create({ full_name: "Cashier", username: "cash", password_hash: hash, role: "employee" });
+    await Employees.create({ full_name: "Cashier", username: "cash", password_hash: hash, role: "employee" });
 
     const agent = request.agent(app);
     let csrf = await csrfFrom(agent, "/login");

@@ -15,8 +15,8 @@ const REQUIRED_PERSONAL: Array<keyof import("../models/employees").Employee> = [
 
 const REQUIRED_DOCS = ["profile_photo", "id_front", "id_back", "contract"] as const;
 
-export function calculateCompleteness(employeeId: number): CompletenessResult {
-  const employee = Employees.findFull(employeeId);
+export async function calculateCompleteness(employeeId: number): Promise<CompletenessResult> {
+  const employee = await Employees.findFull(employeeId);
   if (!employee) return { complete: false, missing: ["employee_not_found"] };
 
   const missing: string[] = [];

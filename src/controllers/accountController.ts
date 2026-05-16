@@ -10,7 +10,7 @@ export function show(_req: Request, res: Response) {
 
 export async function changePassword(req: Request, res: Response) {
   const id = req.session.employeeId!;
-  const user = Employees.findById(id);
+  const user = await Employees.findById(id);
   if (!user || !user.password_hash) {
     pushFlash(req, "error", "Account not found");
     return res.redirect("/account");
@@ -26,7 +26,7 @@ export async function changePassword(req: Request, res: Response) {
     return res.redirect("/account");
   }
   const newHash = await bcrypt.hash(next, 12);
-  Employees.updatePassword(id, newHash);
+  await Employees.updatePassword(id, newHash);
   await writeAudit({ actor_id: id, action: "change_own_password", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Password updated");
   res.redirect("/account");

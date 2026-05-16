@@ -11,16 +11,16 @@ import { pathFor, storeFile, deleteFile } from "../lib/uploads";
 
 function actor(req: Request): number | null { return req.session.employeeId ?? null; }
 
-export function list(req: Request, res: Response) {
+export async function list(req: Request, res: Response) {
   const showInactive = req.query.show === "all";
   // List EVERYONE in the system — owners and employees alike — so the count
   // matches what shows up on payroll / sales / settings audits. Owners are
   // tagged visually in the table so they're easy to spot.
-  const rows = Employees.listAll({ activeOnly: !showInactive });
-  const withStatus = rows.map(e => ({
-    employee: e,
-    completeness: calculateCompleteness(e.id),
-  }));
+  const rows = await Employees.listAll({ activeOnly: !showInactive });
+  const withStatus = [];
+  for (const e of rows) {
+    withStatus.push({ employee: e, completeness: await calculateCompleteness(e.id) });
+  }
   res.render("employees/list", { employees: withStatus, showInactive });
 }
 
@@ -35,20 +35,20 @@ export async function create(req: Request, res: Response) {
     return res.redirect("/employees/new");
   }
   const safeRole: "owner" | "employee" = role === "owner" ? "owner" : "employee";
-  const e = Employees.create({ full_name: full_name.trim(), phone: phone ?? null, role: safeRole });
+  const e = await Employees.create({ full_name: full_name.trim(), phone: phone ?? null, role: safeRole });
   await writeAudit({ actor_id: actor(req), action: "create_employee", entity: "employees", entity_id: e.id });
   pushFlash(req, "success", `${e.full_name} added — fill out the profile next.`);
   res.redirect(`/employees/${e.id}`);
 }
 
-export function profile(req: Request, res: Response) {
+export async function profile(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const employee = Employees.findFull(id);
+  const employee = await Employees.findFull(id);
   if (!employee) return res.status(404).render("errors/404");
   const tab = (req.query.tab as string) || "personal";
   const guarantors = Guarantors.listForEmployee(id);
   const attachments = Attachments.findByOwner("employee", id);
-  const completeness = calculateCompleteness(id);
+  const completeness = await calculateCompleteness(id);
   const guarantorAttachments: Record<number, ReturnType<typeof Attachments.findByOwner>> = {};
   for (const g of guarantors) {
     guarantorAttachments[g.id] = Attachments.findByOwner("guarantor", g.id);
@@ -57,15 +57,15 @@ export function profile(req: Request, res: Response) {
   res.render("employees/profile", { employee, guarantors, attachments, guarantorAttachments, completeness, tab, payrollHistory });
 }
 
-function refreshOnboardingStatus(id: number) {
-  const status = calculateCompleteness(id).complete ? "complete" : "incomplete";
-  Employees.setOnboardingStatus(id, status);
+async function refreshOnboardingStatus(id: number) {
+  const status = (await calculateCompleteness(id)).complete ? "complete" : "incomplete";
+  await Employees.setOnboardingStatus(id, status);
 }
 
 export async function updatePersonal(req: Request, res: Response) {
   const id = Number(req.params.id);
-  if (!Employees.findFull(id)) return res.status(404).render("errors/404");
-  Employees.updatePersonal(id, {
+  if (!(await Employees.findFull(id))) return res.status(404).render("errors/404");
+  await Employees.updatePersonal(id, {
     full_name: (req.body.full_name ?? "").toString().trim(),
     phone: (req.body.phone || null) as string | null,
     national_id_number: req.body.national_id_number || null,
@@ -78,7 +78,7 @@ export async function updatePersonal(req: Request, res: Response) {
     emergency_contact_phone: req.body.emergency_contact_phone || null,
     emergency_contact_relation: req.body.emergency_contact_relation || null,
   });
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "update_employee_personal", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Personal info saved");
   res.redirect(`/employees/${id}?tab=personal`);
@@ -86,14 +86,14 @@ export async function updatePersonal(req: Request, res: Response) {
 
 export async function updateEmployment(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const current = Employees.findFull(id);
+  const current = await Employees.findFull(id);
   if (!current) return res.status(404).render("errors/404");
   const basic = req.body.basic_salary?.toString() || "0";
   const cents = Math.round(Number(basic) * 100);
   // is_active is no longer in the Employment form — owners flip it via the
   // Activate/Deactivate button on the profile header. Preserve the current
   // value through saves so the form doesn't accidentally turn it off.
-  Employees.updateEmployment(id, {
+  await Employees.updateEmployment(id, {
     position: req.body.position || null,
     hire_date: req.body.hire_date || null,
     termination_date: req.body.termination_date || null,
@@ -102,7 +102,7 @@ export async function updateEmployment(req: Request, res: Response) {
     is_active: !!current.is_active,
     username: req.body.username || null,
   });
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "update_employee_employment", entity: "employees", entity_id: id });
   pushFlash(req, "success", "Employment info saved");
   res.redirect(`/employees/${id}?tab=employment`);
@@ -112,10 +112,10 @@ export async function updateEmployment(req: Request, res: Response) {
 // payroll runs, sales, audit log all keep referring to the row by id.
 export async function toggleActive(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const current = Employees.findFull(id);
+  const current = await Employees.findFull(id);
   if (!current) return res.status(404).render("errors/404");
   const next = !current.is_active;
-  Employees.setActive(id, next);
+  await Employees.setActive(id, next);
   await writeAudit({
     actor_id: actor(req),
     action: next ? "activate_employee" : "deactivate_employee",
@@ -131,7 +131,7 @@ type EmpKind = typeof ALLOWED_EMP_KINDS[number];
 
 export async function uploadDocument(req: Request, res: Response) {
   const id = Number(req.params.id);
-  if (!Employees.findFull(id)) return res.status(404).render("errors/404");
+  if (!(await Employees.findFull(id))) return res.status(404).render("errors/404");
   if (!req.file) {
     pushFlash(req, "error", "No file uploaded");
     return res.redirect(`/employees/${id}?tab=documents`);
@@ -159,7 +159,7 @@ export async function uploadDocument(req: Request, res: Response) {
     size_bytes: stored.size,
     uploaded_by: actor(req),
   });
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: `upload_${kind}`, entity: "employees", entity_id: id });
   pushFlash(req, "success", "File uploaded");
   res.redirect(`/employees/${id}?tab=documents`);
@@ -172,7 +172,7 @@ export async function deleteDocument(req: Request, res: Response) {
   if (!att || att.owner_id !== id || att.owner_type !== "employee") return res.status(404).render("errors/404");
   await deleteFile("employee", id, att.filename, null);
   Attachments.remove(attId);
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_document", entity: "attachments", entity_id: attId });
   pushFlash(req, "success", "File removed");
   res.redirect(`/employees/${id}?tab=documents`);
@@ -180,7 +180,7 @@ export async function deleteDocument(req: Request, res: Response) {
 
 export async function addGuarantor(req: Request, res: Response) {
   const id = Number(req.params.id);
-  if (!Employees.findFull(id)) return res.status(404).render("errors/404");
+  if (!(await Employees.findFull(id))) return res.status(404).render("errors/404");
   const g = Guarantors.create({
     employee_id: id,
     full_name: (req.body.full_name ?? "").toString().trim() || "Unnamed guarantor",
@@ -193,7 +193,7 @@ export async function addGuarantor(req: Request, res: Response) {
     workplace: req.body.workplace || null,
     notes: req.body.notes || null,
   });
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "add_guarantor", entity: "guarantors", entity_id: g.id });
   pushFlash(req, "success", "Guarantor added");
   res.redirect(`/employees/${id}?tab=guarantors`);
@@ -230,7 +230,7 @@ export async function removeGuarantor(req: Request, res: Response) {
   for (const a of atts) await deleteFile("guarantor", gid, a.filename, null);
   Attachments.removeByOwner("guarantor", gid);
   Guarantors.remove(gid);
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_guarantor", entity: "guarantors", entity_id: gid });
   pushFlash(req, "success", "Guarantor removed");
   res.redirect(`/employees/${id}?tab=guarantors`);
@@ -270,7 +270,7 @@ export async function uploadGuarantorDocument(req: Request, res: Response) {
     size_bytes: stored.size,
     uploaded_by: actor(req),
   });
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: `upload_guarantor_${kind}`, entity: "guarantors", entity_id: gid });
   pushFlash(req, "success", "File uploaded");
   res.redirect(`/employees/${id}?tab=guarantors`);
@@ -286,7 +286,7 @@ export async function deleteGuarantorDocument(req: Request, res: Response) {
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   await deleteFile("guarantor", gid, att.filename, null);
   Attachments.remove(attId);
-  refreshOnboardingStatus(id);
+  await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_guarantor_document", entity: "attachments", entity_id: attId });
   pushFlash(req, "success", "File removed");
   res.redirect(`/employees/${id}?tab=guarantors`);

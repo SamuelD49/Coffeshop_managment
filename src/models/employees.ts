@@ -1,30 +1,8 @@
-import { _legacySqliteDb } from "../lib/db";
+import { getDb, nowIso } from "../lib/kysely";
+import type { EmployeesTable } from "../lib/db-types";
+import type { Selectable } from "kysely";
 
-export type Employee = {
-  id: number;
-  full_name: string;
-  phone: string | null;
-  national_id_number: string | null;
-  national_id_type: string | null;
-  date_of_birth: string | null;
-  gender: string | null;
-  marital_status: string | null;
-  address: string | null;
-  emergency_contact_name: string | null;
-  emergency_contact_phone: string | null;
-  emergency_contact_relation: string | null;
-  position: string | null;
-  hire_date: string | null;
-  termination_date: string | null;
-  basic_salary: number;
-  username: string | null;
-  password_hash: string | null;
-  role: "owner" | "employee";
-  is_active: number;
-  onboarding_status: "incomplete" | "complete";
-  created_at: string;
-  updated_at: string;
-};
+export type Employee = Selectable<EmployeesTable>;
 
 export type CreateInput = {
   full_name: string;
@@ -34,57 +12,78 @@ export type CreateInput = {
   phone?: string | null;
 };
 
-export function count(): number {
-  const row = _legacySqliteDb().prepare("SELECT COUNT(*) AS c FROM employees").get() as { c: number };
-  return row.c;
+export async function count(): Promise<number> {
+  const row = await getDb()
+    .selectFrom("employees")
+    .select((eb) => eb.fn.countAll<number>().as("c"))
+    .executeTakeFirstOrThrow();
+  return Number(row.c);
 }
 
 // True when at least one active employee has role='employee'. Drives the sales
 // UI: when false (solo-owner shop), the Close-entry button and the per-employee
 // filter are hidden. When the owner hires a cashier, both reappear.
-export function hasActiveCashiers(): boolean {
-  const row = _legacySqliteDb().prepare("SELECT COUNT(*) AS c FROM employees WHERE role = 'employee' AND is_active = 1").get() as { c: number };
-  return row.c > 0;
+export async function hasActiveCashiers(): Promise<boolean> {
+  const row = await getDb()
+    .selectFrom("employees")
+    .select((eb) => eb.fn.countAll<number>().as("c"))
+    .where("role", "=", "employee")
+    .where("is_active", "=", 1)
+    .executeTakeFirstOrThrow();
+  return Number(row.c) > 0;
 }
 
-export function create(input: CreateInput): Employee {
-  const result = _legacySqliteDb()
-    .prepare(`
-      INSERT INTO employees (full_name, phone, username, password_hash, role)
-      VALUES (@full_name, @phone, @username, @password_hash, @role)
-    `)
-    .run({
+export async function create(input: CreateInput): Promise<Employee> {
+  const now = nowIso();
+  const result = await getDb()
+    .insertInto("employees")
+    .values({
       full_name: input.full_name,
       phone: input.phone ?? null,
       username: input.username ?? null,
       password_hash: input.password_hash ?? null,
       role: input.role,
-    });
-  return findById(Number(result.lastInsertRowid))!;
+      created_at: now,
+      updated_at: now,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return (await findById(result.id))!;
 }
 
-export function findByUsername(username: string): Employee | null {
-  const row = _legacySqliteDb()
-    .prepare("SELECT * FROM employees WHERE username = ? AND is_active = 1")
-    .get(username) as Employee | undefined;
+export async function findByUsername(username: string): Promise<Employee | null> {
+  const row = await getDb()
+    .selectFrom("employees")
+    .selectAll()
+    .where("username", "=", username)
+    .where("is_active", "=", 1)
+    .executeTakeFirst();
   return row ?? null;
 }
 
-export function findById(id: number): Employee | null {
-  const row = _legacySqliteDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
+export async function findById(id: number): Promise<Employee | null> {
+  const row = await getDb()
+    .selectFrom("employees")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
   return row ?? null;
 }
 
-export function updatePassword(id: number, password_hash: string): void {
-  _legacySqliteDb()
-    .prepare("UPDATE employees SET password_hash = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(password_hash, id);
+export async function updatePassword(id: number, password_hash: string): Promise<void> {
+  await getDb()
+    .updateTable("employees")
+    .set({ password_hash, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function setActive(id: number, active: boolean): void {
-  _legacySqliteDb()
-    .prepare("UPDATE employees SET is_active = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(active ? 1 : 0, id);
+export async function setActive(id: number, active: boolean): Promise<void> {
+  await getDb()
+    .updateTable("employees")
+    .set({ is_active: active ? 1 : 0, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
 export type PersonalInput = {
@@ -111,59 +110,45 @@ export type EmploymentInput = {
   username?: string | null;
 };
 
-export function listAll(opts: { activeOnly?: boolean } = {}): Employee[] {
-  const where = opts.activeOnly ? "WHERE is_active = 1" : "";
-  return _legacySqliteDb().prepare(`SELECT * FROM employees ${where} ORDER BY full_name`).all() as Employee[];
+export async function listAll(opts: { activeOnly?: boolean } = {}): Promise<Employee[]> {
+  let q = getDb().selectFrom("employees").selectAll();
+  if (opts.activeOnly) q = q.where("is_active", "=", 1);
+  return await q.orderBy("full_name").execute();
 }
 
-export function findFull(id: number): Employee | null {
-  const row = _legacySqliteDb().prepare("SELECT * FROM employees WHERE id = ?").get(id) as Employee | undefined;
-  return row ?? null;
+export async function findFull(id: number): Promise<Employee | null> {
+  return findById(id);
 }
 
-export function updatePersonal(id: number, input: PersonalInput): void {
-  _legacySqliteDb().prepare(`
-    UPDATE employees SET
-      full_name = @full_name,
-      phone = @phone,
-      national_id_number = @national_id_number,
-      national_id_type = @national_id_type,
-      date_of_birth = @date_of_birth,
-      gender = @gender,
-      marital_status = @marital_status,
-      address = @address,
-      emergency_contact_name = @emergency_contact_name,
-      emergency_contact_phone = @emergency_contact_phone,
-      emergency_contact_relation = @emergency_contact_relation,
-      updated_at = datetime('now')
-    WHERE id = @id
-  `).run({ ...input, id });
+export async function updatePersonal(id: number, input: PersonalInput): Promise<void> {
+  await getDb()
+    .updateTable("employees")
+    .set({ ...input, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function updateEmployment(id: number, input: EmploymentInput): void {
-  _legacySqliteDb().prepare(`
-    UPDATE employees SET
-      position = @position,
-      hire_date = @hire_date,
-      termination_date = @termination_date,
-      basic_salary = @basic_salary,
-      role = @role,
-      is_active = @is_active,
-      username = @username,
-      updated_at = datetime('now')
-    WHERE id = @id
-  `).run({
-    position: input.position,
-    hire_date: input.hire_date,
-    termination_date: input.termination_date ?? null,
-    basic_salary: input.basic_salary,
-    role: input.role,
-    is_active: input.is_active ? 1 : 0,
-    username: input.username ?? null,
-    id,
-  });
+export async function updateEmployment(id: number, input: EmploymentInput): Promise<void> {
+  await getDb()
+    .updateTable("employees")
+    .set({
+      position: input.position,
+      hire_date: input.hire_date,
+      termination_date: input.termination_date ?? null,
+      basic_salary: input.basic_salary,
+      role: input.role,
+      is_active: input.is_active ? 1 : 0,
+      username: input.username ?? null,
+      updated_at: nowIso(),
+    })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function setOnboardingStatus(id: number, status: "incomplete" | "complete"): void {
-  _legacySqliteDb().prepare("UPDATE employees SET onboarding_status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
+export async function setOnboardingStatus(id: number, status: "incomplete" | "complete"): Promise<void> {
+  await getDb()
+    .updateTable("employees")
+    .set({ onboarding_status: status, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }

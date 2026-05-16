@@ -40,18 +40,21 @@ export async function showNew(_req: Request, res: Response) {
 
   // Eligibility: active employees, optionally filtered by completeness
   const requireComplete = await Settings.getBool("require_complete_hr_before_payroll");
-  const all = Employees.listAll({ activeOnly: true });
+  const all = await Employees.listAll({ activeOnly: true });
   const eligible: Array<{ id: number; full_name: string; complete: boolean; missing: string[] }> = [];
   for (const e of all) {
-    const c = calculateCompleteness(e.id);
+    const c = await calculateCompleteness(e.id);
     if (requireComplete && !c.complete) continue;
     eligible.push({ id: e.id, full_name: e.full_name, complete: c.complete, missing: c.missing });
   }
   // Also surface incomplete ones for owner awareness
-  const incomplete = requireComplete ? all
-    .map(e => ({ e, c: calculateCompleteness(e.id) }))
-    .filter(x => !x.c.complete)
-    .map(x => ({ id: x.e.id, full_name: x.e.full_name, missing: x.c.missing })) : [];
+  const incomplete: Array<{ id: number; full_name: string; missing: string[] }> = [];
+  if (requireComplete) {
+    for (const e of all) {
+      const c = await calculateCompleteness(e.id);
+      if (!c.complete) incomplete.push({ id: e.id, full_name: e.full_name, missing: c.missing });
+    }
+  }
 
   res.render("payroll/new", { defaultYear, defaultMonth, monthNames: MONTH_NAMES, eligible, incomplete, requireComplete });
 }
@@ -77,9 +80,9 @@ export async function create(req: Request, res: Response) {
   const pePct = await Settings.getNumber("pension_employer_default_pct");
   const pnPct = await Settings.getNumber("pension_employee_default_pct");
 
-  const employees = Employees.listAll({ activeOnly: true });
+  const employees = await Employees.listAll({ activeOnly: true });
   for (const e of employees) {
-    if (requireComplete && !calculateCompleteness(e.id).complete) continue;
+    if (requireComplete && !(await calculateCompleteness(e.id)).complete) continue;
     Entries.createFromEmployee({
       run_id: run.id,
       employee_id: e.id,
@@ -188,8 +191,8 @@ export async function print(req: Request, res: Response) {
     total_deduction: sumColumn(entries, "total_deduction"),
     net_payment: sumColumn(entries, "net_payment"),
   };
-  const preparer = r.prepared_by ? Employees.findById(r.prepared_by) : null;
-  const approver = r.approved_by ? Employees.findById(r.approved_by) : null;
+  const preparer = r.prepared_by ? await Employees.findById(r.prepared_by) : null;
+  const approver = r.approved_by ? await Employees.findById(r.approved_by) : null;
   const month_name = MONTH_NAMES[r.month - 1];
   const shopName = (await Settings.get("shop_name")) ?? "Coffee Shop";
   const signature = (await Settings.get("shop_signature")) || "";

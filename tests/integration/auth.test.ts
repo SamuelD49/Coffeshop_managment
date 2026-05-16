@@ -11,7 +11,7 @@ process.env.SESSION_SECRET = "test-secret";
 
 async function seedOwner() {
   const hash = await bcrypt.hash("secret123", 12);
-  Employees.create({ full_name: "Sam", username: "sam", password_hash: hash, role: "owner" });
+  await Employees.create({ full_name: "Sam", username: "sam", password_hash: hash, role: "owner" });
 }
 
 beforeEach(async () => {

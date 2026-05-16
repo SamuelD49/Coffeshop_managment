@@ -19,7 +19,7 @@ function canEdit(req: Request, session: Sessions.SalesSession): boolean {
   return session.employee_id === actor(req) && session.status === "open";
 }
 
-export function list(req: Request, res: Response) {
+export async function list(req: Request, res: Response) {
   const filters: any = {
     date: "",
     from: "",
@@ -62,8 +62,8 @@ export function list(req: Request, res: Response) {
     status: filters.status || undefined
   }).map(s => Sessions.withTotals(s.id)!);
   
-  const employees = role(req) === "owner" ? Employees.listAll({ activeOnly: false }) : [];
-  const hasCashiers = Employees.hasActiveCashiers();
+  const employees = role(req) === "owner" ? await Employees.listAll({ activeOnly: false }) : [];
+  const hasCashiers = await Employees.hasActiveCashiers();
   res.render("sales/list", { sessions, employees, filters, hasCashiers });
 }
 
@@ -87,7 +87,7 @@ export async function create(req: Request, res: Response) {
   res.redirect(`/sales/${s.id}`);
 }
 
-export function entry(req: Request, res: Response) {
+export async function entry(req: Request, res: Response) {
   const id = Number(req.params.id);
   const session = Sessions.findById(id);
   if (!session) return res.status(404).render("errors/404");
@@ -99,8 +99,8 @@ export function entry(req: Request, res: Response) {
   for (const l of linesArr) lines[l.menu_item_id] = l;
   const totals = Sessions.withTotals(id)!;
   const editable = canEdit(req, session);
-  const employee = Employees.findById(session.employee_id);
-  const hasCashiers = Employees.hasActiveCashiers();
+  const employee = await Employees.findById(session.employee_id);
+  const hasCashiers = await Employees.hasActiveCashiers();
   res.render("sales/entry", { session, totals, items, lines, employee, editable, hasCashiers });
 }
 

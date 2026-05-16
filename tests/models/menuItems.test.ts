@@ -59,8 +59,8 @@ describe("MenuItems", () => {
     expect(Menu.findById(m.id)?.is_active).toBe(0);
   });
 
-  it("listActiveByPopularity() orders by lifetime qty sold desc, then name asc", () => {
-    const cashier = Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
+  it("listActiveByPopularity() orders by lifetime qty sold desc, then name asc", async () => {
+    const cashier = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const latte    = Menu.create({ name: "Latte",    price: 5000 });
     const espresso = Menu.create({ name: "Espresso", price: 3000 });
     const water    = Menu.create({ name: "Water",    price: 1000 }); // never sold
