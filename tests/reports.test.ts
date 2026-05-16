@@ -28,17 +28,17 @@ describe("Sales reports", () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
 
-    const s1 = Sessions.create({ employee_id: e.id, business_date: "2026-05-10", shift: "m" });
-    Lines.upsert(s1.id, m.id, 2); // 10000
-    Sessions.updateHeader(s1.id, { cash_amount: 10000, bank_transfer_amount: 0, notes: null });
+    const s1 = await Sessions.create({ employee_id: e.id, business_date: "2026-05-10", shift: "m" });
+    await Lines.upsert(s1.id, m.id, 2); // 10000
+    await Sessions.updateHeader(s1.id, { cash_amount: 10000, bank_transfer_amount: 0, notes: null });
 
-    const s2 = Sessions.create({ employee_id: e.id, business_date: "2026-05-10", shift: "e" });
-    Lines.upsert(s2.id, m.id, 1); // 5000
-    Sessions.updateHeader(s2.id, { cash_amount: 5000, bank_transfer_amount: 0, notes: null });
+    const s2 = await Sessions.create({ employee_id: e.id, business_date: "2026-05-10", shift: "e" });
+    await Lines.upsert(s2.id, m.id, 1); // 5000
+    await Sessions.updateHeader(s2.id, { cash_amount: 5000, bank_transfer_amount: 0, notes: null });
 
-    const s3 = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
-    Lines.upsert(s3.id, m.id, 4); // 20000
-    Sessions.updateHeader(s3.id, { cash_amount: 20000, bank_transfer_amount: 0, notes: null });
+    const s3 = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
+    await Lines.upsert(s3.id, m.id, 4); // 20000
+    await Sessions.updateHeader(s3.id, { cash_amount: 20000, bank_transfer_amount: 0, notes: null });
 
     const result = Reports.salesByDay({ from: "2026-05-01", to: "2026-05-31" });
     expect(result.find(r => r.business_date === "2026-05-10")?.subtotal).toBe(15000);
@@ -50,9 +50,9 @@ describe("Sales reports", () => {
     const latte = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
     const espresso = await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
 
-    const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
-    Lines.upsert(s.id, latte.id, 3);     // qty 3, total 15000
-    Lines.upsert(s.id, espresso.id, 5);  // qty 5, total 15000
+    const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
+    await Lines.upsert(s.id, latte.id, 3);     // qty 3, total 15000
+    await Lines.upsert(s.id, espresso.id, 5);  // qty 5, total 15000
 
     const result = Reports.salesByItem({ from: "2026-05-01", to: "2026-05-31" });
     const r1 = result.find(r => r.name === "Latte")!;
@@ -68,10 +68,10 @@ describe("Sales reports", () => {
     const e2 = await Employees.create({ full_name: "Bekele", username: "b", password_hash: "h", role: "employee" });
     const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
 
-    const s1 = Sessions.create({ employee_id: e1.id, business_date: "2026-05-12", shift: "m" });
-    Lines.upsert(s1.id, m.id, 4); // 20000
-    const s2 = Sessions.create({ employee_id: e2.id, business_date: "2026-05-12", shift: "e" });
-    Lines.upsert(s2.id, m.id, 2); // 10000
+    const s1 = await Sessions.create({ employee_id: e1.id, business_date: "2026-05-12", shift: "m" });
+    await Lines.upsert(s1.id, m.id, 4); // 20000
+    const s2 = await Sessions.create({ employee_id: e2.id, business_date: "2026-05-12", shift: "e" });
+    await Lines.upsert(s2.id, m.id, 2); // 10000
 
     const result = Reports.salesByEmployee({ from: "2026-05-01", to: "2026-05-31" });
     expect(result.find(r => r.full_name === "Almaz")?.subtotal).toBe(20000);
@@ -110,17 +110,17 @@ describe("Dashboard totals", () => {
   it("todaySalesTotal() sums only the given business date", async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const m = await Menu.create({ name: "L", price: 1000, sort_order: 1 });
-    const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
-    Lines.upsert(s.id, m.id, 3); // 3000
-    const sOther = Sessions.create({ employee_id: e.id, business_date: "2026-05-11", shift: "m" });
-    Lines.upsert(sOther.id, m.id, 99); // shouldn't count
+    const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
+    await Lines.upsert(s.id, m.id, 3); // 3000
+    const sOther = await Sessions.create({ employee_id: e.id, business_date: "2026-05-11", shift: "m" });
+    await Lines.upsert(sOther.id, m.id, 99); // shouldn't count
     expect(Reports.todaySalesTotal("2026-05-12")).toBe(3000);
   });
 
   it("todayCashVsBank() splits payment by tender", async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
-    const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
-    Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 5000, notes: null });
+    const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
+    await Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 5000, notes: null });
     const r = Reports.todayCashVsBank("2026-05-12");
     expect(r.cash).toBe(15000);
     expect(r.bank).toBe(5000);

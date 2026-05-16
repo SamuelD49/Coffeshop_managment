@@ -55,13 +55,14 @@ export async function list(req: Request, res: Response) {
     filters.employeeId = actor(req);
   }
 
-  const sessions = Sessions.listAll({
+  const rawSessions = await Sessions.listAll({
     from: filters.from || undefined,
     to: filters.to || undefined,
     employeeId: filters.employeeId,
     status: filters.status || undefined
-  }).map(s => Sessions.withTotals(s.id)!);
-  
+  });
+  const sessions = await Promise.all(rawSessions.map(async s => (await Sessions.withTotals(s.id))!));
+
   const employees = role(req) === "owner" ? await Employees.listAll({ activeOnly: false }) : [];
   const hasCashiers = await Employees.hasActiveCashiers();
   res.render("sales/list", { sessions, employees, filters, hasCashiers });
@@ -82,22 +83,22 @@ export async function create(req: Request, res: Response) {
     pushFlash(req, "error", "Pick a valid date");
     return res.redirect("/sales/new");
   }
-  const s = Sessions.create({ employee_id: actor(req), business_date, shift });
+  const s = await Sessions.create({ employee_id: actor(req), business_date, shift });
   await writeAudit({ actor_id: actor(req), action: "create_sales_session", entity: "sales_sessions", entity_id: s.id });
   res.redirect(`/sales/${s.id}`);
 }
 
 export async function entry(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const session = Sessions.findById(id);
+  const session = await Sessions.findById(id);
   if (!session) return res.status(404).render("errors/404");
   if (!canView(req, session)) return res.status(403).render("errors/403", { message: "Not your shift" });
 
   const items = await Menu.listActiveByPopularity();
-  const linesArr = Lines.listForSession(id);
+  const linesArr = await Lines.listForSession(id);
   const lines: Record<number, typeof linesArr[0]> = {};
   for (const l of linesArr) lines[l.menu_item_id] = l;
-  const totals = Sessions.withTotals(id)!;
+  const totals = (await Sessions.withTotals(id))!;
   const editable = canEdit(req, session);
   const employee = await Employees.findById(session.employee_id);
   const hasCashiers = await Employees.hasActiveCashiers();
@@ -107,12 +108,12 @@ export async function entry(req: Request, res: Response) {
 export async function upsertLine(req: Request, res: Response) {
   const id = Number(req.params.id);
   const menuItemId = Number(req.params.menuItemId);
-  const session = Sessions.findById(id);
+  const session = await Sessions.findById(id);
   if (!session || !canEdit(req, session)) return res.status(403).send("Forbidden");
 
   const qty = Math.max(0, Math.floor(Number(req.body.qty || 0)));
-  const line = Lines.upsert(id, menuItemId, qty);
-  const totals = Sessions.withTotals(id)!;
+  const line = await Lines.upsert(id, menuItemId, qty);
+  const totals = (await Sessions.withTotals(id))!;
   const item = await Menu.findById(menuItemId);
 
   // Return two HTML fragments: the row total and the footer totals (out-of-band swap).
@@ -131,16 +132,16 @@ function parseMajor(input: unknown): number {
   return Math.round(n * 100);
 }
 
-export function updateHeader(req: Request, res: Response) {
+export async function updateHeader(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const session = Sessions.findById(id);
+  const session = await Sessions.findById(id);
   if (!session || !canEdit(req, session)) return res.status(403).send("Forbidden");
-  Sessions.updateHeader(id, {
+  await Sessions.updateHeader(id, {
     cash_amount: parseMajor(req.body.cash_amount),
     bank_transfer_amount: parseMajor(req.body.bank_transfer_amount),
     notes: (req.body.notes ?? "").toString() || null,
   });
-  const totals = Sessions.withTotals(id)!;
+  const totals = (await Sessions.withTotals(id))!;
   res.render("sales/_totals", { totals, layout: false }, (err, html) => {
     if (err) return res.status(500).send("render error");
     res.send(html);
@@ -149,9 +150,9 @@ export function updateHeader(req: Request, res: Response) {
 
 export async function close(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const session = Sessions.findById(id);
+  const session = await Sessions.findById(id);
   if (!session || !canEdit(req, session)) return res.status(403).render("errors/403", { message: "Cannot close this shift" });
-  Sessions.close(id);
+  await Sessions.close(id);
   await writeAudit({ actor_id: actor(req), action: "close_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Shift closed");
   res.redirect(`/sales/${id}`);
@@ -159,10 +160,10 @@ export async function close(req: Request, res: Response) {
 
 export async function reopen(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const session = Sessions.findById(id);
+  const session = await Sessions.findById(id);
   if (!session) return res.status(404).render("errors/404");
   if (role(req) !== "owner") return res.status(403).render("errors/403", { message: "Only the owner can reopen a shift" });
-  Sessions.reopen(id);
+  await Sessions.reopen(id);
   await writeAudit({ actor_id: actor(req), action: "reopen_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Shift reopened");
   res.redirect(`/sales/${id}`);
@@ -170,10 +171,10 @@ export async function reopen(req: Request, res: Response) {
 
 export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const session = Sessions.findById(id);
+  const session = await Sessions.findById(id);
   if (!session) return res.status(404).render("errors/404");
   if (role(req) !== "owner") return res.status(403).render("errors/403", { message: "Only the owner can delete a sales record" });
-  Sessions.remove(id);
+  await Sessions.remove(id);
   await writeAudit({ actor_id: actor(req), action: "delete_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Sales record deleted");
   res.redirect("/sales");

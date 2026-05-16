@@ -28,9 +28,9 @@ beforeEach(async () => {
   await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
   const e = await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
   const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
-  const s = Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "morning" });
-  Lines.upsert(s.id, m.id, 3);
-  Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 0, notes: null });
+  const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "morning" });
+  await Lines.upsert(s.id, m.id, 3);
+  await Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 0, notes: null });
 });
 
 afterAll(async () => {
