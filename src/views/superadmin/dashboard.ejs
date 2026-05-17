@@ -47,7 +47,7 @@
         <form method="POST" action="/superadmin/settings" class="flex flex-col md:flex-row md:items-center justify-between gap-gutter">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <div class="flex items-start gap-3">
-            <input type="checkbox" id="requireApproval" name="requireApproval" value="true" <%= requireApproval ? 'checked' : '' %> class="w-4 h-4 text-ember border-rule rounded focus:ring-ember mt-1 cursor-pointer" />
+            <input type="checkbox" id="requireApproval" name="requireApproval" value="true" <%= typeof requireApproval !== 'undefined' && requireApproval ? 'checked' : '' %> class="w-4 h-4 text-ember border-rule rounded focus:ring-ember mt-1 cursor-pointer" />
             <div>
               <label for="requireApproval" class="block font-sans font-bold text-[14px] text-ink cursor-pointer">
                 Require Manual Owner Approval
