@@ -7,7 +7,8 @@ import * as PayrollEntries from "../models/payrollEntries";
 import { calculateCompleteness } from "../lib/onboarding";
 import { writeAudit } from "../lib/audit";
 import { pushFlash } from "../lib/flash";
-import { pathFor, storeFile, deleteFile } from "../lib/uploads";
+import { storeFile, deleteFile } from "../lib/uploads";
+import { getStorage } from "../lib/storage";
 
 function actor(req: Request): number | null { return req.session.employeeId ?? null; }
 
@@ -294,13 +295,19 @@ export async function deleteGuarantorDocument(req: Request, res: Response) {
   res.redirect(`/employees/${id}?tab=guarantors`);
 }
 
-// Auth-gated file serving: only owners can view files
-export function serveEmployeeFile(req: Request, res: Response) {
+// Auth-gated file serving: stream through the Storage backend so the same
+// handler works whether files live on local disk or in Supabase Storage.
+export async function serveEmployeeFile(req: Request, res: Response) {
   const id = Number(req.params.id);
   const filename = String(req.params.filename);
   if (!/^[\w\-.]+$/.test(filename)) return res.status(400).send("Invalid filename");
-  const full = pathFor("employee", id, filename);
-  res.sendFile(resolve(full));
+  try {
+    const obj = await getStorage().get("employee", id, filename);
+    res.type(obj.contentType);
+    return res.send(obj.body);
+  } catch {
+    return res.status(404).send("Not found");
+  }
 }
 
 export async function serveGuarantorFile(req: Request, res: Response) {
@@ -310,6 +317,11 @@ export async function serveGuarantorFile(req: Request, res: Response) {
   if (!/^[\w\-.]+$/.test(filename)) return res.status(400).send("Invalid filename");
   const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).send("Not found");
-  const full = pathFor("guarantor", gid, filename);
-  res.sendFile(resolve(full));
+  try {
+    const obj = await getStorage().get("guarantor", gid, filename);
+    res.type(obj.contentType);
+    return res.send(obj.body);
+  } catch {
+    return res.status(404).send("Not found");
+  }
 }
