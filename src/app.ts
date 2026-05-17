@@ -34,6 +34,16 @@ app.use("/img", express.static(resolve(process.cwd(), "public/img"), { maxAge: "
 app.use(express.urlencoded({ extended: true, limit: "500kb" }));
 app.use(express.json({ limit: "500kb" }));
 
+// Dynamic pages must NOT be cached at Vercel's edge — every request is
+// per-session and per-shop. Without this header, a 404 from an early
+// deploy (or a response for shop A) could be served to shop B.
+// Static handlers ran above and set their own Cache-Control already, so
+// this only affects the application routes that follow.
+app.use((_req, res, next) => {
+  res.set("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
+  next();
+});
+
 app.use(sessionMiddleware());
 app.use(localsMiddleware);
 app.use(flashMiddleware);
