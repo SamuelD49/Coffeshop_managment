@@ -10,6 +10,13 @@ import { router } from "./routes";
 
 export const app = express();
 
+// Vercel (and most modern hosts) terminate TLS at the edge and forward
+// to the function over HTTP. Without trust proxy, Express thinks every
+// request is insecure and express-session refuses to send a `secure`
+// cookie — sessions silently fail to persist across redirects. trust
+// proxy=1 tells Express to read X-Forwarded-Proto from the first hop.
+app.set("trust proxy", 1);
+
 // Register EJS explicitly. Express otherwise calls `require("ejs")` at the
 // first render — a dynamic require that Vercel's bundler can't see, so the
 // module gets stripped from the function package. The static `import ejs`

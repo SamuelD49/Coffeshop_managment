@@ -47,6 +47,11 @@ export function sessionMiddleware() {
     cookie: {
       httpOnly: true,
       sameSite: "lax",
+      // secure: "auto" works hand-in-hand with `app.set("trust proxy", 1)`
+      // — express-session looks at req.secure (set from X-Forwarded-Proto)
+      // and sets the cookie's Secure flag only on HTTPS. So local HTTP dev
+      // and HTTPS production both work without code changes.
+      secure: "auto",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   });
