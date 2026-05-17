@@ -5,7 +5,6 @@ import { sessionMiddleware } from "./lib/session";
 import { csrfMiddleware } from "./lib/csrf";
 import { flashMiddleware } from "./lib/flash";
 import { localsMiddleware } from "./middleware/locals";
-import { requireSetup } from "./middleware/requireSetup";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
 import { router } from "./routes";
 
@@ -37,7 +36,6 @@ app.use(sessionMiddleware());
 app.use(localsMiddleware);
 app.use(flashMiddleware);
 app.use(csrfMiddleware);
-app.use(requireSetup);
 
 app.use(router);
 

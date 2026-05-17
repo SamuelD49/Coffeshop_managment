@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as Auth from "../controllers/authController";
-import * as Setup from "../controllers/setupController";
+import * as Signup from "../controllers/signupController";
 import * as Dashboard from "../controllers/dashboardController";
 import * as Settings from "../controllers/settingsController";
 import * as Account from "../controllers/accountController";
@@ -16,14 +16,18 @@ import { reportsRouter } from "./reports";
 
 export const router = Router();
 
-// Setup (only reachable when employees table is empty — enforced by requireSetup middleware)
-router.get("/setup", Setup.showForm);
-router.post("/setup", Setup.submit);
+// Signup — creates a new shop + first owner. Public.
+router.get("/signup", Signup.showSignup);
+router.post("/signup", Signup.signup);
 
 // Auth
 router.get("/login", Auth.showLogin);
 router.post("/login", Auth.submitLogin);
 router.post("/logout", Auth.logout);
+
+// Legacy /setup redirects to /signup so old links don't 404.
+router.get("/setup", (_req, res) => res.redirect("/signup"));
+router.post("/setup", (_req, res) => res.redirect("/signup"));
 
 // Dashboard
 router.get("/", requireAuth, Dashboard.show);

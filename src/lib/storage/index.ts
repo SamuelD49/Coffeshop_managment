@@ -1,5 +1,6 @@
 import { LocalStorage } from "./local";
 import { SupabaseStorage } from "./supabase";
+import { currentShopId } from "../shopContext";
 
 export type OwnerType = "employee" | "guarantor";
 
@@ -38,6 +39,9 @@ export function currentStorageDriver(): "local" | "supabase" {
   return (process.env.STORAGE_DRIVER ?? "local").toLowerCase() === "supabase" ? "supabase" : "local";
 }
 
+// All keys are scoped under `shops/{shopId}/...` so two shops can never
+// collide on the same object path. The shopId is read from request-scoped
+// AsyncLocalStorage — every storage call happens inside a runWithShop block.
 export function storageKey(ownerType: OwnerType, ownerId: number, filename: string): string {
-  return `${ownerType}/${ownerId}/${filename}`;
+  return `shops/${currentShopId()}/${ownerType}/${ownerId}/${filename}`;
 }

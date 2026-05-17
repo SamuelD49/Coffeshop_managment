@@ -1,6 +1,7 @@
 import { getDb } from "./kysely";
 import { sql } from "kysely";
 import { memoize } from "./cache";
+import { currentShopId } from "./shopContext";
 
 export type DateRange = { from: string; to: string };
 
@@ -18,15 +19,19 @@ export type PettyCashSummary = {
   byType: { expense: number; refund: number; replenishment: number };
 };
 
-// Every read here is memoized for 10s. Writes in the sales/purchases/petty-cash
-// models call invalidate("reports:") so a fresh page load after a save sees
-// the new data immediately. A 10s window is short enough that staleness in
-// the absence of writes is invisible, long enough to absorb a page-load
-// burst (dashboard + sidebar + refresh).
+// Cache keys are namespaced by shop. Writes in sales/purchases/petty-cash
+// invalidate `reports:shop:{id}:` so a fresh page load after a save sees
+// the new data immediately. Each shop's aggregates live in their own
+// cache slot — shop A's write doesn't bust shop B's cache.
 const TTL_MS = 10_000;
 
+function shopKey(suffix: string): string {
+  return `reports:shop:${currentShopId()}:${suffix}`;
+}
+
 export async function salesByDay(range: DateRange): Promise<SalesByDayRow[]> {
-  return memoize(`reports:salesByDay:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`salesByDay:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("sales_sessions as s")
       .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
@@ -35,6 +40,7 @@ export async function salesByDay(range: DateRange): Promise<SalesByDayRow[]> {
         eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"),
         eb.fn.count<number>("s.id").distinct().as("session_count"),
       ])
+      .where("s.shop_id", "=", shopId)
       .where("s.business_date", ">=", range.from)
       .where("s.business_date", "<=", range.to)
       .groupBy("s.business_date")
@@ -45,10 +51,7 @@ export async function salesByDay(range: DateRange): Promise<SalesByDayRow[]> {
 }
 
 export async function salesByDayDense(range: DateRange): Promise<SalesByDayRow[]> {
-  // Composed of salesByDay (which is memoized) + pure JS densification.
-  // Memoizing the dense form too means the dashboard hits one cache entry
-  // for the whole 7-day stripe.
-  return memoize(`reports:salesByDayDense:${range.from}:${range.to}`, TTL_MS, async () => {
+  return memoize(shopKey(`salesByDayDense:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await salesByDay(range);
     const byDate: Record<string, SalesByDayRow> = {};
     for (const r of rows) byDate[r.business_date] = r;
@@ -74,7 +77,8 @@ export function shiftDate(yyyymmdd: string, days: number): string {
 }
 
 export async function salesByItem(range: DateRange): Promise<SalesByItemRow[]> {
-  return memoize(`reports:salesByItem:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`salesByItem:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("sale_line_items as l")
       .innerJoin("sales_sessions as s", "s.id", "l.sales_session_id")
@@ -85,6 +89,7 @@ export async function salesByItem(range: DateRange): Promise<SalesByItemRow[]> {
         eb.fn.coalesce(eb.fn.sum<number>("l.qty"), eb.lit(0)).as("qty"),
         eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("revenue"),
       ])
+      .where("s.shop_id", "=", shopId)
       .where("s.business_date", ">=", range.from)
       .where("s.business_date", "<=", range.to)
       .groupBy(["l.menu_item_id", "m.name"])
@@ -96,7 +101,8 @@ export async function salesByItem(range: DateRange): Promise<SalesByItemRow[]> {
 }
 
 export async function salesByEmployee(range: DateRange): Promise<SalesByEmployeeRow[]> {
-  return memoize(`reports:salesByEmployee:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`salesByEmployee:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("sales_sessions as s")
       .innerJoin("employees as e", "e.id", "s.employee_id")
@@ -107,6 +113,7 @@ export async function salesByEmployee(range: DateRange): Promise<SalesByEmployee
         eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"),
         eb.fn.count<number>("s.id").distinct().as("session_count"),
       ])
+      .where("s.shop_id", "=", shopId)
       .where("s.business_date", ">=", range.from)
       .where("s.business_date", "<=", range.to)
       .groupBy(["s.employee_id", "e.full_name"])
@@ -118,7 +125,8 @@ export async function salesByEmployee(range: DateRange): Promise<SalesByEmployee
 }
 
 export async function purchasesByDay(range: DateRange): Promise<PurchasesByDayRow[]> {
-  return memoize(`reports:purchasesByDay:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`purchasesByDay:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("purchase_requisitions")
       .select((eb) => [
@@ -126,6 +134,7 @@ export async function purchasesByDay(range: DateRange): Promise<PurchasesByDayRo
         eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("total"),
         eb.fn.countAll<number>().as("row_count"),
       ])
+      .where("shop_id", "=", shopId)
       .where("purchase_date", ">=", range.from)
       .where("purchase_date", "<=", range.to)
       .groupBy("purchase_date")
@@ -136,7 +145,8 @@ export async function purchasesByDay(range: DateRange): Promise<PurchasesByDayRo
 }
 
 export async function salesByMonth(range: DateRange): Promise<SalesByMonthRow[]> {
-  return memoize(`reports:salesByMonth:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`salesByMonth:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("sales_sessions as s")
       .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
@@ -145,6 +155,7 @@ export async function salesByMonth(range: DateRange): Promise<SalesByMonthRow[]>
         eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"),
         eb.fn.count<number>("s.id").distinct().as("session_count"),
       ])
+      .where("s.shop_id", "=", shopId)
       .where("s.business_date", ">=", range.from)
       .where("s.business_date", "<=", range.to)
       .groupBy("month")
@@ -155,7 +166,8 @@ export async function salesByMonth(range: DateRange): Promise<SalesByMonthRow[]>
 }
 
 export async function purchasesByMonth(range: DateRange): Promise<PurchasesByMonthRow[]> {
-  return memoize(`reports:purchasesByMonth:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`purchasesByMonth:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("purchase_requisitions")
       .select((eb) => [
@@ -163,6 +175,7 @@ export async function purchasesByMonth(range: DateRange): Promise<PurchasesByMon
         eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("total"),
         eb.fn.countAll<number>().as("row_count"),
       ])
+      .where("shop_id", "=", shopId)
       .where("purchase_date", ">=", range.from)
       .where("purchase_date", "<=", range.to)
       .groupBy("month")
@@ -173,7 +186,8 @@ export async function purchasesByMonth(range: DateRange): Promise<PurchasesByMon
 }
 
 export async function pettyCashByMonth(range: DateRange): Promise<PettyCashByMonthRow[]> {
-  return memoize(`reports:pettyCashByMonth:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`pettyCashByMonth:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("petty_cash_entries")
       .select([
@@ -181,6 +195,7 @@ export async function pettyCashByMonth(range: DateRange): Promise<PettyCashByMon
         sql<number>`COALESCE(SUM(CASE WHEN type IN ('refund','replenishment') THEN amount ELSE 0 END), 0)`.as("total_in"),
         sql<number>`COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0)`.as("total_out"),
       ])
+      .where("shop_id", "=", shopId)
       .where("entry_date", ">=", range.from)
       .where("entry_date", "<=", range.to)
       .groupBy("month")
@@ -196,13 +211,15 @@ export async function pettyCashByMonth(range: DateRange): Promise<PettyCashByMon
 }
 
 export async function pettyCashSummary(range: DateRange): Promise<PettyCashSummary> {
-  return memoize(`reports:pettyCashSummary:${range.from}:${range.to}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`pettyCashSummary:${range.from}:${range.to}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("petty_cash_entries")
       .select((eb) => [
         "type",
         eb.fn.coalesce(eb.fn.sum<number>("amount"), eb.lit(0)).as("total"),
       ])
+      .where("shop_id", "=", shopId)
       .where("entry_date", ">=", range.from)
       .where("entry_date", "<=", range.to)
       .groupBy("type")
@@ -218,11 +235,13 @@ export async function pettyCashSummary(range: DateRange): Promise<PettyCashSumma
 // Dashboard helpers
 
 export async function todaySalesTotal(businessDate: string): Promise<number> {
-  return memoize(`reports:todaySalesTotal:${businessDate}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`todaySalesTotal:${businessDate}`), TTL_MS, async () => {
     const r = await getDb()
       .selectFrom("sales_sessions as s")
       .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
       .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"))
+      .where("s.shop_id", "=", shopId)
       .where("s.business_date", "=", businessDate)
       .executeTakeFirstOrThrow();
     return Number(r.subtotal);
@@ -230,13 +249,15 @@ export async function todaySalesTotal(businessDate: string): Promise<number> {
 }
 
 export async function todayCashVsBank(businessDate: string): Promise<{ cash: number; bank: number }> {
-  return memoize(`reports:todayCashVsBank:${businessDate}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`todayCashVsBank:${businessDate}`), TTL_MS, async () => {
     const r = await getDb()
       .selectFrom("sales_sessions")
       .select((eb) => [
         eb.fn.coalesce(eb.fn.sum<number>("cash_amount"), eb.lit(0)).as("cash"),
         eb.fn.coalesce(eb.fn.sum<number>("bank_transfer_amount"), eb.lit(0)).as("bank"),
       ])
+      .where("shop_id", "=", shopId)
       .where("business_date", "=", businessDate)
       .executeTakeFirstOrThrow();
     return { cash: Number(r.cash), bank: Number(r.bank) };
@@ -244,10 +265,12 @@ export async function todayCashVsBank(businessDate: string): Promise<{ cash: num
 }
 
 export async function todayPurchasesTotal(businessDate: string): Promise<number> {
-  return memoize(`reports:todayPurchasesTotal:${businessDate}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`todayPurchasesTotal:${businessDate}`), TTL_MS, async () => {
     const r = await getDb()
       .selectFrom("purchase_requisitions")
       .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("s"))
+      .where("shop_id", "=", shopId)
       .where("purchase_date", "=", businessDate)
       .executeTakeFirstOrThrow();
     return Number(r.s);
@@ -255,10 +278,12 @@ export async function todayPurchasesTotal(businessDate: string): Promise<number>
 }
 
 export async function todayPettyCashSpent(businessDate: string): Promise<number> {
-  return memoize(`reports:todayPettyCashSpent:${businessDate}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`todayPettyCashSpent:${businessDate}`), TTL_MS, async () => {
     const r = await getDb()
       .selectFrom("petty_cash_entries")
       .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("amount"), eb.lit(0)).as("s"))
+      .where("shop_id", "=", shopId)
       .where("entry_date", "=", businessDate)
       .where("type", "=", "expense")
       .executeTakeFirstOrThrow();
@@ -267,7 +292,8 @@ export async function todayPettyCashSpent(businessDate: string): Promise<number>
 }
 
 export async function topItemsToday(businessDate: string, limit: number = 5): Promise<SalesByItemRow[]> {
-  return memoize(`reports:topItemsToday:${businessDate}:${limit}`, TTL_MS, async () => {
+  const shopId = currentShopId();
+  return memoize(shopKey(`topItemsToday:${businessDate}:${limit}`), TTL_MS, async () => {
     const rows = await getDb()
       .selectFrom("sale_line_items as l")
       .innerJoin("sales_sessions as s", "s.id", "l.sales_session_id")
@@ -278,6 +304,7 @@ export async function topItemsToday(businessDate: string, limit: number = 5): Pr
         eb.fn.coalesce(eb.fn.sum<number>("l.qty"), eb.lit(0)).as("qty"),
         eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("revenue"),
       ])
+      .where("s.shop_id", "=", shopId)
       .where("s.business_date", "=", businessDate)
       .groupBy(["l.menu_item_id", "m.name"])
       .orderBy("qty", "desc")

@@ -1,34 +1,29 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { currentShopId } from "../lib/shopContext";
 
-// In-memory cache of the entire settings table. Settings are read on almost
-// every request (timezone, business-day cutoff, currency formatting, etc.)
-// but written rarely (only through the /settings page). One round trip to
-// Supabase costs ~100ms from Africa; without this cache, a single dashboard
-// render fires 4-6 settings lookups serially. With it, the first request
-// fills the cache and every subsequent settings read is in-process.
-//
-// Invalidation: any successful Settings.set() clears the cache.
-let _cache: Map<string, string> | null = null;
-let _cacheLoadedAt = 0;
+// Per-shop cache: each shop's settings are loaded on first access and held
+// for CACHE_TTL_MS. A Settings.set() invalidates only its own shop's cache.
+// closeDb() (in tests) wipes everything via _invalidateCache().
+const _caches = new Map<number, { map: Map<string, string>; loadedAt: number }>();
 const CACHE_TTL_MS = 30_000;
 
-async function loadCache(): Promise<Map<string, string>> {
-  const rows = await getDb().selectFrom("settings").select(["key", "value"]).execute();
+async function cache(): Promise<Map<string, string>> {
+  const shopId = currentShopId();
+  const hit = _caches.get(shopId);
+  if (hit && Date.now() - hit.loadedAt < CACHE_TTL_MS) return hit.map;
+  const rows = await getDb()
+    .selectFrom("settings")
+    .select(["key", "value"])
+    .where("shop_id", "=", shopId)
+    .execute();
   const m = new Map<string, string>();
   for (const r of rows) m.set(r.key, r.value);
-  _cache = m;
-  _cacheLoadedAt = Date.now();
+  _caches.set(shopId, { map: m, loadedAt: Date.now() });
   return m;
 }
 
-function invalidate(): void {
-  _cache = null;
-  _cacheLoadedAt = 0;
-}
-
-async function cache(): Promise<Map<string, string>> {
-  if (_cache && Date.now() - _cacheLoadedAt < CACHE_TTL_MS) return _cache;
-  return await loadCache();
+function invalidateShop(shopId: number): void {
+  _caches.delete(shopId);
 }
 
 export async function get(key: string): Promise<string | null> {
@@ -37,13 +32,14 @@ export async function get(key: string): Promise<string | null> {
 }
 
 export async function set(key: string, value: string): Promise<void> {
+  const shopId = currentShopId();
   const now = nowIso();
   await getDb()
     .insertInto("settings")
-    .values({ key, value, updated_at: now })
+    .values({ shop_id: shopId, key, value, updated_at: now })
     .onConflict((oc) => oc.columns(["shop_id", "key"]).doUpdateSet({ value, updated_at: now }))
     .execute();
-  invalidate();
+  invalidateShop(shopId);
 }
 
 export async function getAll(): Promise<Record<string, string>> {
@@ -63,8 +59,7 @@ export async function getBool(key: string): Promise<boolean> {
   return (await get(key)) === "true";
 }
 
-// Test hook: lets the model tests wipe the cache between tests without
-// having to know about its existence.
+// Test hook — wipes all shops' caches. Called by closeDb.
 export function _invalidateCache(): void {
-  invalidate();
+  _caches.clear();
 }

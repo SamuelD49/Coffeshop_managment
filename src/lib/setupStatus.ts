@@ -1,4 +1,5 @@
 import { getDb } from "./kysely";
+import { currentShopId } from "./shopContext";
 import * as Settings from "../models/settings";
 import type { DB } from "./db-types";
 
@@ -23,7 +24,12 @@ export type SetupStatus = {
 };
 
 async function tableHasRows(table: keyof DB): Promise<boolean> {
-  const row = await getDb().selectFrom(table).select("id" as any).limit(1).executeTakeFirst();
+  const row = await getDb()
+    .selectFrom(table)
+    .select("id" as any)
+    .where("shop_id" as any, "=", currentShopId())
+    .limit(1)
+    .executeTakeFirst();
   return !!row;
 }
 
