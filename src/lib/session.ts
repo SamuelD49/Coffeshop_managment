@@ -54,6 +54,7 @@ export function sessionMiddleware() {
 
 declare module "express-session" {
   interface SessionData {
+    shopId?: number;
     employeeId?: number;
     role?: "owner" | "employee";
     csrfToken?: string;

@@ -1,5 +1,6 @@
 import { getDb, nowIso } from "../lib/kysely";
 import { invalidate } from "../lib/cache";
+import { currentShopId } from "../lib/shopContext";
 import type { SalesSessionsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -14,11 +15,22 @@ export type SessionTotals = SalesSession & {
 export type CreateInput = { employee_id: number; business_date: string; shift: string | null };
 export type HeaderInput = { cash_amount: number; bank_transfer_amount: number; notes: string | null };
 
+function bustReportsCache(): void {
+  invalidate(`reports:shop:${currentShopId()}:`);
+}
+
+// First sale flips the "Log your first sale" step in the onboarding
+// checklist. Bust setupStatus on create so the strip updates.
+function bustSetupStatus(): void {
+  invalidate(`setupStatus:shop:${currentShopId()}`);
+}
+
 export async function create(input: CreateInput): Promise<SalesSession> {
   const now = nowIso();
   const r = await getDb()
     .insertInto("sales_sessions")
     .values({
+      shop_id: currentShopId(),
       employee_id: input.employee_id,
       business_date: input.business_date,
       shift: input.shift,
@@ -27,12 +39,18 @@ export async function create(input: CreateInput): Promise<SalesSession> {
     })
     .returning("id")
     .executeTakeFirstOrThrow();
-  invalidate("reports:");
+  bustReportsCache();
+  bustSetupStatus();
   return (await findById(r.id))!;
 }
 
 export async function findById(id: number): Promise<SalesSession | null> {
-  const r = await getDb().selectFrom("sales_sessions").selectAll().where("id", "=", id).executeTakeFirst();
+  const r = await getDb()
+    .selectFrom("sales_sessions")
+    .selectAll()
+    .where("shop_id", "=", currentShopId())
+    .where("id", "=", id)
+    .executeTakeFirst();
   return r ?? null;
 }
 
@@ -42,6 +60,7 @@ export async function withTotals(id: number): Promise<SessionTotals | null> {
   const row = await getDb()
     .selectFrom("sale_line_items")
     .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("subtotal"))
+    .where("shop_id", "=", currentShopId())
     .where("sales_session_id", "=", id)
     .executeTakeFirstOrThrow();
   const subtotal = Number(row.subtotal);
@@ -53,37 +72,46 @@ export async function updateHeader(id: number, input: HeaderInput): Promise<void
   await getDb()
     .updateTable("sales_sessions")
     .set({ ...input, updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
-  invalidate("reports:");
+  bustReportsCache();
 }
 
 export async function close(id: number): Promise<void> {
   await getDb()
     .updateTable("sales_sessions")
     .set({ status: "closed", updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
-  invalidate("reports:");
+  bustReportsCache();
 }
 
 export async function reopen(id: number): Promise<void> {
   await getDb()
     .updateTable("sales_sessions")
     .set({ status: "open", updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
-  invalidate("reports:");
+  bustReportsCache();
 }
 
-// Deletes a session and (via ON DELETE CASCADE in the schema) all its sale_line_items.
 export async function remove(id: number): Promise<void> {
-  await getDb().deleteFrom("sales_sessions").where("id", "=", id).execute();
-  invalidate("reports:");
+  await getDb()
+    .deleteFrom("sales_sessions")
+    .where("shop_id", "=", currentShopId())
+    .where("id", "=", id)
+    .execute();
+  bustReportsCache();
 }
 
 export async function listAll(filters: { from?: string; to?: string; employeeId?: number; status?: "open" | "closed" } = {}): Promise<SalesSession[]> {
-  let q = getDb().selectFrom("sales_sessions").selectAll();
+  let q = getDb()
+    .selectFrom("sales_sessions")
+    .selectAll()
+    .where("shop_id", "=", currentShopId());
   if (filters.from)       q = q.where("business_date", ">=", filters.from);
   if (filters.to)         q = q.where("business_date", "<=", filters.to);
   if (filters.employeeId) q = q.where("employee_id", "=", filters.employeeId);

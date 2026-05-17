@@ -5,6 +5,8 @@ import { unlinkSync, existsSync } from "fs";
 import { closeDb, runMigrations } from "../../src/lib/db";
 import * as Employees from "../../src/models/employees";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-auth.db";
 process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
@@ -13,12 +15,17 @@ async function seedOwner() {
   const hash = await bcrypt.hash("secret123", 12);
   await Employees.create({ full_name: "Sam", username: "sam", password_hash: hash, role: "owner" });
 }
+let shopId: number;
+
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
-  await seedOwner();
+  shopId = await seedTestShop();
+  await runInShop(shopId, async () => {
+    await seedOwner();
+  });
 });
 
 afterAll(async () => {
@@ -35,21 +42,39 @@ async function getCsrf(agent: request.SuperAgentTest, path: string): Promise<str
 
 describe("Auth", () => {
   it("GET /login renders the form", async () => {
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const res = await request(app).get("/login").expect(200);
     expect(res.text).toContain("Sign in");
+  
+
+    });
+
   });
 
   it("rejects invalid credentials", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = request.agent(app);
     const csrf = await getCsrf(agent, "/login");
     const res = await agent.post("/login").type("form").send({ _csrf: csrf, username: "sam", password: "wrong" });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe("/login");
+  
+
+
+    });
+
+
   });
 
   it("accepts valid credentials and redirects to /", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = request.agent(app);
     const csrf = await getCsrf(agent, "/login");
@@ -60,15 +85,33 @@ describe("Auth", () => {
     const home = await agent.get("/");
     expect(home.status).toBe(200);
     expect(home.text).toContain("Dashboard");
+  
+
+
+    });
+
+
   });
 
   it("requireAuth redirects unauthenticated user to /login", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const res = await request(app).get("/").expect(302);
     expect(res.headers.location).toBe("/login");
+  
+
+
+    });
+
+
   });
 
   it("logout clears the session", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = request.agent(app);
     let csrf = await getCsrf(agent, "/login");
@@ -78,5 +121,11 @@ describe("Auth", () => {
     const res = await agent.get("/");
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe("/login");
+  
+
+
+    });
+
+
   });
 });

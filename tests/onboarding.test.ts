@@ -6,13 +6,18 @@ import * as Guarantors from "../src/models/guarantors";
 import * as Attachments from "../src/models/attachments";
 import { calculateCompleteness } from "../src/lib/onboarding";
 
+import { seedTestShop, runInShop } from "./lib/testShop";
+
 const TEST_DB = "./data/test-onboarding.db";
 process.env.DB_PATH = TEST_DB;
+
+let shopId: number;
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
+  shopId = await seedTestShop();
 });
 
 afterAll(async () => {
@@ -42,15 +47,24 @@ async function fillPersonal(id: number) {
 
 describe("calculateCompleteness", () => {
   it("flags personal-incomplete when fields are missing", async () => {
+
+    await runInShop(shopId, async () => {
     const e = await seedEmployee();
     const r = await calculateCompleteness(e.id);
     expect(r.complete).toBe(false);
     expect(r.missing).toContain("phone");
     expect(r.missing).toContain("national_id_number");
     expect(r.missing).toContain("address");
+  
+
+    });
+
   });
 
   it("flags missing documents", async () => {
+
+
+    await runInShop(shopId, async () => {
     const e = await seedEmployee();
     await fillPersonal(e.id);
     const r = await calculateCompleteness(e.id);
@@ -58,9 +72,18 @@ describe("calculateCompleteness", () => {
     expect(r.missing).toContain("id_front");
     expect(r.missing).toContain("id_back");
     expect(r.missing).toContain("contract");
+  
+
+
+    });
+
+
   });
 
   it("flags missing guarantor and guarantor id", async () => {
+
+
+    await runInShop(shopId, async () => {
     const e = await seedEmployee();
     await fillPersonal(e.id);
     for (const k of ["profile_photo", "id_front", "id_back", "contract"] as const) {
@@ -68,9 +91,18 @@ describe("calculateCompleteness", () => {
     }
     const r = await calculateCompleteness(e.id);
     expect(r.missing).toContain("guarantor");
+  
+
+
+    });
+
+
   });
 
   it("complete=true when everything present", async () => {
+
+
+    await runInShop(shopId, async () => {
     const e = await seedEmployee();
     await fillPersonal(e.id);
     for (const k of ["profile_photo", "id_front", "id_back", "contract"] as const) {
@@ -85,5 +117,11 @@ describe("calculateCompleteness", () => {
     const r = await calculateCompleteness(e.id);
     expect(r.complete).toBe(true);
     expect(r.missing).toEqual([]);
+  
+
+
+    });
+
+
   });
 });

@@ -3,13 +3,18 @@ import { unlinkSync, existsSync } from "fs";
 import { closeDb, runMigrations } from "../../src/lib/db";
 import * as Purchases from "../../src/models/purchases";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-purchases.db";
 process.env.DB_PATH = TEST_DB;
+
+let shopId: number;
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
+  shopId = await seedTestShop();
 });
 
 afterAll(async () => {
@@ -19,6 +24,8 @@ afterAll(async () => {
 
 describe("Purchases", () => {
   it("create() inserts and returns the row with computed total", async () => {
+
+    await runInShop(shopId, async () => {
     const p = await Purchases.create({
       purchase_date: "2026-05-12",
       description: "Beans",
@@ -30,9 +37,16 @@ describe("Purchases", () => {
     });
     expect(p.id).toBeGreaterThan(0);
     expect(p.total).toBe(200000);
+  
+
+    });
+
   });
 
   it("findById() and update()", async () => {
+
+
+    await runInShop(shopId, async () => {
     const p = await Purchases.create({ purchase_date: "2026-05-12", description: "Beans", unit: "kg", qty: 2, unit_price: 100000, remark: null, entered_by: null });
     expect((await Purchases.findById(p.id))?.description).toBe("Beans");
     await Purchases.update(p.id, { purchase_date: "2026-05-13", description: "Premium beans", unit: "kg", qty: 3, unit_price: 110000, remark: "house blend" });
@@ -40,32 +54,74 @@ describe("Purchases", () => {
     expect(got?.description).toBe("Premium beans");
     expect(got?.total).toBe(330000);
     expect(got?.remark).toBe("house blend");
+  
+
+
+    });
+
+
   });
 
   it("listAll() orders by purchase_date desc, id desc", async () => {
+
+
+    await runInShop(shopId, async () => {
     await Purchases.create({ purchase_date: "2026-05-10", description: "A", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-12", description: "B", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-11", description: "C", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     expect((await Purchases.listAll()).map(p => p.description)).toEqual(["B", "C", "A"]);
+  
+
+
+    });
+
+
   });
 
   it("listAll() filters by date range", async () => {
+
+
+    await runInShop(shopId, async () => {
     await Purchases.create({ purchase_date: "2026-05-10", description: "A", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-12", description: "B", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-15", description: "C", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     expect((await Purchases.listAll({ from: "2026-05-11", to: "2026-05-13" })).map(p => p.description)).toEqual(["B"]);
+  
+
+
+    });
+
+
   });
 
   it("remove() deletes a row", async () => {
+
+
+    await runInShop(shopId, async () => {
     const p = await Purchases.create({ purchase_date: "2026-05-12", description: "X", unit: null, qty: 1, unit_price: 100, remark: null, entered_by: null });
     await Purchases.remove(p.id);
     expect(await Purchases.findById(p.id)).toBeNull();
+  
+
+
+    });
+
+
   });
 
   it("sumTotalInRange()", async () => {
+
+
+    await runInShop(shopId, async () => {
     await Purchases.create({ purchase_date: "2026-05-12", description: "A", unit: null, qty: 2, unit_price: 100, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-12", description: "B", unit: null, qty: 1, unit_price: 300, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-20", description: "C", unit: null, qty: 1, unit_price: 999, remark: null, entered_by: null });
     expect(await Purchases.sumTotalInRange("2026-05-12", "2026-05-12")).toBe(500); // 200 + 300
+  
+
+
+    });
+
+
   });
 });

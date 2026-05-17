@@ -13,7 +13,7 @@
   const backHref = segs.length >= 2 ? '/' + segs[0] : '/';
 %>
 
-<header class="app-header-mobile md:hidden" role="banner">
+<header class="app-header-mobile md:hidden" role="banner" hx-boost="true">
   <% if (showBack) { %>
     <a href="<%= backHref %>" class="app-header-back" aria-label="Back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -28,7 +28,7 @@
 </header>
 
 <% if (isOwner) { %>
-  <nav class="tab-bar md:hidden" aria-label="Primary">
+  <nav class="tab-bar md:hidden" aria-label="Primary" hx-boost="true">
     <a href="/" class="<%= tabClass('/', currentPath) %>">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
       <span>Home</span>
@@ -51,7 +51,7 @@
     </button>
   </nav>
 <% } else { %>
-  <nav class="tab-bar md:hidden" aria-label="Primary">
+  <nav class="tab-bar md:hidden" aria-label="Primary" hx-boost="true">
     <a href="/" class="<%= tabClass('/', currentPath) %>">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
       <span>Home</span>
@@ -72,7 +72,7 @@
   <div class="sheet md:hidden" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-sheet-title" aria-hidden="true">
     <div class="sheet-grip" aria-hidden="true"></div>
     <h2 class="sheet-title" id="more-sheet-title">More</h2>
-    <nav class="sheet-list" aria-label="Secondary">
+    <nav class="sheet-list" aria-label="Secondary" hx-boost="true">
       <a href="/reports"    class="sheet-item">Reports</a>
       <a href="/menu"       class="sheet-item">Menu</a>
       <a href="/employees"  class="sheet-item">Employees</a>

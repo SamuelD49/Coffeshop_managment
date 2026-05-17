@@ -1,5 +1,6 @@
 import { getSupabaseClient, storageBucket } from "../supabase";
 import { storageKey } from "./index";
+import { currentShopId } from "../shopContext";
 import type { Storage, OwnerType, PutOptions, GetResult } from "./index";
 
 export class SupabaseStorage implements Storage {
@@ -35,7 +36,7 @@ export class SupabaseStorage implements Storage {
     // Supabase has no head endpoint; list with a single-result filter.
     const { data, error } = await client.storage
       .from(storageBucket())
-      .list(`${ownerType}/${ownerId}`, { search: filename, limit: 1 });
+      .list(`shops/${currentShopId()}/${ownerType}/${ownerId}`, { search: filename, limit: 1 });
     if (error) throw error;
     return !!data && data.some((f) => f.name === filename);
   }

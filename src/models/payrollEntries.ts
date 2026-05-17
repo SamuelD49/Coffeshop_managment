@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { currentShopId } from "../lib/shopContext";
 import { computeEntry } from "../lib/payrollMath";
 import type { PayrollEntriesTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
@@ -50,6 +51,7 @@ export async function createFromEmployee(input: CreateInput): Promise<PayrollEnt
   const r = await getDb()
     .insertInto("payroll_entries")
     .values({
+      shop_id: currentShopId(),
       payroll_run_id: input.run_id,
       employee_id: input.employee_id,
       days_worked: input.days_worked,
@@ -114,12 +116,18 @@ export async function update(id: number, input: UpdateInput): Promise<void> {
       net_payment: c.net_payment,
       updated_at: nowIso(),
     })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }
 
 export async function findById(id: number): Promise<PayrollEntry | null> {
-  const r = await getDb().selectFrom("payroll_entries").selectAll().where("id", "=", id).executeTakeFirst();
+  const r = await getDb()
+    .selectFrom("payroll_entries")
+    .selectAll()
+    .where("shop_id", "=", currentShopId())
+    .where("id", "=", id)
+    .executeTakeFirst();
   return r ?? null;
 }
 
@@ -129,6 +137,7 @@ export async function listForRun(runId: number): Promise<PayrollEntryWithEmploye
     .innerJoin("employees as emp", "emp.id", "e.employee_id")
     .selectAll("e")
     .select(["emp.full_name", "emp.position"])
+    .where("e.shop_id", "=", currentShopId())
     .where("e.payroll_run_id", "=", runId)
     .orderBy("emp.full_name")
     .execute();
@@ -140,6 +149,7 @@ export async function listForEmployee(employeeId: number): Promise<PayrollEntryW
     .innerJoin("payroll_runs as r", "r.id", "e.payroll_run_id")
     .selectAll("e")
     .select(["r.year", "r.month", "r.status"])
+    .where("e.shop_id", "=", currentShopId())
     .where("e.employee_id", "=", employeeId)
     .orderBy("r.year", "desc")
     .orderBy("r.month", "desc")
@@ -147,5 +157,9 @@ export async function listForEmployee(employeeId: number): Promise<PayrollEntryW
 }
 
 export async function removeForRun(runId: number): Promise<void> {
-  await getDb().deleteFrom("payroll_entries").where("payroll_run_id", "=", runId).execute();
+  await getDb()
+    .deleteFrom("payroll_entries")
+    .where("shop_id", "=", currentShopId())
+    .where("payroll_run_id", "=", runId)
+    .execute();
 }

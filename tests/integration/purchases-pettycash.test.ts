@@ -7,6 +7,8 @@ import * as Employees from "../../src/models/employees";
 import * as Purchases from "../../src/models/purchases";
 import * as Petty from "../../src/models/pettyCash";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-purch-petty.db";
 process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
@@ -23,14 +25,19 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
   const r = await agent.get(path);
   return /name="_csrf" value="([^"]+)"/.exec(r.text)![1];
 }
+let shopId: number;
+
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
-  const hash = await bcrypt.hash("pw", 12);
-  await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
-  await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
+  shopId = await seedTestShop();
+  await runInShop(shopId, async () => {
+    const hash = await bcrypt.hash("pw", 12);
+    await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
+    await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
+  });
 });
 
 afterAll(async () => {
@@ -40,6 +47,8 @@ afterAll(async () => {
 
 describe("Purchases", () => {
   it("owner can add a purchase via the inline form", async () => {
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "owner", "pw");
     const csrf = await csrfFrom(agent, "/purchases");
@@ -52,16 +61,32 @@ describe("Purchases", () => {
     const list = await agent.get("/purchases");
     expect(list.text).toContain("Beans");
     expect(list.text).toContain("200.00"); // 2 kg * 100.00
+  
+
+    });
+
   });
 
   it("cashier cannot reach /purchases", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "cash", "pw");
     const res = await agent.get("/purchases");
     expect(res.status).toBe(403);
+  
+
+
+    });
+
+
   });
 
   it("update + delete cycle", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "owner", "pw");
     const p = await Purchases.create({ purchase_date: "2026-05-12", description: "X", unit: null, qty: 1, unit_price: 10000, remark: null, entered_by: null });
@@ -73,11 +98,19 @@ describe("Purchases", () => {
     csrf = await csrfFrom(agent, "/purchases");
     await agent.post(`/purchases/${p.id}/delete`).type("form").send({ _csrf: csrf });
     expect(await Purchases.findById(p.id)).toBeNull();
+  
+
+
+    });
+
+
   });
 });
 
 describe("Petty cash", () => {
   it("running balance reflects entries by date", async () => {
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "owner", "pw");
     let csrf = await csrfFrom(agent, "/petty-cash");
@@ -88,12 +121,25 @@ describe("Petty cash", () => {
     expect(list.text).toContain("Initial");
     expect(list.text).toContain("Taxi");
     expect(await Petty.currentBalance()).toBe(95000); // 100000 - 5000
+  
+
+    });
+
   });
 
   it("cashier cannot reach /petty-cash", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "cash", "pw");
     const res = await agent.get("/petty-cash");
     expect(res.status).toBe(403);
+  
+
+
+    });
+
+
   });
 });

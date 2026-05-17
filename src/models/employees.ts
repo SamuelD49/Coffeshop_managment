@@ -1,4 +1,6 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { currentShopId } from "../lib/shopContext";
+import { invalidate } from "../lib/cache";
 import type { EmployeesTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -16,17 +18,16 @@ export async function count(): Promise<number> {
   const row = await getDb()
     .selectFrom("employees")
     .select((eb) => eb.fn.countAll<number>().as("c"))
+    .where("shop_id", "=", currentShopId())
     .executeTakeFirstOrThrow();
   return Number(row.c);
 }
 
-// True when at least one active employee has role='employee'. Drives the sales
-// UI: when false (solo-owner shop), the Close-entry button and the per-employee
-// filter are hidden. When the owner hires a cashier, both reappear.
 export async function hasActiveCashiers(): Promise<boolean> {
   const row = await getDb()
     .selectFrom("employees")
     .select((eb) => eb.fn.countAll<number>().as("c"))
+    .where("shop_id", "=", currentShopId())
     .where("role", "=", "employee")
     .where("is_active", "=", 1)
     .executeTakeFirstOrThrow();
@@ -38,6 +39,7 @@ export async function create(input: CreateInput): Promise<Employee> {
   const result = await getDb()
     .insertInto("employees")
     .values({
+      shop_id: currentShopId(),
       full_name: input.full_name,
       phone: input.phone ?? null,
       username: input.username ?? null,
@@ -48,9 +50,18 @@ export async function create(input: CreateInput): Promise<Employee> {
     })
     .returning("id")
     .executeTakeFirstOrThrow();
+  // First employee added → "Add an employee" step ticks done.
+  invalidate(`setupStatus:shop:${currentShopId()}`);
   return (await findById(result.id))!;
 }
 
+// SPECIAL: at LOGIN time we don't yet know which shop the user belongs to.
+// We look the employee up globally by username and resolve their shop_id
+// from the matched row. Login is the ONE place we read without a shop
+// filter; everywhere else uses currentShopId().
+// Note: username uniqueness is per-shop, so multiple shops may have an
+// employee named "owner". Login takes the first match — document this
+// as a known SaaS V1 limitation.
 export async function findByUsername(username: string): Promise<Employee | null> {
   const row = await getDb()
     .selectFrom("employees")
@@ -65,6 +76,7 @@ export async function findById(id: number): Promise<Employee | null> {
   const row = await getDb()
     .selectFrom("employees")
     .selectAll()
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .executeTakeFirst();
   return row ?? null;
@@ -74,6 +86,7 @@ export async function updatePassword(id: number, password_hash: string): Promise
   await getDb()
     .updateTable("employees")
     .set({ password_hash, updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }
@@ -82,6 +95,7 @@ export async function setActive(id: number, active: boolean): Promise<void> {
   await getDb()
     .updateTable("employees")
     .set({ is_active: active ? 1 : 0, updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }
@@ -111,7 +125,7 @@ export type EmploymentInput = {
 };
 
 export async function listAll(opts: { activeOnly?: boolean } = {}): Promise<Employee[]> {
-  let q = getDb().selectFrom("employees").selectAll();
+  let q = getDb().selectFrom("employees").selectAll().where("shop_id", "=", currentShopId());
   if (opts.activeOnly) q = q.where("is_active", "=", 1);
   return await q.orderBy("full_name").execute();
 }
@@ -124,6 +138,7 @@ export async function updatePersonal(id: number, input: PersonalInput): Promise<
   await getDb()
     .updateTable("employees")
     .set({ ...input, updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }
@@ -141,6 +156,7 @@ export async function updateEmployment(id: number, input: EmploymentInput): Prom
       username: input.username ?? null,
       updated_at: nowIso(),
     })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }
@@ -149,6 +165,7 @@ export async function setOnboardingStatus(id: number, status: "incomplete" | "co
   await getDb()
     .updateTable("employees")
     .set({ onboarding_status: status, updated_at: nowIso() })
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }

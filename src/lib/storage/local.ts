@@ -1,12 +1,13 @@
 import { mkdirSync, existsSync } from "fs";
 import { readFile, writeFile, unlink, stat } from "fs/promises";
 import { resolve, join } from "path";
+import { currentShopId } from "../shopContext";
 import type { Storage, OwnerType, PutOptions, GetResult } from "./index";
 
 const ROOT = resolve(process.cwd(), "data/uploads");
 
 function dirFor(ownerType: OwnerType, ownerId: number): string {
-  const d = join(ROOT, ownerType, String(ownerId));
+  const d = join(ROOT, "shops", String(currentShopId()), ownerType, String(ownerId));
   if (!existsSync(d)) mkdirSync(d, { recursive: true });
   return d;
 }

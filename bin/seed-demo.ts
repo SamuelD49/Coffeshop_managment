@@ -19,7 +19,8 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
 import { sql } from "kysely";
-import { getDb, closeDb, currentDriver, runMigrations } from "../src/lib/db";
+import { getDb, closeDb, currentDriver, runMigrations, nowIso } from "../src/lib/db";
+import { runWithShop } from "../src/lib/shopContext";
 
 import * as Employees from "../src/models/employees";
 import * as Settings from "../src/models/settings";
@@ -71,6 +72,22 @@ async function hasData(): Promise<boolean> {
   return Number(r.c) > 0;
 }
 
+async function ensureSampleShop(): Promise<number> {
+  // Sample Shop is provisioned by migration 006 at id=1. If the migration
+  // ran via a different path (or someone TRUNCATEd shops), recreate it.
+  const existing = await getDb()
+    .selectFrom("shops")
+    .select("id")
+    .where("id", "=", 1)
+    .executeTakeFirst();
+  if (existing) return existing.id;
+  await getDb()
+    .insertInto("shops")
+    .values({ id: 1, name: "Sample Shop", created_at: nowIso() } as any)
+    .execute();
+  return 1;
+}
+
 async function main(): Promise<void> {
   await runMigrations();
 
@@ -85,8 +102,11 @@ async function main(): Promise<void> {
     await wipe();
   }
 
-  console.log("Seeding demo data on " + currentDriver() + "...");
+  const shopId = await ensureSampleShop();
+  console.log(`Seeding demo data on ${currentDriver()} (Sample Shop id=${shopId})...`);
 
+  // Everything below uses the shop context so models see the right id.
+  await runWithShop(shopId, async () => {
   // ── Shop identity ────────────────────────────────────────────────────
   await Settings.set("shop_name", "Buna Counter");
   await Settings.set("currency_code", "ETB");
@@ -296,6 +316,7 @@ async function main(): Promise<void> {
   console.log("  Owner:    owner");
   console.log("  Cashier:  almaz");
   console.log("  Cashier:  hanna");
+  }); // end runWithShop
 }
 
 main()

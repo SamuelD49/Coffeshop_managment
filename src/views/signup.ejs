@@ -1,0 +1,33 @@
+<%- include('partials/head', { title: "Sign up", shopName: "Buna Counter" }) %>
+<body class="text-ink font-sans antialiased min-h-screen bg-cream flex items-center justify-center px-gutter">
+  <main class="w-full max-w-md py-air">
+    <%- include('partials/flash', { flash }) %>
+    <h1 class="text-display text-[44px] leading-[48px] mb-air">Open your shop</h1>
+    <p class="font-display italic text-[16px] text-coal mb-air-lg">Create your account. You'll be the owner; you can add staff after.</p>
+    <form method="POST" action="/signup" class="space-y-gutter">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+      <label class="block">
+        <span class="field-label">Shop name</span>
+        <input type="text" name="shop_name" required minlength="2" maxlength="120" class="field-input" autofocus placeholder="My Coffee Shop" />
+      </label>
+      <label class="block">
+        <span class="field-label">Your full name</span>
+        <input type="text" name="full_name" required minlength="2" maxlength="120" class="field-input" placeholder="Almaz Bekele" />
+      </label>
+      <label class="block">
+        <span class="field-label">Username (for login)</span>
+        <input type="text" name="username" required minlength="3" maxlength="60" pattern="[A-Za-z0-9_]+" class="field-input field-mono" placeholder="almaz" />
+        <span class="font-sans text-[12px] text-smoke mt-gutter-tight block">Letters, numbers, and underscores only.</span>
+      </label>
+      <label class="block">
+        <span class="field-label">Password (min 8 chars)</span>
+        <input type="password" name="password" required minlength="8" maxlength="256" class="field-input" />
+      </label>
+      <button type="submit" class="btn-primary w-full mt-air">Create my shop</button>
+      <p class="text-center text-[14px] text-coal mt-gutter">
+        Already have a shop? <a href="/login" class="link">Log in</a>
+      </p>
+    </form>
+  </main>
+</body>
+</html>

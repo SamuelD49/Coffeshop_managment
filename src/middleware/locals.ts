@@ -1,20 +1,36 @@
 import type { Request, Response, NextFunction } from "express";
 import * as Settings from "../models/settings";
 import * as Employees from "../models/employees";
+import { runWithShop } from "../lib/shopContext";
 
 export async function localsMiddleware(req: Request, res: Response, next: NextFunction) {
-  res.locals.shopName = (await Settings.get("shop_name")) ?? "Coffee Shop";
+  res.locals.currentPath = req.path;
+  res.locals.pageTitle = derivePageTitle(req.path);
   res.locals.currentUser = null;
   res.locals.currentRole = null;
-  if (req.session.employeeId) {
-    const u = await Employees.findById(req.session.employeeId);
+  res.locals.shopId = req.session.shopId ?? null;
+
+  if (!req.session.shopId || !req.session.employeeId) {
+    // Unauthenticated request (login/signup pages). Use a neutral default
+    // shop name; nothing else to load without a shop context.
+    res.locals.shopName = "Coffee Shop";
+    return next();
+  }
+
+  // Authenticated — load shop-specific data inside the shop's context.
+  // Settings.get + Employees.findById are independent; firing in parallel
+  // saves one query RTT on every authenticated page nav.
+  await runWithShop(req.session.shopId, async () => {
+    const [shopName, u] = await Promise.all([
+      Settings.get("shop_name"),
+      Employees.findById(req.session.employeeId!),
+    ]);
+    res.locals.shopName = shopName ?? "Coffee Shop";
     if (u) {
       res.locals.currentUser = u;
       res.locals.currentRole = u.role;
     }
-  }
-  res.locals.currentPath = req.path;
-  res.locals.pageTitle = derivePageTitle(req.path);
+  });
   next();
 }
 

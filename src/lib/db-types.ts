@@ -2,8 +2,15 @@ import type { Generated, ColumnType } from "kysely";
 
 type TimestampString = string;
 
+export interface ShopsTable {
+  id: Generated<number>;
+  name: string;
+  created_at: ColumnType<TimestampString, string | undefined, string>;
+}
+
 export interface EmployeesTable {
   id: Generated<number>;
+  shop_id: number;
   full_name: string;
   phone: string | null;
   national_id_number: string | null;
@@ -30,6 +37,7 @@ export interface EmployeesTable {
 
 export interface GuarantorsTable {
   id: Generated<number>;
+  shop_id: number;
   employee_id: number;
   full_name: string;
   phone: string | null;
@@ -46,6 +54,7 @@ export interface GuarantorsTable {
 
 export interface AttachmentsTable {
   id: Generated<number>;
+  shop_id: number;
   owner_type: "employee" | "guarantor";
   owner_id: number;
   kind: "profile_photo" | "id_front" | "id_back" | "contract" | "guarantor_letter" | "other";
@@ -60,6 +69,7 @@ export interface AttachmentsTable {
 
 export interface MenuItemsTable {
   id: Generated<number>;
+  shop_id: number;
   name: string;
   price: ColumnType<number, number | undefined, number>;
   sort_order: ColumnType<number, number | undefined, number>;
@@ -71,6 +81,7 @@ export interface MenuItemsTable {
 
 export interface SalesSessionsTable {
   id: Generated<number>;
+  shop_id: number;
   employee_id: number;
   business_date: string;
   shift: string | null;
@@ -84,6 +95,7 @@ export interface SalesSessionsTable {
 
 export interface SaleLineItemsTable {
   id: Generated<number>;
+  shop_id: number;
   sales_session_id: number;
   menu_item_id: number;
   qty: ColumnType<number, number | undefined, number>;
@@ -96,6 +108,7 @@ export interface SaleLineItemsTable {
 
 export interface PurchaseRequisitionsTable {
   id: Generated<number>;
+  shop_id: number;
   purchase_date: string;
   description: string;
   unit: string | null;
@@ -110,6 +123,7 @@ export interface PurchaseRequisitionsTable {
 
 export interface PettyCashEntriesTable {
   id: Generated<number>;
+  shop_id: number;
   entry_date: string;
   description: string;
   payer_name: string | null;
@@ -123,6 +137,7 @@ export interface PettyCashEntriesTable {
 
 export interface PayrollRunsTable {
   id: Generated<number>;
+  shop_id: number;
   year: number;
   month: number;
   status: ColumnType<"draft" | "approved", "draft" | "approved" | undefined, "draft" | "approved">;
@@ -134,6 +149,7 @@ export interface PayrollRunsTable {
 
 export interface PayrollEntriesTable {
   id: Generated<number>;
+  shop_id: number;
   payroll_run_id: number;
   employee_id: number;
   days_worked: ColumnType<number, number | undefined, number>;
@@ -154,7 +170,9 @@ export interface PayrollEntriesTable {
   updated_at: ColumnType<TimestampString, string | undefined, string>;
 }
 
+// Settings has a composite (shop_id, key) primary key — no synthetic id.
 export interface SettingsTable {
+  shop_id: number;
   key: string;
   value: string;
   updated_at: ColumnType<TimestampString, string | undefined, string>;
@@ -162,6 +180,7 @@ export interface SettingsTable {
 
 export interface AuditLogTable {
   id: Generated<number>;
+  shop_id: number;
   actor_id: number | null;
   action: string;
   entity: string;
@@ -175,6 +194,7 @@ export interface SchemaMigrationsTable {
 }
 
 export interface DB {
+  shops: ShopsTable;
   employees: EmployeesTable;
   guarantors: GuarantorsTable;
   attachments: AttachmentsTable;
