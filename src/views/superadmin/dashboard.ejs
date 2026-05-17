@@ -57,7 +57,7 @@
             <% shops.forEach(shop => { %>
               <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
                 <td class="px-gutter-lg py-gutter-lg font-sans text-[15px] text-ink font-medium">
-                  <%= shop.name %>
+                  <a href="/superadmin/shops/<%= shop.id %>" class="link hover:text-ember-deep transition-colors"><%= shop.name %></a>
                   <span class="block font-mono text-[11px] text-smoke font-normal mt-0.5">ID: <%= shop.id %></span>
                 </td>
                 <td class="py-gutter-lg font-mono text-[13px] text-coal">
@@ -71,20 +71,25 @@
                   <% } %>
                 </td>
                 <td class="px-gutter-lg py-gutter-lg text-right">
-                  <form method="POST" action="/superadmin/shops/<%= shop.id %>/toggle" class="inline">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <% if (shop.is_active !== 0) { %>
-                      <input type="hidden" name="active" value="false" />
-                      <button class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-crimson text-crimson hover:bg-crimson hover:text-cream transition-colors duration-200">
-                        Suspend Account
-                      </button>
-                    <% } else { %>
-                      <input type="hidden" name="active" value="true" />
-                      <button class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-leaf text-leaf hover:bg-leaf hover:text-cream transition-colors duration-200">
-                        Reactivate Account
-                      </button>
-                    <% } %>
-                  </form>
+                  <div class="flex items-center justify-end gap-2">
+                    <a href="/superadmin/shops/<%= shop.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-rule-strong text-ink hover:bg-paper transition-colors duration-200">
+                      Analytics
+                    </a>
+                    <form method="POST" action="/superadmin/shops/<%= shop.id %>/toggle" class="inline">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <% if (shop.is_active !== 0) { %>
+                        <input type="hidden" name="active" value="false" />
+                        <button class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-crimson text-crimson hover:bg-crimson hover:text-cream transition-colors duration-200">
+                          Suspend
+                        </button>
+                      <% } else { %>
+                        <input type="hidden" name="active" value="true" />
+                        <button class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-leaf text-leaf hover:bg-leaf hover:text-cream transition-colors duration-200">
+                          Reactivate
+                        </button>
+                      <% } %>
+                    </form>
+                  </div>
                 </td>
               </tr>
             <% }) %>

@@ -1,0 +1,173 @@
+<%- include('../partials/head', { title: title, shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen bg-sand">
+  <header class="border-b border-rule bg-paper">
+    <div class="max-w-4xl mx-auto px-gutter-lg py-gutter flex justify-between items-center">
+      <div class="flex items-center gap-gutter">
+        <a href="/superadmin" class="font-sans text-[13px] font-semibold tracking-button uppercase text-smoke hover:text-ink transition-colors">← Back to Dashboard</a>
+      </div>
+      <form method="POST" action="/superadmin/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors">Sign out</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-gutter-lg py-air-md">
+    <%- include('../partials/flash', { flash }) %>
+
+    <!-- Shop Title Section -->
+    <div class="mb-air flex flex-col md:flex-row md:items-center justify-between gap-gutter reveal reveal-1">
+      <div>
+        <div class="flex items-center gap-air">
+          <h1 class="font-display italic text-[36px] text-ink leading-tight" style="font-variation-settings:'opsz' 40,'SOFT' 50"><%= shop.name %></h1>
+          <% if (shop.is_active !== 0) { %>
+            <span class="pip pip-approved">Active</span>
+          <% } else { %>
+            <span class="pip pip-draft">Suspended</span>
+          <% } %>
+        </div>
+        <p class="font-sans text-[14px] text-smoke mt-1">Tenant ID: <%= shop.id %> • Registered on <%= new Date(shop.created_at).toLocaleDateString(undefined, { dateStyle: 'long' }) %></p>
+      </div>
+
+      <form method="POST" action="/superadmin/shops/<%= shop.id %>/toggle" class="inline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% if (shop.is_active !== 0) { %>
+          <input type="hidden" name="active" value="false" />
+          <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2 rounded-soft border border-crimson text-crimson hover:bg-crimson hover:text-cream transition-all duration-200">
+            Suspend Account
+          </button>
+        <% } else { %>
+          <input type="hidden" name="active" value="true" />
+          <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2 rounded-soft border border-leaf text-leaf hover:bg-leaf hover:text-cream transition-all duration-200">
+            Reactivate Account
+          </button>
+        <% } %>
+      </form>
+    </div>
+
+    <!-- Analytics Key Metrics Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-gutter mb-air reveal reveal-2">
+      <!-- Total Revenue -->
+      <div class="card p-gutter-lg">
+        <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Total Revenue</div>
+        <div class="font-mono text-[28px] text-ink leading-none mt-2">
+          $<%= (analytics.totalRevenue / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+        </div>
+        <div class="font-sans text-[11px] text-smoke mt-1">From Sales Sessions</div>
+      </div>
+
+      <!-- Total Expenses -->
+      <div class="card p-gutter-lg">
+        <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Total Expenses</div>
+        <div class="font-mono text-[28px] text-crimson leading-none mt-2">
+          $<%= (analytics.totalExpenses / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+        </div>
+        <div class="font-sans text-[11px] text-smoke mt-1">From Petty Cash Outlays</div>
+      </div>
+
+      <!-- Net Balance -->
+      <div class="card p-gutter-lg col-span-2 md:col-span-1">
+        <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Net Shop Performance</div>
+        <% const net = analytics.totalRevenue - analytics.totalExpenses; %>
+        <div class="font-mono text-[28px] <%= net >= 0 ? 'text-leaf' : 'text-crimson' %> leading-none mt-2">
+          $<%= (net / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+        </div>
+        <div class="font-sans text-[11px] text-smoke mt-1">Revenue minus Expenses</div>
+      </div>
+
+      <!-- Total Employees -->
+      <div class="card p-gutter-lg">
+        <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Employees Count</div>
+        <div class="font-mono text-[28px] text-ink leading-none mt-2"><%= analytics.employeeCount %></div>
+        <div class="font-sans text-[11px] text-smoke mt-1">Active staff in database</div>
+      </div>
+
+      <!-- Menu Items -->
+      <div class="card p-gutter-lg">
+        <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Menu Items</div>
+        <div class="font-mono text-[28px] text-ink leading-none mt-2"><%= analytics.menuItemCount %></div>
+        <div class="font-sans text-[11px] text-smoke mt-1">Products offered on menu</div>
+      </div>
+
+      <!-- Sales Sessions -->
+      <div class="card p-gutter-lg">
+        <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Sales Sessions</div>
+        <div class="font-mono text-[28px] text-ink leading-none mt-2"><%= analytics.salesSessionCount %></div>
+        <div class="font-sans text-[11px] text-smoke mt-1">Tally registers opened</div>
+      </div>
+    </div>
+
+    <!-- Details Columns -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter reveal reveal-3">
+      <!-- Left Column: Recent Activity Log -->
+      <div class="card overflow-hidden">
+        <div class="card-header bg-paper">
+          <h2 class="card-title text-[20px]">Recent Activity Log</h2>
+          <p class="font-sans text-[12px] text-smoke mt-0.5">Last 10 security/auditable events from the tenant</p>
+        </div>
+        <div class="divide-y divide-rule">
+          <% if (analytics.auditLogs.length === 0) { %>
+            <div class="p-gutter-lg text-center font-sans text-[14px] text-smoke">No recent activity logged.</div>
+          <% } else { %>
+            <% analytics.auditLogs.forEach(log => { %>
+              <div class="p-gutter flex justify-between items-start gap-gutter hover:bg-paper transition-colors">
+                <div>
+                  <div class="font-sans font-medium text-[14px] text-ink">
+                    <%= log.action.charAt(0).toUpperCase() + log.action.slice(1) %> <%= log.entity %>
+                  </div>
+                  <div class="font-sans text-[12px] text-smoke mt-0.5">
+                    By <%= log.actor_name || "Unknown" %>
+                  </div>
+                </div>
+                <div class="text-right flex flex-col items-end">
+                  <span class="font-mono text-[11px] text-smoke">
+                    <%= new Date(log.at).toLocaleDateString(undefined, { dateStyle: 'short' }) %>
+                  </span>
+                  <span class="font-mono text-[11px] text-mist">
+                    <%= new Date(log.at).toLocaleTimeString(undefined, { timeStyle: 'short' }) %>
+                  </span>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Right Column: Employees Directory -->
+      <div class="card overflow-hidden">
+        <div class="card-header bg-paper">
+          <h2 class="card-title text-[20px]">Staff Directory</h2>
+          <p class="font-sans text-[12px] text-smoke mt-0.5">Registered accounts and current roles</p>
+        </div>
+        <div class="divide-y divide-rule">
+          <% if (analytics.employeesList.length === 0) { %>
+            <div class="p-gutter-lg text-center font-sans text-[14px] text-smoke">No employees registered yet.</div>
+          <% } else { %>
+            <% analytics.employeesList.forEach(emp => { %>
+              <div class="p-gutter flex justify-between items-center hover:bg-paper transition-colors">
+                <div>
+                  <div class="font-sans font-semibold text-[14px] text-ink flex items-center gap-gutter">
+                    <%= emp.full_name %>
+                    <% if (emp.is_active !== 0) { %>
+                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-leaf" title="Active"></span>
+                    <% } else { %>
+                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-smoke" title="Inactive"></span>
+                    <% } %>
+                  </div>
+                  <div class="font-sans text-[12px] text-smoke mt-0.5"><%= emp.position %></div>
+                </div>
+                <div class="text-right">
+                  <div class="font-mono text-[13px] text-coal">
+                    $<%= (emp.basic_salary / 100).toLocaleString(undefined, { minimumFractionDigits: 2 }) %>
+                  </div>
+                  <div class="font-sans text-[10px] text-smoke mt-0.5">Base Salary</div>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

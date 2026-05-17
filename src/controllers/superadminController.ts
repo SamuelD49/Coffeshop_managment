@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as Shops from "../models/shops";
 import { pushFlash } from "../lib/flash";
+import { getDb } from "../lib/kysely";
 
 export function showLogin(req: Request, res: Response) {
   if (req.session.isSuperAdmin) {
@@ -53,4 +54,86 @@ export async function toggleShop(req: Request, res: Response) {
   await Shops.setActive(shopId, nextActive);
   pushFlash(req, "success", `Shop "${shop.name}" has been ${nextActive ? "activated" : "suspended"}!`);
   res.redirect("/superadmin");
+}
+
+export async function shopDetails(req: Request, res: Response) {
+  const shopId = Number(req.params.id);
+  const shop = await Shops.findById(shopId);
+  if (!shop) {
+    pushFlash(req, "error", "Shop not found");
+    return res.redirect("/superadmin");
+  }
+
+  const db = getDb();
+  
+  // 1. Employees count
+  const employeeCountRow = await db.selectFrom("employees")
+    .select((eb) => eb.fn.count<number>("id").as("count"))
+    .where("shop_id", "=", shopId)
+    .executeTakeFirst();
+  const employeeCount = Number(employeeCountRow?.count || 0);
+
+  // 2. Menu items count
+  const menuItemCountRow = await db.selectFrom("menu_items")
+    .select((eb) => eb.fn.count<number>("id").as("count"))
+    .where("shop_id", "=", shopId)
+    .executeTakeFirst();
+  const menuItemCount = Number(menuItemCountRow?.count || 0);
+
+  // 3. Sales sessions count
+  const salesSessionCountRow = await db.selectFrom("sales_sessions")
+    .select((eb) => eb.fn.count<number>("id").as("count"))
+    .where("shop_id", "=", shopId)
+    .executeTakeFirst();
+  const salesSessionCount = Number(salesSessionCountRow?.count || 0);
+
+  // 4. Total revenue
+  const revenueRow = await db.selectFrom("sales_sessions")
+    .select((eb) => [
+      eb.fn.sum<number>("cash_amount").as("cash"),
+      eb.fn.sum<number>("bank_transfer_amount").as("bank")
+    ])
+    .where("shop_id", "=", shopId)
+    .executeTakeFirst();
+  const totalRevenue = Number(revenueRow?.cash || 0) + Number(revenueRow?.bank || 0);
+
+  // 5. Total expenses (petty cash)
+  const expenseRow = await db.selectFrom("petty_cash_entries")
+    .select((eb) => eb.fn.sum<number>("amount").as("total"))
+    .where("shop_id", "=", shopId)
+    .where("type", "=", "expense")
+    .executeTakeFirst();
+  const totalExpenses = Number(expenseRow?.total || 0);
+
+  // 6. Recent audit logs
+  const auditLogs = await db.selectFrom("audit_log as a")
+    .leftJoin("employees as e", "e.id", "a.actor_id")
+    .select(["a.id", "a.action", "a.entity", "a.entity_id", "a.at", "e.full_name as actor_name"])
+    .where("a.shop_id", "=", shopId)
+    .orderBy("a.at", "desc")
+    .limit(10)
+    .execute();
+
+  // 7. Employee details list
+  const employeesList = await db.selectFrom("employees")
+    .select(["id", "full_name", "position", "basic_salary", "is_active"])
+    .where("shop_id", "=", shopId)
+    .orderBy("is_active", "desc")
+    .orderBy("id", "asc")
+    .execute();
+
+  res.render("superadmin/shopDetails", {
+    shop,
+    shopName: "SaaS Admin",
+    title: `${shop.name} Analytics`,
+    analytics: {
+      employeeCount,
+      menuItemCount,
+      salesSessionCount,
+      totalRevenue,
+      totalExpenses,
+      auditLogs,
+      employeesList
+    }
+  });
 }
