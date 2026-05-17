@@ -1,4 +1,5 @@
 import express from "express";
+import ejs from "ejs";
 import { resolve } from "path";
 import { sessionMiddleware } from "./lib/session";
 import { csrfMiddleware } from "./lib/csrf";
@@ -10,6 +11,11 @@ import { router } from "./routes";
 
 export const app = express();
 
+// Register EJS explicitly. Express otherwise calls `require("ejs")` at the
+// first render — a dynamic require that Vercel's bundler can't see, so the
+// module gets stripped from the function package. The static `import ejs`
+// above + the app.engine call below force the bundler to include it.
+app.engine("ejs", ejs.renderFile);
 app.set("view engine", "ejs");
 // Views are read from src/views/ regardless of whether we're running through
 // `tsx` (dev) or `node dist/server.js` (prod). tsc doesn't copy *.ejs to dist/,
