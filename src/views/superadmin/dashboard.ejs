@@ -44,22 +44,24 @@
         </div>
       </div>
       <div class="p-gutter-lg bg-cream">
-        <form method="POST" action="/superadmin/settings" class="flex flex-col md:flex-row md:items-center justify-between gap-gutter">
+        <form method="POST" action="/superadmin/settings" class="space-y-gutter">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-          <div class="flex items-start gap-3">
-            <input type="checkbox" id="requireApproval" name="requireApproval" value="true" <%= typeof requireApproval !== 'undefined' && requireApproval ? 'checked' : '' %> class="w-4 h-4 text-ember border-rule rounded focus:ring-ember mt-1 cursor-pointer" />
-            <div>
-              <label for="requireApproval" class="block font-sans font-bold text-[14px] text-ink cursor-pointer">
+          <div class="flex items-start gap-gutter">
+            <input type="checkbox" id="requireApproval" name="requireApproval" value="true" <%= typeof requireApproval !== 'undefined' && requireApproval ? 'checked' : '' %> class="w-4 h-4 text-ember border-rule rounded focus:ring-ember mt-1 cursor-pointer shrink-0" />
+            <div class="flex-1">
+              <label for="requireApproval" class="block font-sans font-bold text-[15px] text-ink cursor-pointer">
                 Require Manual Owner Approval
               </label>
-              <p class="font-sans text-[12px] text-smoke mt-0.5">
-                When checked, new shop owners must wait for you to reactivate their account before they can sign in.
+              <p class="font-sans text-[13px] text-smoke mt-1 max-w-xl">
+                When enabled, newly registered shop accounts are created in "Suspended" status. They must wait for you to review and reactivate their account before they can sign in. When disabled, users can register and begin using the app immediately with no friction.
               </p>
             </div>
           </div>
-          <button class="btn-primary px-5 py-2.5 text-[12px] tracking-button uppercase font-bold w-full md:w-auto text-center shrink-0">
-            Save Settings
-          </button>
+          <div class="pt-gutter border-t border-rule-strong/10 flex justify-end">
+            <button class="font-sans text-[12px] tracking-button uppercase px-5 py-2.5 rounded-soft bg-ember text-ember-deep hover:bg-ember-deep hover:text-cream transition-all duration-200 font-bold">
+              Save Policy Settings
+            </button>
+          </div>
         </form>
       </div>
     </div>
