@@ -122,14 +122,13 @@
   <% } %>
 </article>
 
-<%# Monthly summary — bottom of the page so the daily/item/employee breakdown stays above the fold. %>
 <article class="card">
   <header class="card-header">
     <h2 class="card-title">By month</h2>
     <p class="card-meta">Calendar-month buckets across the selected range — widen the date filter at the top to see more months</p>
   </header>
   <% if (_byMonth.length === 0) { %>
-    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">Range only covers <%= range.from === range.to ? 'one day' : 'days within one month' %>. Widen the date filter to see monthly totals.</div>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">Range only covers a few days. Widen the date filter to see monthly totals.</div>
   <% } else { %>
     <% const _max = Math.max(0, ..._byMonth.map(m => m.subtotal)); %>
     <div class="card-body">

@@ -11,8 +11,7 @@
   const _details  = Array.isArray(data.details) ? data.details : [];
 %>
 
-<%# CSV export chips — three now: by day, by month, detail. %>
-<div class="grid grid-cols-3 gap-air mb-air">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-air mb-air">
   <a href="/reports/export?tab=purchases&group=day&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
     <div class="card-body text-center py-gutter-lg">
       <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">By day</p>
@@ -21,7 +20,7 @@
   </a>
   <a href="/reports/export?tab=purchases&group=detail&from=<%= range.from %>&to=<%= range.to %>" class="card hover:bg-paper transition-colors">
     <div class="card-body text-center py-gutter-lg">
-      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Detail (every row)</p>
+      <p class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke">Details</p>
       <p class="font-display text-[16px] mt-1 text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">CSV →</p>
     </div>
   </a>
@@ -33,7 +32,6 @@
   </a>
 </div>
 
-<%# 1) By day — daily totals %>
 <article class="card mb-air">
   <header class="card-header">
     <h2 class="card-title">By day</h2>
@@ -45,7 +43,7 @@
       <thead>
         <tr class="border-b border-rule">
           <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
-          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Entries</th>
           <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
         </tr>
       </thead>
@@ -68,24 +66,22 @@
   <% } %>
 </article>
 
-<%# 2) Detail — every purchase line in the range %>
 <article class="card mb-air overflow-x-auto">
   <header class="card-header">
-    <h2 class="card-title">Detail</h2>
-    <p class="card-meta">Every item logged in the selected range</p>
+    <h2 class="card-title">Details</h2>
   </header>
   <% if (_details.length === 0) { %>
-    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchase entries in this range.</div>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No purchases in this range.</div>
   <% } else { %>
     <table class="w-full table-fixed">
       <colgroup>
-        <col style="width: 116px" />   <%# Date %>
-        <col style="width: 26%"   />   <%# Description %>
-        <col style="width: 56px"  />   <%# Un %>
-        <col style="width: 64px"  />   <%# Qty %>
-        <col style="width: 92px"  />   <%# Price %>
-        <col style="width: 104px" />   <%# Total %>
-        <col />                        <%# Remark — fills the rest %>
+        <col style="width: 116px" />
+        <col style="width: 26%"   />
+        <col style="width: 56px"  />
+        <col style="width: 64px"  />
+        <col style="width: 92px"  />
+        <col style="width: 104px" />
+        <col />
       </colgroup>
       <thead>
         <tr class="border-b border-rule">
@@ -122,14 +118,13 @@
   <% } %>
 </article>
 
-<%# 3) By month — moved to the bottom so daily / detail stay above the fold %>
 <article class="card">
   <header class="card-header">
     <h2 class="card-title">By month</h2>
-    <p class="card-meta">Calendar-month buckets — widen the date filter to see more months</p>
+    <p class="card-meta">Calendar-month buckets across the selected range — widen the date filter at the top to see more months</p>
   </header>
   <% if (_byMonth.length === 0) { %>
-    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">Range only covers <%= range.from === range.to ? 'one day' : 'days within one month' %>. Widen the date filter to see monthly totals.</div>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">Range only covers a few days. Widen the date filter to see monthly totals.</div>
   <% } else { %>
     <% const _max = Math.max(0, ..._byMonth.map(m => m.total)); %>
     <div class="card-body">
@@ -150,7 +145,7 @@
       <thead>
         <tr class="border-y border-rule">
           <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Month</th>
-          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Rows</th>
+          <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Entries</th>
           <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
         </tr>
       </thead>

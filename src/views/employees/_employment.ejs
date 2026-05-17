@@ -2,16 +2,15 @@
   <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
   <header class="card-header">
     <h2 class="card-title">Employment</h2>
-    <p class="card-meta">Role, salary, and login access</p>
   </header>
-  <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+  <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
     <label class="block">
       <span class="field-label">Position</span>
       <input name="position" value="<%= employee.position || '' %>" class="field-input" placeholder="Barista" />
     </label>
     <label class="block">
-      <span class="field-label">Basic salary (per month)</span>
-      <input name="basic_salary" value="<%= (employee.basic_salary / 100).toFixed(2) %>" class="field-input field-mono" />
+      <span class="field-label">Basic salary</span>
+      <input name="basic_salary" value="<%= (employee.basic_salary / 100).toFixed(2) %>" inputmode="decimal" class="field-input field-mono" />
     </label>
     <label class="block">
       <span class="field-label">Hire date</span>
@@ -21,22 +20,21 @@
       <span class="field-label">Termination date</span>
       <input type="date" name="termination_date" value="<%= employee.termination_date || '' %>" class="field-input field-mono" />
     </label>
-    <label class="block col-span-2">
+    <label class="block col-span-1 md:col-span-2">
       <span class="field-label">Role</span>
       <select name="role" class="field-input">
         <% ['employee', 'owner'].forEach(r => { %>
-          <option value="<%= r %>" <%= employee.role === r ? 'selected' : '' %>><%= r === 'owner' ? 'Owner (full access)' : 'Employee' %></option>
+          <option value="<%= r %>" <%= employee.role === r ? 'selected' : '' %>><%= (r === 'owner') ? "Owner (full access)" : "Employee" %></option>
         <% }) %>
       </select>
-      <span class="field-hint">Use the Deactivate button at the top to soft-delete this employee while keeping their history.</span>
     </label>
-    <label class="block col-span-2">
-      <span class="field-label">Username (optional — required if they need to log in)</span>
-      <input name="username" value="<%= employee.username || '' %>" class="field-input field-mono" placeholder="leave blank if no login" />
-      <span class="field-hint">Owner can set a password from a future profile tab. For now, the cashier signs in once the username + password are set via the setup or password-reset flow.</span>
+    <label class="block col-span-1 md:col-span-2">
+      <span class="field-label">Username <span class="text-mist normal-case">(optional)</span></span>
+      <input name="username" value="<%= employee.username || '' %>" class="field-input field-mono" />
+      <span class="field-hint">Lowercase only. Leave blank if this person doesn't log in.</span>
     </label>
   </div>
-  <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
-    <button class="btn-primary">Save employment</button>
+  <div class="px-gutter-lg pb-gutter-lg sticky-actions">
+    <button class="btn-primary">Save</button>
   </div>
 </form>

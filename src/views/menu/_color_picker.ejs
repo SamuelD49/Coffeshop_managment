@@ -3,13 +3,15 @@
   const _defaultPalette = ['#C75D34', '#5C7558', '#B68A3C', '#8B2A26', '#3E2A1F', '#9E4524', '#7A6E62'];
   const _palette  = (typeof palette  !== 'undefined' && Array.isArray(palette) && palette.length) ? palette : _defaultPalette;
   const _selected = (typeof selected !== 'undefined') ? selected : null;
+  const _isCustom = !!_selected && !_palette.includes(_selected);
+  const _customDefault = _isCustom ? _selected : '#888888';
 %>
 <fieldset>
   <legend class="field-label">Token colour <span class="text-mist normal-case">(optional)</span></legend>
   <div class="flex flex-wrap items-center gap-gutter mt-1">
     <label class="swatch-label" title="Auto (let the system pick)">
       <input type="radio" name="token_color" value="" class="sr-only" <%= !_selected ? 'checked' : '' %> />
-      <span class="swatch swatch-auto" aria-label="Auto">A</span>
+      <span class="swatch swatch-auto" aria-label="Auto (let the system pick)">A</span>
     </label>
     <% _palette.forEach(c => { %>
       <label class="swatch-label" title="<%= c %>">
@@ -17,6 +19,38 @@
         <span class="swatch" style="background-color: <%= c %>" aria-label="<%= c %>"></span>
       </label>
     <% }) %>
+    <label class="swatch-label swatch-label-custom" title="Pick a custom colour" id="tc-custom-label">
+      <input type="radio" name="token_color"
+             value="<%= _isCustom ? _selected : '' %>"
+             id="tc-custom-radio" class="sr-only"
+             <%= _isCustom ? 'checked' : '' %> />
+      <span class="swatch swatch-custom <%= _isCustom ? 'has-color' : '' %>"
+            id="tc-custom-swatch"
+            style="<%= _isCustom ? 'background-color: ' + _selected : '' %>"
+            aria-label="Pick a custom colour"></span>
+      <input type="color"
+             id="tc-custom-picker"
+             value="<%= _customDefault %>"
+             aria-label="Pick a custom colour" />
+    </label>
   </div>
-  <span class="field-hint">Used on the sales entry buttons and jars. Auto picks a stable colour from the palette based on the item.</span>
+  <span class="field-hint">Used on the sales entry buttons and jars. Auto picks a stable colour from the palette based on the item. Tap the rainbow swatch to pick any custom colour.</span>
 </fieldset>
+
+<script>
+  (function(){
+    var radio  = document.getElementById('tc-custom-radio');
+    var swatch = document.getElementById('tc-custom-swatch');
+    var picker = document.getElementById('tc-custom-picker');
+    if (!radio || !swatch || !picker) return;
+    function apply(hex){
+      radio.value = hex;
+      radio.checked = true;
+      swatch.style.backgroundColor = hex;
+      swatch.classList.add('has-color');
+    }
+    // `input` fires live as the user drags in the color picker; `change` is the commit.
+    picker.addEventListener('input',  function(){ apply(picker.value); });
+    picker.addEventListener('change', function(){ apply(picker.value); });
+  })();
+</script>

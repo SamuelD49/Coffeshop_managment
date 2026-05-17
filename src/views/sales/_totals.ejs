@@ -1,5 +1,5 @@
 <div id="totals" class="bg-paper border-t-2 border-rule-strong px-gutter-lg py-gutter-lg num-flash" <%= typeof oob !== 'undefined' && oob ? 'hx-swap-oob="true"' : '' %>>
-  <div class="grid grid-cols-4 gap-air">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-gutter-lg md:gap-air">
     <div>
       <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Subtotal</p>
       <p id="totals-subtotal" class="font-mono text-[20px] text-ink mt-1"><%= (totals.subtotal / 100).toFixed(2) %></p>

@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Payroll', shopName }) %>
+<%- include('../partials/head', { title: "Payroll", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -23,8 +23,30 @@
           <a href="/payroll/new" class="btn-primary mt-gutter-lg">New payroll run</a>
         </div>
       </div>
-    <% } else { %>
-      <div class="reveal reveal-3 card">
+    <% } else {
+         const periodOf = (r) => r.month_name + ' ' + r.year;
+    %>
+      <%# ─── Mobile (md:hidden): tappable run cards ─── %>
+      <div class="reveal reveal-3 md:hidden">
+        <% runs.forEach(r => { %>
+          <a href="/payroll/<%= r.id %>" class="list-card">
+            <div class="min-w-0 flex-1">
+              <div class="list-card-primary"><%= periodOf(r) %></div>
+              <div class="list-card-secondary">
+                <%= r.employee_count %> Employees
+                · <%= r.status === 'approved' ? 'Approved' : 'Draft' %>
+              </div>
+            </div>
+            <div class="list-card-trailing">
+              <%= (r.total_net / 100).toFixed(2) %>
+              <span class="sub">Net</span>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+
+      <%# ─── Desktop (hidden md:block): the existing table ─── %>
+      <div class="reveal reveal-3 card hidden md:block">
         <table class="w-full">
           <thead>
             <tr class="border-b border-rule">
@@ -39,14 +61,10 @@
             <% runs.forEach(r => { %>
               <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
                 <td class="px-gutter-lg py-gutter-lg font-display text-[18px] text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50">
-                  <%= r.month_name %> <%= r.year %>
+                  <%= periodOf(r) %>
                 </td>
                 <td class="py-gutter-lg">
-                  <% if (r.status === 'approved') { %>
-                    <span class="pip pip-approved">Approved</span>
-                  <% } else { %>
-                    <span class="pip pip-draft">Draft</span>
-                  <% } %>
+                  <span class="pip pip-<%= r.status === 'approved' ? 'approved' : 'draft' %>"><%= r.status === 'approved' ? 'Approved' : 'Draft' %></span>
                 </td>
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-coal"><%= r.employee_count %></td>
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (r.total_net / 100).toFixed(2) %></td>
@@ -54,8 +72,8 @@
                   <a href="/payroll/<%= r.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors mr-gutter">Open →</a>
                   <a href="/payroll/<%= r.id %>/print" target="_blank" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors mr-gutter">Print</a>
                   <form method="POST" action="/payroll/<%= r.id %>/delete" class="inline"
-                        data-confirm="The whole <%= r.month_name %> <%= r.year %> payroll run and every entry on it will be removed."
-                        data-confirm-title="Delete <%= r.month_name %> <%= r.year %>?"
+                        data-confirm="<%= `The whole ${periodOf(r)} payroll run and every entry on it will be removed.` %>"
+                        data-confirm-title="<%= `Delete ${periodOf(r)}?` %>"
                         data-confirm-label="Delete payroll"
                         data-confirm-variant="danger">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />

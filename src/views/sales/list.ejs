@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Sales', shopName }) %>
+<%- include('../partials/head', { title: "Sales", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -13,7 +13,7 @@
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
 
-    <form method="GET" class="reveal reveal-3 flex items-end gap-gutter mb-air">
+    <form method="GET" class="reveal reveal-3 flex items-end gap-gutter mb-air flex-wrap">
       <label class="block">
         <span class="field-label">Date</span>
         <input type="date" name="date" value="<%= filters.date %>" class="field-input field-mono" />
@@ -51,7 +51,35 @@
         </div>
       </div>
     <% } else { %>
-      <div class="card">
+      <%# ─── Mobile (md:hidden): tappable cards ─── %>
+      <div class="md:hidden">
+        <% sessions.forEach(s => { %>
+          <a href="/sales/<%= s.id %>" class="list-card">
+            <div class="min-w-0 flex-1">
+              <div class="list-card-primary">
+                <span class="font-mono"><%= s.business_date %></span>
+                <% if (s.shift) { %><span class="text-smoke"> · <%= s.shift %></span><% } %>
+              </div>
+              <div class="list-card-secondary">
+                Counted <%= (s.total_amount / 100).toFixed(2) %>
+                <% if (s.difference !== 0) { %>
+                  · <span class="<%= s.difference > 0 ? 'text-leaf' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %></span>
+                <% } %>
+                <% if ((typeof hasCashiers !== 'undefined') && hasCashiers) { %>
+                  · <%= s.status === 'open' ? 'open' : 'closed' %>
+                <% } %>
+              </div>
+            </div>
+            <div class="list-card-trailing">
+              <%= (s.subtotal / 100).toFixed(2) %>
+              <span class="sub">Subtotal</span>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+
+      <%# ─── Desktop (hidden md:block): the existing table ─── %>
+      <div class="card hidden md:block">
         <table class="w-full">
           <% const _showCashierCol = (currentRole === 'owner' && (typeof hasCashiers !== 'undefined') && hasCashiers); %>
           <% const _showStatusCol = (typeof hasCashiers !== 'undefined') && hasCashiers; %>
@@ -86,7 +114,7 @@
                 </td>
                 <% if (_showStatusCol) { %>
                   <td class="py-gutter-lg pl-air">
-                    <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status %></span>
+                    <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status === 'open' ? 'open' : 'closed' %></span>
                   </td>
                 <% } %>
                 <td class="px-gutter-lg py-gutter-lg text-right">

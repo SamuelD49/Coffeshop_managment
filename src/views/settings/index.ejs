@@ -1,11 +1,10 @@
-<%- include('../partials/head', { title: 'Settings', shopName }) %>
+<%- include('../partials/head', { title: "Settings", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-3xl">
     <header class="reveal reveal-1">
-      <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Configuration</p>
-      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Settings</h1>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink" style="font-variation-settings:'opsz' 72,'SOFT' 50">Settings</h1>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
@@ -41,7 +40,7 @@
           <h2 class="card-title">Money</h2>
           <p class="card-meta">How figures are displayed across the app</p>
         </header>
-        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
           <label class="block">
             <span class="field-label">Currency code</span>
             <input name="currency_code" value="<%= settings.currency_code || '' %>" class="field-input field-mono" />
@@ -68,38 +67,37 @@
       <article class="card">
         <header class="card-header">
           <h2 class="card-title">Payroll defaults</h2>
-          <p class="card-meta">Snapshotted into each payroll run at creation</p>
+          <p class="card-meta">Used when creating a new payroll run</p>
         </header>
-        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
           <label class="block">
-            <span class="field-label">Employer pension %</span>
+            <span class="field-label">Pension employer %</span>
             <input name="pension_employer_default_pct" value="<%= settings.pension_employer_default_pct %>" class="field-input field-mono" />
           </label>
           <label class="block">
-            <span class="field-label">Employee pension %</span>
+            <span class="field-label">Pension employee %</span>
             <input name="pension_employee_default_pct" value="<%= settings.pension_employee_default_pct %>" class="field-input field-mono" />
           </label>
           <label class="block">
-            <span class="field-label">Standard days / month</span>
+            <span class="field-label">Standard days in month</span>
             <input name="standard_days_in_month" value="<%= settings.standard_days_in_month %>" class="field-input field-mono" />
           </label>
           <label class="flex items-start gap-gutter-tight mt-air pt-1">
             <input type="checkbox" name="require_complete_hr_before_payroll" value="true" <%= settings.require_complete_hr_before_payroll === 'true' ? 'checked' : '' %> class="mt-1 w-4 h-4 accent-ember" />
-            <span class="font-sans text-[14px] text-coal">Require complete HR record before adding an employee to payroll</span>
+            <span class="font-sans text-[14px] text-coal">Require complete HR before payroll</span>
           </label>
         </div>
       </article>
 
       <article class="card">
         <header class="card-header">
-          <h2 class="card-title">System</h2>
-          <p class="card-meta">Time and business-day handling</p>
+          <h2 class="card-title">Business day</h2>
+          <p class="card-meta">Decides which date a midnight sale belongs to</p>
         </header>
-        <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+        <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
           <label class="block">
-            <span class="field-label">Business-day cutoff</span>
+            <span class="field-label">Business day cutoff</span>
             <input name="business_day_cutoff" value="<%= settings.business_day_cutoff %>" class="field-input field-mono" placeholder="HH:MM" />
-            <span class="field-hint">Sales logged before this hour file under yesterday</span>
           </label>
           <label class="block">
             <span class="field-label">Timezone</span>
@@ -108,7 +106,7 @@
         </div>
       </article>
 
-      <div class="flex items-center justify-end gap-gutter pt-gutter">
+      <div class="flex items-center justify-end gap-gutter pt-gutter sticky-actions">
         <a href="/" class="btn-secondary">Cancel</a>
         <button class="btn-primary">Save settings</button>
       </div>
@@ -123,20 +121,20 @@
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <input type="hidden" name="signature_data_url" id="signature-data" />
 
-        <div class="relative inline-block">
+        <div class="relative block w-full max-w-[560px]">
           <canvas id="signature-pad"
                   width="560" height="160"
-                  class="block border border-rule-strong rounded-soft bg-paper cursor-crosshair touch-none"
-                  aria-label="Signature drawing area"></canvas>
+                  class="block w-full h-40 border border-rule-strong rounded-soft bg-paper cursor-crosshair touch-none"
+                  aria-label="Signature"></canvas>
           <div class="absolute bottom-2 left-3 right-3 border-b border-rule-strong pointer-events-none"></div>
           <p id="signature-placeholder" class="absolute inset-0 flex items-center justify-center font-display italic text-mist text-[20px] pointer-events-none select-none" style="font-variation-settings:'opsz' 36,'SOFT' 50">Sign here</p>
         </div>
 
-        <div class="flex items-center justify-between mt-gutter">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-gutter mt-gutter">
           <p class="font-sans text-[12px] text-smoke">
             Use a mouse or your finger. <button type="button" id="signature-clear" class="link">Clear</button>
           </p>
-          <div class="flex items-center gap-gutter">
+          <div class="flex items-center gap-gutter flex-wrap">
             <% if (settings.shop_signature) { %>
               <button type="button" id="signature-remove" class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-crimson transition-colors">Remove saved signature</button>
             <% } %>
@@ -148,7 +146,7 @@
           <div class="mt-gutter-lg pt-gutter-lg border-t border-rule">
             <p class="field-label">Currently saved</p>
             <div class="mt-gutter inline-block bg-paper border border-rule rounded-soft px-gutter py-gutter-tight">
-              <img src="<%= settings.shop_signature %>" alt="Saved signature" class="max-h-16" />
+              <img src="<%= settings.shop_signature %>" alt="Signature" class="max-h-16" />
             </div>
           </div>
         <% } %>
@@ -233,7 +231,7 @@
 
           // "Remove saved signature" submits an empty data URL so the server clears it.
           removeBtn && removeBtn.addEventListener('click', function () {
-            if (!confirm('Remove the saved signature?')) return;
+            if (!confirm("Remove the saved signature?")) return;
             dataInput.value = '';
             form.submit();
           });
@@ -250,7 +248,7 @@
           form.addEventListener('submit', function (e) {
             if (!touched || isBlank()) {
               e.preventDefault();
-              alert('Draw your signature first.');
+              alert("Draw your signature first.");
               return;
             }
             dataInput.value = canvas.toDataURL('image/png');
@@ -267,14 +265,14 @@
         <p class="card-meta">Stored in <span class="font-mono"><%= backupDir %></span></p>
       </header>
       <div class="card-body">
-        <form method="POST" action="/settings/backup" class="flex items-center justify-between mb-gutter-lg">
+        <form method="POST" action="/settings/backup" class="flex flex-col md:flex-row md:items-center md:justify-between gap-gutter mb-gutter-lg">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <p class="font-sans text-[13px] text-coal">Automatic backups run nightly at 02:30 and are kept for 30 days.</p>
           <button class="btn-secondary">Back up now</button>
         </form>
 
         <% if (backups.length === 0) { %>
-          <p class="font-sans text-[13px] text-smoke italic">No backups yet — run one to create the first.</p>
+          <p class="font-sans text-[13px] text-smoke italic">No backups yet.</p>
         <% } else { %>
           <table class="w-full">
             <thead>

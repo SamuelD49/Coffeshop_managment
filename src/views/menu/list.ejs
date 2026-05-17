@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Menu', shopName }) %>
+<%- include('../partials/head', { title: "Menu", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -24,7 +24,29 @@
         </div>
       </div>
     <% } else { %>
-      <div class="reveal reveal-3 card">
+      <%
+        const FALLBACK_PALETTE_MOBILE = ['#C75D34','#5C7558','#B68A3C','#8B2A26','#3E2A1F','#9E4524','#7A6E62'];
+      %>
+      <%# ─── Mobile (md:hidden): tappable item cards ─── %>
+      <div class="reveal reveal-3 md:hidden">
+        <% items.forEach(item => {
+             const colorM = item.token_color || FALLBACK_PALETTE_MOBILE[item.id % FALLBACK_PALETTE_MOBILE.length];
+        %>
+          <a href="/menu/<%= item.id %>/edit" class="list-card">
+            <div class="min-w-0 flex-1 flex items-center gap-gutter">
+              <span class="inline-block w-3.5 h-3.5 rounded-full flex-shrink-0" style="background-color: <%= colorM %>; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.22);"></span>
+              <div class="min-w-0">
+                <div class="list-card-primary <%= !item.is_active ? 'text-smoke' : '' %>"><%= item.name %></div>
+                <div class="list-card-secondary"><%= (item.is_active) ? "Active" : "Inactive" %></div>
+              </div>
+            </div>
+            <div class="list-card-trailing"><%= (item.price / 100).toFixed(2) %></div>
+          </a>
+        <% }) %>
+      </div>
+
+      <%# ─── Desktop (hidden md:block): the existing table ─── %>
+      <div class="reveal reveal-3 card hidden md:block">
         <table class="w-full">
           <thead>
             <tr class="border-b border-rule">
@@ -62,7 +84,7 @@
                   <form method="POST" action="/menu/<%= item.id %>/active" class="inline">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                     <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors">
-                      <%= item.is_active ? 'Deactivate' : 'Activate' %>
+                      <%= (item.is_active) ? "Deactivate" : "Activate" %>
                     </button>
                   </form>
                 </td>

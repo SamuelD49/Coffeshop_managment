@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'New menu item', shopName }) %>
+<%- include('../partials/head', { title: "New menu item", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-xl">
@@ -20,12 +20,12 @@
         </label>
         <label class="block">
           <span class="field-label">Price</span>
-          <input name="price" required class="field-input field-mono" placeholder="45.00" />
+          <input name="price" required inputmode="decimal" class="field-input field-mono" placeholder="45.00" />
           <span class="field-hint">In the shop currency (e.g. ETB). Items will be ordered by sales volume on the entry page.</span>
         </label>
         <%- include('_color_picker', { palette: locals.palette, selected: null }) %>
       </div>
-      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+      <div class="px-gutter-lg pb-gutter-lg sticky-actions">
         <a href="/menu" class="btn-secondary">Cancel</a>
         <button class="btn-primary">Add item →</button>
       </div>

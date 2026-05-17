@@ -1,9 +1,9 @@
-<%- include('../partials/head', { title: 'Something went wrong', shopName }) %>
+<%- include('../partials/head', { title: '500', shopName}) %>
 <body class="text-ink font-sans antialiased">
   <main class="max-w-lg mx-auto px-gutter-lg py-chapter text-center">
     <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">An ink smudge</p>
     <h1 class="font-display text-[56px] leading-[60px] mt-gutter" style="font-variation-settings:'opsz' 144,'SOFT' 80">500</h1>
-    <p class="font-sans text-coal mt-gutter"><%= typeof message !== 'undefined' ? message : 'Something went wrong on our end.' %></p>
+    <p class="font-sans text-coal mt-gutter"><%= typeof message !== 'undefined' ? message : "Something went wrong on our end." %></p>
   </main>
 </body>
 </html>

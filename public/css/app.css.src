@@ -52,44 +52,35 @@
   }
 
   /* ─────────── Mobile shell ─────────────────────────────────────────────
-     On small screens the sidebar slides off-canvas and a top bar with a
-     hamburger replaces it. The :has() selector means these rules only fire
-     on pages that actually have a sidebar — login/setup are untouched.
+     Phone gets a real app shell: sticky top header + bottom tab bar. The
+     desktop sidebar is hidden below 768px. The :has() selector means these
+     rules only fire on pages that actually mount the shell — login/setup
+     and other no-sidebar pages are untouched.
   */
   @media (max-width: 767px) {
     body:has(> aside) { display: block; }
-    body:has(> aside) > aside {
-      position: fixed;
-      top: 0; bottom: 0; left: 0;
-      width: 260px;
-      max-width: 85vw;
-      z-index: 50;
-      transform: translateX(-100%);
-      transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
-      overflow-y: auto;
-      box-shadow: 8px 0 32px rgba(26, 20, 16, 0.18);
-    }
-    body:has(> aside).sidebar-open > aside { transform: translateX(0); }
+
+    /* Main content gets vertical breathing room for the fixed header + tab bar.
+       env(safe-area-inset-*) carves out iPhone notch/home-bar space. */
     body:has(> aside) > main {
       padding-left: 16px !important;
       padding-right: 16px !important;
-      padding-top: 76px !important;
+      padding-top: calc(56px + env(safe-area-inset-top, 0px) + 12px) !important;
+      padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px) !important;
       max-width: 100% !important;
     }
-    body:has(> aside) > .mobile-topbar { display: flex; }
-    body:has(> aside) > .mobile-backdrop { display: block; }
-    body:has(> aside).sidebar-open > .mobile-backdrop {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    body:has(> aside).sidebar-open { overflow: hidden; }
 
-    /* Page headlines come down a notch — 36px is the design-system "display-md"
-       but it's loud on a phone. Knock it back to ~28-30px so the eye breathes. */
+    /* The in-page h1 is redundant with the top-bar title — dial it down. */
     h1.font-display {
-      font-size: 28px !important;
-      line-height: 34px !important;
+      font-size: 26px !important;
+      line-height: 32px !important;
     }
+
+    body.sheet-open { overflow: hidden; }
+
+    /* Defensive: prevent any single wide element (canvas, long mono text, etc.)
+       from pushing the whole page wider than the viewport on phones. */
+    body:has(> aside) { overflow-x: hidden; }
   }
 
   /* ─────────── Skip-to-main link ──────────────────────────────────────── */
@@ -351,6 +342,118 @@
     outline: 2px dashed #C75D34;
     outline-offset: 4px;
   }
+  /* Onboarding "Getting started" checklist on the dashboard */
+  .getting-started-progress {
+    height: 4px;
+    background-color: #E3D9C6;
+    overflow: hidden;
+  }
+  .getting-started-progress-fill {
+    height: 100%;
+    background-color: #C75D34;
+    transition: width 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .getting-started-list { padding: 0; margin: 0; list-style: none; }
+  .getting-started-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    border-bottom: 1px solid #E3D9C6;
+  }
+  .getting-started-item:last-child { border-bottom: 0; }
+  .getting-started-check {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    border: 1.5px solid #C5B79E;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    background-color: transparent;
+    transition: all 180ms ease;
+  }
+  .getting-started-item.is-done .getting-started-check {
+    background-color: #5C7558;
+    border-color: #5C7558;
+    color: #F4ECDF;
+  }
+  .getting-started-title {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: #1A1410;
+    line-height: 1.25;
+  }
+  .getting-started-item.is-done .getting-started-title {
+    color: #7A6E62;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .getting-started-hint {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 12.5px;
+    color: #6F6356;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+  .getting-started-cta {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #C75D34;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .getting-started-cta:hover { color: #9E4524; }
+  .getting-started-done {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #7A6E62;
+    flex-shrink: 0;
+  }
+  @media (max-width: 767px) {
+    .getting-started-item { padding: 14px 18px; gap: 12px; }
+    .getting-started-hint { display: none; } /* save vertical space on phone */
+  }
+
+  /* Custom-color swatch: rainbow gradient until the user picks something.
+     The native <input type="color"> is layered invisibly over the swatch so
+     tapping anywhere on it opens the OS color picker. */
+  .swatch-label-custom { position: relative; }
+  .swatch-custom {
+    background: conic-gradient(
+      from 0deg,
+      #C75D34, #B68A3C, #5C7558, #2C6E7A,
+      #3E2A1F, #8B2A26, #9E4524, #C75D34
+    );
+  }
+  .swatch-custom.has-color { background-image: none; }
+  .swatch-label-custom input[type="color"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+    background: transparent;
+  }
+  @media (max-width: 767px) {
+    /* Tighter swatches so all 8 fit on a phone without scrolling. */
+    .swatch { width: 32px; height: 32px; }
+    .swatch-auto { font-size: 14px; }
+    /* Shrink the row's gap too — the parent uses gap-gutter (16px). */
+    fieldset > .flex.flex-wrap { gap: 10px !important; }
+  }
 
   /* Sparkbar — vertical bar chart used on the dashboard 7-day overview */
   .sparkbars {
@@ -433,5 +536,260 @@
     z-index: 1000;
     pointer-events: none;
     will-change: transform, opacity;
+  }
+
+  /* ─────────── Mobile-app shell: top header + bottom tab bar ─────────── */
+  .app-header-mobile {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 40;
+    height: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: rgba(244, 236, 223, 0.92);
+    backdrop-filter: saturate(160%) blur(10px);
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid #D6CCB8;
+  }
+  .app-header-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: 0.005em;
+    color: #1A1410;
+    line-height: 1;
+    flex: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-header-back, .app-header-back-spacer {
+    width: 44px; height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #1A1410;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .app-header-back:hover { background-color: rgba(26, 20, 16, 0.06); }
+  .app-header-back:active { background-color: rgba(26, 20, 16, 0.12); }
+
+  .tab-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 40;
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    gap: 0;
+    padding: 6px 4px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    background-color: rgba(244, 236, 223, 0.94);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    border-top: 1px solid #D6CCB8;
+  }
+  .tab-item {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 6px 4px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: #6F6356;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    border-radius: 10px;
+    min-height: 48px;
+    transition: color 140ms, background-color 140ms, transform 80ms;
+  }
+  .tab-item svg { width: 22px; height: 22px; }
+  .tab-item:active { transform: scale(0.96); background-color: rgba(26, 20, 16, 0.05); }
+  .tab-item.is-active { color: #1A1410; }
+  .tab-item.is-active svg { stroke-width: 2.1; }
+
+  /* Bottom sheet (More menu, mobile confirm dialogs) */
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(26, 20, 16, 0.4);
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 70;
+    background-color: #F4ECDF;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-top: 1px solid #D6CCB8;
+    padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -16px 48px rgba(26, 20, 16, 0.24);
+    transform: translateY(110%);
+    transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .sheet.is-open { transform: translateY(0); }
+  .sheet-grip {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background-color: #C5B79E;
+    margin: 6px auto 8px;
+  }
+  .sheet-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-variation-settings: "opsz" 36, "SOFT" 50;
+    font-weight: 500;
+    font-size: 18px;
+    color: #1A1410;
+    padding: 4px 20px 12px;
+    border-bottom: 1px solid #E3D9C6;
+  }
+  .sheet-list { padding: 4px 0; }
+  .sheet-item {
+    display: block;
+    width: 100%;
+    padding: 14px 20px;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 15px;
+    color: #1A1410;
+    text-align: left;
+    text-decoration: none;
+    border: 0;
+    background: transparent;
+    border-bottom: 1px solid #E3D9C6;
+    min-height: 48px;
+    cursor: pointer;
+  }
+  .sheet-item:last-child { border-bottom: 0; }
+  .sheet-item:active { background-color: rgba(26, 20, 16, 0.06); }
+  .sheet-item-form { display: block; }
+  .sheet-item-button { font-weight: 500; }
+
+  /* Form action row — chunky full-width buttons on mobile so they're easy
+     to tap, but kept in document flow (not position:fixed) so they never
+     cover form fields above them. The "sticky-actions" name is historical. */
+  .sticky-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  @media (max-width: 767px) {
+    .sticky-actions {
+      justify-content: stretch;
+    }
+    .sticky-actions > * { flex: 1; }
+    .sticky-actions > a, .sticky-actions > button {
+      height: 48px;
+      font-size: 14px;
+    }
+  }
+
+  /* Mobile list cards — used as the md:hidden twin to desktop tables */
+  .list-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 14px;
+    background-color: #F8F2E6;
+    border: 1px solid #E3D9C6;
+    border-radius: 12px;
+    color: #1A1410;
+    text-decoration: none;
+    min-height: 64px;
+    transition: transform 80ms, background-color 140ms;
+  }
+  .list-card:active { transform: scale(0.985); background-color: #F4ECDC; }
+  .list-card + .list-card { margin-top: 8px; }
+  .list-card-primary {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1.25;
+    color: #1A1410;
+  }
+  .list-card-secondary {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 12.5px;
+    color: #6F6356;
+    margin-top: 3px;
+  }
+  .list-card-trailing {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 14px;
+    color: #1A1410;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .list-card-trailing .sub {
+    display: block;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 11px;
+    color: #6F6356;
+    margin-top: 2px;
+  }
+
+  /* Sales entry: drop the token-tally column and reflow on phone.
+     The token jar + flying disks are desktop delight; on mobile we just
+     want a clean Item / Unit / Qty / Total table that breathes. */
+  @media (max-width: 767px) {
+    .sales-entry-table .col-tally { display: none !important; }
+    .sales-entry-table { table-layout: auto !important; }
+    .sales-entry-table th, .sales-entry-table td {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+      padding-top: 14px !important;
+      padding-bottom: 14px !important;
+    }
+    .sales-entry-table th:first-child, .sales-entry-table td:first-child {
+      padding-left: 14px !important;
+    }
+    .sales-entry-table th:nth-last-child(2), .sales-entry-table td:nth-last-child(2) {
+      padding-right: 14px !important;
+    }
+    /* Bigger tap target for the qty number input on mobile */
+    .sales-entry-table input[name="qty"] {
+      width: 56px !important;
+      height: 36px !important;
+      font-size: 16px !important;
+    }
+  }
+
+  /* Confirm dialog becomes a bottom sheet on phone */
+  @media (max-width: 767px) {
+    dialog.confirm-dialog {
+      position: fixed;
+      margin: 0;
+      bottom: 0; top: auto; left: 0; right: 0;
+      width: 100% !important;
+      max-width: 100% !important;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      border-bottom: 0;
+    }
   }
 }

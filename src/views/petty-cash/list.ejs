@@ -1,20 +1,20 @@
-<%- include('../partials/head', { title: 'Petty cash', shopName }) %>
+<%- include('../partials/head', { title: "Petty cash", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
-    <header class="reveal reveal-1 flex items-end justify-between gap-gutter">
+    <header class="reveal reveal-1 flex flex-col md:flex-row md:items-end md:justify-between gap-gutter">
       <h1 class="font-display text-[36px] leading-[42px] text-ink" style="font-variation-settings:'opsz' 72,'SOFT' 50">Petty cash</h1>
-      <div class="flex items-end gap-air">
+      <div class="flex items-end gap-air justify-between md:justify-end">
         <details class="text-right">
           <summary class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink cursor-pointer transition-colors list-none">
             <% if (filters.from || filters.to) { %>
-              Filter: <span class="font-mono"><%= filters.from || '…' %> → <%= filters.to || '…' %></span>
+              Filter: <span class="font-mono"><%= (filters.from) || '…' %> → <%= (filters.to) || '…' %></span>
             <% } else { %>
               Filter by date
             <% } %>
           </summary>
-          <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end">
+          <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end flex-wrap">
             <label class="block">
               <span class="field-label">From</span>
               <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
@@ -45,7 +45,73 @@
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
     </form>
 
-    <div class="reveal reveal-3 card">
+    <%# ─── Mobile (md:hidden): stacked add-form + tappable cards ─── %>
+    <div class="reveal reveal-3 md:hidden">
+      <form method="POST" action="/petty-cash" class="card p-gutter-lg space-y-gutter mb-gutter-lg">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Add entry</p>
+        <div class="grid grid-cols-2 gap-gutter">
+          <label class="block">
+            <span class="field-label">Date</span>
+            <input type="date" name="entry_date" value="<%= today %>" required class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Type</span>
+            <select name="type" class="field-input">
+              <option value="expense">Expense</option>
+              <option value="refund">Refund</option>
+              <option value="replenishment">Replenishment</option>
+            </select>
+          </label>
+        </div>
+        <label class="block">
+          <span class="field-label">Description</span>
+          <input name="description" required placeholder="What was this for?" class="field-input" />
+        </label>
+        <div class="grid grid-cols-2 gap-gutter">
+          <label class="block">
+            <span class="field-label">Payer</span>
+            <input name="payer_name" placeholder="Who?" class="field-input" />
+          </label>
+          <label class="block">
+            <span class="field-label">Amount</span>
+            <input name="amount" required inputmode="decimal" placeholder="0.00" class="field-input field-mono text-right" />
+          </label>
+        </div>
+        <button class="btn-primary w-full mt-gutter">Add entry</button>
+      </form>
+
+      <% if (entries.length === 0) { %>
+        <p class="text-center font-display italic text-[16px] text-mist py-air" style="font-variation-settings:'opsz' 24,'SOFT' 50">
+          No entries yet.
+        </p>
+      <% } %>
+
+      <% entries.forEach(e => {
+           const sign = e.type === 'expense' ? -1 : 1;
+           const signed = (sign * e.amount) / 100;
+      %>
+        <a href="/petty-cash/<%= e.id %>/edit" class="list-card">
+          <div class="min-w-0 flex-1">
+            <div class="list-card-primary truncate"><%= e.description %></div>
+            <div class="list-card-secondary">
+              <span class="font-mono"><%= e.entry_date %></span>
+              · <%= (e.type).charAt(0).toUpperCase() + (e.type).slice(1) %>
+              <% if (e.payer_name) { %>· <%= e.payer_name %><% } %>
+            </div>
+          </div>
+          <div class="list-card-trailing">
+            <span class="<%= sign < 0 ? 'text-crimson' : 'text-leaf' %>">
+              <%= sign > 0 ? '+' : '' %><%= signed.toFixed(2) %>
+            </span>
+            <span class="sub">Cash on hand <%= (e.running_balance / 100).toFixed(2) %></span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+
+    <%# ─── Desktop (hidden md:block): the existing table ─── %>
+    <div class="reveal reveal-3 card hidden md:block">
       <table class="w-full">
         <thead>
           <tr class="border-b border-rule-strong">

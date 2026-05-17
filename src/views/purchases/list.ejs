@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Purchases', shopName }) %>
+<%- include('../partials/head', { title: "Purchases", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -20,7 +20,7 @@
           <% } else if (_showAll) { %>
             All purchases — <a href="/purchases" class="link">back to today</a>
           <% } else if (_isFiltered) { %>
-            <span class="font-mono"><%= filters.from || '…' %></span> → <span class="font-mono"><%= filters.to || '…' %></span> — <a href="/purchases" class="link">back to today</a>
+            <span class="font-mono"><%= (filters.from) || '…' %></span> → <span class="font-mono"><%= (filters.to) || '…' %></span> — <a href="/purchases" class="link">back to today</a>
           <% } %>
         </p>
       </div>
@@ -28,7 +28,7 @@
         <summary class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink cursor-pointer transition-colors list-none">
           Filter by date
         </summary>
-        <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end">
+        <form method="GET" class="flex items-end gap-gutter mt-gutter justify-end flex-wrap">
           <label class="block">
             <span class="field-label">From</span>
             <input type="date" name="from" value="<%= filters.from || '' %>" class="field-input field-mono" />
@@ -56,7 +56,75 @@
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
     </form>
 
-    <div class="reveal reveal-3 card overflow-x-auto">
+    <%# ─── Mobile (md:hidden): stacked add-form + tappable cards ─── %>
+    <div class="reveal reveal-3 md:hidden">
+      <form method="POST" action="/purchases" class="card p-gutter-lg space-y-gutter mb-gutter-lg">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Add purchase</p>
+        <label class="block">
+          <span class="field-label">Date</span>
+          <input type="date" name="purchase_date" value="<%= today %>" required class="field-input field-mono" />
+        </label>
+        <label class="block">
+          <span class="field-label">Description</span>
+          <input name="description" required placeholder="Beans, milk, sugar…" class="field-input" />
+        </label>
+        <div class="grid grid-cols-3 gap-gutter">
+          <label class="block">
+            <span class="field-label">Unit</span>
+            <input name="unit" placeholder="kg" class="field-input field-mono" />
+          </label>
+          <label class="block">
+            <span class="field-label">Qty</span>
+            <input name="qty" required inputmode="decimal" placeholder="0" class="field-input field-mono text-right" />
+          </label>
+          <label class="block">
+            <span class="field-label">Price</span>
+            <input name="unit_price" required inputmode="decimal" placeholder="0.00" class="field-input field-mono text-right" />
+          </label>
+        </div>
+        <label class="block">
+          <span class="field-label">Remark <span class="text-mist normal-case">(optional)</span></span>
+          <input name="remark" class="field-input" />
+        </label>
+        <button class="btn-primary w-full mt-gutter">Add purchase</button>
+      </form>
+
+      <% if (purchases.length === 0) { %>
+        <p class="text-center font-display italic text-[16px] text-mist py-air" style="font-variation-settings:'opsz' 24,'SOFT' 50">
+          <% if (_isToday) { %>
+            No purchases logged today — type into the line above to add one.
+          <% } else { %>
+            No purchases in this range — widen the filter or
+          <% } %>
+        </p>
+      <% } %>
+
+      <% purchases.forEach(p => { %>
+        <a href="/purchases/<%= p.id %>/edit" class="list-card">
+          <div class="min-w-0 flex-1">
+            <div class="list-card-primary truncate"><%= p.description %></div>
+            <div class="list-card-secondary">
+              <span class="font-mono"><%= p.purchase_date %></span>
+              · <%= p.qty %><%= p.unit ? ' ' + p.unit : '' %>
+              × <%= (p.unit_price / 100).toFixed(2) %>
+              <% if (p.remark) { %>· <%= p.remark %><% } %>
+            </div>
+          </div>
+          <div class="list-card-trailing"><%= (p.total / 100).toFixed(2) %></div>
+        </a>
+      <% }) %>
+
+      <% if (purchases.length > 0) { %>
+        <div class="flex items-center justify-between mt-gutter-lg pt-gutter border-t-2 border-rule-strong">
+          <span class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Total</span>
+          <span class="font-mono text-[18px] text-ink"><%= (sumTotal / 100).toFixed(2) %></span>
+        </div>
+      <% } %>
+    </div>
+
+    <%# ─── Desktop (hidden md:block): the existing table ─── %>
+    <div class="reveal reveal-3 card overflow-x-auto hidden md:block">
       <table class="w-full table-fixed">
         <colgroup>
           <col style="width: 132px" />  <%# Date %>

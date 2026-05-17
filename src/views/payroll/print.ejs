@@ -1,8 +1,9 @@
+<% const displayMonthPrint = month_name; %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Payroll · <%= month_name %> <%= run.year %> · <%= shopName %></title>
+  <title>Payroll · <%= displayMonthPrint %> <%= run.year %> · <%= shopName %></title>
   <link rel="stylesheet" href="/css/app.css" />
   <style>
     @page { size: A4 landscape; margin: 14mm; }
@@ -18,11 +19,11 @@
       <div>
         <p class="font-mono text-[11px] tracking-smallcaps uppercase text-smoke">Payroll sheet</p>
         <h1 class="wordmark wordmark-lg text-[44px] leading-[48px] mt-gutter-tight"><%= shopName %></h1>
-        <p class="font-display italic text-[20px] text-coal mt-gutter-tight" style="font-variation-settings:'opsz' 24,'SOFT' 50">For the month of <%= month_name %> <%= run.year %></p>
+        <p class="font-display italic text-[20px] text-coal mt-gutter-tight" style="font-variation-settings:'opsz' 24,'SOFT' 50">For the month of <%= displayMonthPrint %> <%= run.year %></p>
       </div>
       <div class="text-right">
         <p class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke">Status</p>
-        <p class="font-display text-[18px] text-ink mt-1 capitalize" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= run.status %></p>
+        <p class="font-display text-[18px] text-ink mt-1 capitalize" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= run.status === 'approved' ? 'Approved' : 'Draft' %></p>
       </div>
     </header>
 
@@ -86,8 +87,6 @@
 
     <%
       const _sig = (typeof signature !== 'undefined' && signature) ? signature : '';
-      // For each block, show the saved signature image above the line. The line
-      // stays — the image sits just above it, mimicking a real ink signature.
     %>
     <div class="grid grid-cols-2 gap-air-lg mt-air-lg">
       <div>

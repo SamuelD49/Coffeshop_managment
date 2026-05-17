@@ -1,25 +1,25 @@
-<%- include('../partials/head', { title: employee.full_name, shopName }) %>
+<%- include('../partials/head', { title: employee.full_name, shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <%
     const tabs = [
-      { key: 'personal',    label: 'Personal' },
-      { key: 'documents',   label: 'Documents' },
-      { key: 'guarantors',  label: 'Guarantors' },
-      { key: 'employment',  label: 'Employment' },
-      { key: 'payroll',     label: 'Payroll' },
+      { key: 'personal',    label: "Personal" },
+      { key: 'documents',   label: "Documents" },
+      { key: 'guarantors',  label: "Guarantors" },
+      { key: 'employment',  label: "Employment" },
+      { key: 'payroll',     label: "Payroll" },
     ];
   %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-4xl">
-    <header class="reveal reveal-1 flex items-start justify-between gap-air">
+    <header class="reveal reveal-1 flex items-start justify-between gap-air flex-wrap">
       <div>
         <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
-          <a href="/employees" class="hover:text-ink transition-colors">Employees</a> · <%= employee.position || 'No position set' %>
+          <a href="/employees" class="hover:text-ink transition-colors">Employees</a> · <%= employee.position || "No position set" %>
         </p>
         <h1 class="font-display text-[40px] leading-[44px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 80,'SOFT' 50"><%= employee.full_name %></h1>
-        <div class="mt-gutter flex items-center gap-gutter">
+        <div class="mt-gutter flex items-center gap-gutter flex-wrap">
           <% if (completeness.complete) { %>
             <span class="pip pip-approved">Onboarding complete</span>
           <% } else { %>
@@ -38,8 +38,8 @@
       <div class="flex items-center gap-gutter">
         <% if (employee.is_active) { %>
           <form method="POST" action="/employees/<%= employee.id %>/active"
-                data-confirm="<%= employee.full_name %> will be marked inactive — hidden from payroll auto-populate and the active-employee lists, but all their history (past payrolls, sales, documents) stays intact. You can reactivate at any time."
-                data-confirm-title="Deactivate <%= employee.full_name %>?"
+                data-confirm="<%= `${employee.full_name} will be marked inactive — hidden from payroll auto-populate and the active-employee lists, but all their history (past payrolls, sales, documents) stays intact. You can reactivate at any time.` %>"
+                data-confirm-title="<%= `Deactivate ${employee.full_name}?` %>"
                 data-confirm-label="Deactivate"
                 data-confirm-variant="danger">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -54,13 +54,13 @@
       </div>
     </header>
 
-    <nav class="reveal reveal-2 mt-air-lg border-b border-rule-strong flex gap-air-lg">
-      <% tabs.forEach(t => {
-           const isActive = t.key === tab;
+    <nav class="reveal reveal-2 mt-air-lg border-b border-rule-strong flex gap-air-lg overflow-x-auto">
+      <% tabs.forEach(tb => {
+           const isActive = tb.key === tab;
       %>
-        <a href="/employees/<%= employee.id %>?tab=<%= t.key %>"
-           class="relative pb-gutter font-sans text-[14px] transition-colors <%= isActive ? 'text-ink' : 'text-smoke hover:text-coal' %>">
-          <%= t.label %>
+        <a href="/employees/<%= employee.id %>?tab=<%= tb.key %>"
+           class="relative pb-gutter font-sans text-[14px] transition-colors whitespace-nowrap <%= isActive ? 'text-ink' : 'text-smoke hover:text-coal' %>">
+          <%= tb.label %>
           <% if (isActive) { %>
             <span class="absolute left-0 right-0 -bottom-px h-[2px] bg-ember"></span>
           <% } %>

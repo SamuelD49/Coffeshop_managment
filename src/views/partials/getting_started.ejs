@@ -1,0 +1,50 @@
+<%
+  // Shown only when not complete. Owner-gated by the dashboard parent.
+  const _setup = (typeof setup !== 'undefined' && setup) ? setup : { complete: true, steps: [], doneCount: 0, totalCount: 0 };
+  if (!_setup.complete) {
+    const _labels = {
+      shop_name: { title: "Set your shop name",   hint: "Replace the default \"Coffee Shop\" with the real name. Appears in the header, on prints, and on every page." },
+      menu:      { title: "Add your first menu item",       hint: "Drinks and food you sell. You'll tap these on the sales-entry screen." },
+      employees: { title: "Add an employee",  hint: "Even if it's just you. The roster powers payroll and assigns sales sessions to a cashier." },
+      sale:      { title: "Log your first sales entry",       hint: "A practice run is fine — you can delete it after." },
+      signature: { title: "Save your signature",  hint: "Drawn once on Settings, then reused on payroll prints and future reports." },
+    };
+    const _pct = Math.round((_setup.doneCount / _setup.totalCount) * 100);
+%>
+<section class="reveal reveal-3 mb-air-lg">
+  <article class="card overflow-hidden">
+    <header class="card-header flex items-start justify-between gap-gutter flex-wrap">
+      <div>
+        <h2 class="card-title">Getting started</h2>
+        <p class="card-meta"><%= `${_setup.doneCount} of ${_setup.totalCount} done — a few first steps to make the app yours` %></p>
+      </div>
+      <div class="font-mono text-[12px] text-smoke whitespace-nowrap"><%= _pct %>%</div>
+    </header>
+    <div class="getting-started-progress" aria-hidden="true">
+      <div class="getting-started-progress-fill" style="width: <%= _pct %>%"></div>
+    </div>
+    <ol class="getting-started-list">
+      <% _setup.steps.forEach(step => {
+           const lbl = _labels[step.key] || { title: step.key, hint: '' };
+      %>
+        <li class="getting-started-item <%= step.done ? 'is-done' : '' %>">
+          <span class="getting-started-check" aria-hidden="true">
+            <% if (step.done) { %>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <% } %>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="getting-started-title"><%= lbl.title %></p>
+            <p class="getting-started-hint"><%= lbl.hint %></p>
+          </div>
+          <% if (!step.done) { %>
+            <a href="<%= step.href %>" class="getting-started-cta">Do this →</a>
+          <% } else { %>
+            <span class="getting-started-done">Done</span>
+          <% } %>
+        </li>
+      <% }) %>
+    </ol>
+  </article>
+</section>
+<% } %>

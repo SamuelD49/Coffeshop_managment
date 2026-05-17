@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Edit purchase', shopName }) %>
+<%- include('../partials/head', { title: "Edit" + ' · ' + "Purchases", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-2xl">
@@ -30,18 +30,18 @@
         </label>
         <label class="block">
           <span class="field-label">Qty</span>
-          <input name="qty" value="<%= purchase.qty %>" class="field-input field-mono" />
+          <input name="qty" value="<%= purchase.qty %>" inputmode="decimal" class="field-input field-mono" />
         </label>
         <label class="block">
           <span class="field-label">Unit price</span>
-          <input name="unit_price" value="<%= (purchase.unit_price / 100).toFixed(2) %>" class="field-input field-mono" />
+          <input name="unit_price" value="<%= (purchase.unit_price / 100).toFixed(2) %>" inputmode="decimal" class="field-input field-mono" />
         </label>
         <label class="block col-span-2">
           <span class="field-label">Remark</span>
           <input name="remark" value="<%= purchase.remark || '' %>" class="field-input" />
         </label>
       </div>
-      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+      <div class="px-gutter-lg pb-gutter-lg sticky-actions">
         <a href="/purchases" class="btn-secondary">Cancel</a>
         <button class="btn-primary">Save changes</button>
       </div>

@@ -1,4 +1,4 @@
-<%- include('partials/head', { title: 'Dashboard', shopName }) %>
+<%- include('partials/head', { title: "Dashboard", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -34,6 +34,8 @@
     <%- include('partials/flash', { flash }) %>
 
     <% if (currentRole === 'owner') { %>
+      <%- include('partials/getting_started', { setup: _d.setup}) %>
+
       <%# ─── Today's snapshot ─── %>
       <section class="reveal reveal-3 grid grid-cols-1 md:grid-cols-3 gap-air">
         <article class="card">
@@ -120,15 +122,15 @@
               <p class="font-display italic text-[16px] text-mist" style="font-variation-settings:'opsz' 24,'SOFT' 50">No sales yet this week.</p>
             <% } else { %>
               <ul class="space-y-gutter-tight">
-                <% _trending.forEach((t, i) => {
-                     const w = _trendingMax > 0 ? Math.max(3, Math.round((t.qty / _trendingMax) * 100)) : 0;
+                <% _trending.forEach((item, i) => {
+                     const w = _trendingMax > 0 ? Math.max(3, Math.round((item.qty / _trendingMax) * 100)) : 0;
                 %>
                   <li class="rank-item">
-                    <span class="rank-name font-sans text-[14px] text-ink truncate"><%= t.name %></span>
+                    <span class="rank-name font-sans text-[14px] text-ink truncate"><%= item.name %></span>
                     <div class="rank-bar">
-                      <div class="rank-fill" style="width: <%= w %>%; background-color: <%= t.color %>;"></div>
+                      <div class="rank-fill" style="width: <%= w %>%; background-color: <%= item.color %>;"></div>
                     </div>
-                    <span class="rank-value font-mono text-[13px] text-coal"><%= t.qty %></span>
+                    <span class="rank-value font-mono text-[13px] text-coal"><%= item.qty %></span>
                   </li>
                 <% }) %>
               </ul>

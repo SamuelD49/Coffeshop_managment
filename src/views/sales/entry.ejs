@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Sales · ' + session.business_date, shopName }) %>
+<%- include('../partials/head', { title: "Sales" + ' · ' + (session.business_date), shopName }) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -24,7 +24,7 @@
         <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
           <% if (employee && _hasCashiers) { %>Cashier: <%= employee.full_name %><% if (_showStatusPip) { %> · <% } %><% } %>
           <% if (_showStatusPip) { %>
-            <span class="pip pip-<%= session.status === 'open' ? 'open' : 'closed' %>"><%= session.status %></span>
+            <span class="pip pip-<%= session.status === 'open' ? 'open' : 'closed' %>"><%= session.status === 'open' ? 'open' : 'closed' %></span>
           <% } %>
         </p>
       </div>
@@ -61,13 +61,13 @@
     <%- include('../partials/flash', { flash }) %>
 
     <div class="reveal reveal-3 card overflow-hidden">
-      <table class="w-full table-fixed">
+      <table class="w-full table-fixed sales-entry-table">
         <colgroup>
-          <col style="width: 32%" />
-          <col style="width: 12%" />
-          <col style="width: 12%" />
-          <col style="width: 14%" />
-          <col style="width: 30%" />
+          <col class="col-item"  style="width: 32%" />
+          <col class="col-unit"  style="width: 12%" />
+          <col class="col-qty"   style="width: 12%" />
+          <col class="col-total" style="width: 14%" />
+          <col class="col-tally" style="width: 30%" />
         </colgroup>
         <thead>
           <tr class="border-b border-rule-strong">
@@ -75,7 +75,7 @@
             <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
             <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Qty</th>
             <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg border-l-2 border-rule-strong bg-paper">Tally</th>
+            <th class="col-tally text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg border-l-2 border-rule-strong bg-paper">Tally</th>
           </tr>
         </thead>
         <tbody>
@@ -91,7 +91,7 @@
 
       <% if (editable) { %>
         <form
-          class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-3 gap-air items-end"
+          class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-1 md:grid-cols-3 gap-gutter-lg md:gap-air items-end"
           hx-post="/sales/<%= session.id %>/header"
           hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
           hx-target="#totals"
@@ -112,7 +112,7 @@
           </label>
         </form>
       <% } else { %>
-        <div class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-3 gap-air">
+        <div class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-1 md:grid-cols-3 gap-gutter md:gap-air">
           <div>
             <p class="field-label">Cash collected</p>
             <p class="font-mono text-[16px] text-ink"><%= (session.cash_amount / 100).toFixed(2) %></p>

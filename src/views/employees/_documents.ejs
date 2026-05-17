@@ -3,15 +3,15 @@
     return attachments.find(a => a.kind === kind) || null;
   }
   const slots = [
-    { key: 'profile_photo', label: 'Profile photo' },
-    { key: 'id_front',      label: 'ID — front'   },
-    { key: 'id_back',       label: 'ID — back'    },
-    { key: 'contract',      label: 'Signed contract' },
+    { key: 'profile_photo', label: "Profile photo" },
+    { key: 'id_front',      label: "ID — front"      },
+    { key: 'id_back',       label: "ID — back"       },
+    { key: 'contract',      label: "Contract"     },
   ];
   const others = attachments.filter(a => a.kind === 'other');
 %>
 
-<div class="grid grid-cols-2 gap-air">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-air">
   <% slots.forEach(slot => {
        const att = findAtt(slot.key);
   %>
@@ -22,13 +22,13 @@
           <% if (att) { %>
             <p class="card-meta truncate"><%= att.original_name %></p>
           <% } else { %>
-            <p class="card-meta">Required</p>
+            <p class="card-meta">required</p>
           <% } %>
         </div>
         <% if (att) { %>
           <span class="pip pip-approved">Uploaded</span>
         <% } else { %>
-          <span class="pip pip-draft">Missing</span>
+          <span class="pip pip-draft">Not uploaded yet</span>
         <% } %>
       </header>
       <div class="card-body">
@@ -41,12 +41,12 @@
             </a>
           <% } else { %>
             <a href="/employees/<%= employee.id %>/files/<%= att.filename %>" target="_blank" class="link">
-              View document
+              View
             </a>
           <% } %>
           <form method="POST" action="/employees/<%= employee.id %>/documents/<%= att.id %>/delete" class="mt-gutter">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-            <button class="btn-danger w-full">Remove</button>
+            <button class="btn-danger w-full">Delete</button>
           </form>
         <% } else { %>
           <form method="POST" action="/employees/<%= employee.id %>/documents" enctype="multipart/form-data" class="space-y-gutter">
@@ -63,8 +63,8 @@
 
 <article class="card mt-air">
   <header class="card-header">
-    <h3 class="card-title">Other documents</h3>
-    <p class="card-meta">Anything else worth keeping on file</p>
+    <h3 class="card-title">Documents</h3>
+    <p class="card-meta">Upload scans or photos. Each is replaced when you upload a new one of the same kind.</p>
   </header>
   <div class="card-body space-y-gutter">
     <% if (others.length) { %>
@@ -74,18 +74,18 @@
             <a href="/employees/<%= employee.id %>/files/<%= a.filename %>" target="_blank" class="link font-sans text-[14px] truncate"><%= a.original_name %></a>
             <form method="POST" action="/employees/<%= employee.id %>/documents/<%= a.id %>/delete">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-              <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Remove</button>
+              <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Delete</button>
             </form>
           </li>
         <% }) %>
       </ul>
     <% } %>
 
-    <form method="POST" action="/employees/<%= employee.id %>/documents" enctype="multipart/form-data" class="flex items-end gap-gutter pt-gutter border-t border-rule">
+    <form method="POST" action="/employees/<%= employee.id %>/documents" enctype="multipart/form-data" class="flex flex-col md:flex-row md:items-end gap-gutter pt-gutter border-t border-rule">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
       <input type="hidden" name="kind" value="other" />
       <label class="flex-1">
-        <span class="field-label">Add document</span>
+        <span class="field-label">Add</span>
         <input type="file" name="file" required accept="image/*,.pdf" class="font-sans text-[14px] block w-full mt-1" />
       </label>
       <button class="btn-primary">Upload</button>

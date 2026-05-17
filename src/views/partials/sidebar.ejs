@@ -1,21 +1,8 @@
 <a href="#main" class="skip-link">Skip to main content</a>
 
-<header class="mobile-topbar fixed top-0 left-0 right-0 z-40 hidden items-center justify-between px-gutter py-gutter-tight bg-cream border-b border-rule-strong">
-  <button type="button" id="mobile-hamburger" aria-label="Open navigation menu" aria-controls="app-sidebar" aria-expanded="false"
-          class="w-10 h-10 flex items-center justify-center text-ink hover:bg-paper rounded-soft transition-colors">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-      <line x1="3" y1="6"  x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-  </button>
-  <a href="/" class="wordmark text-[18px]" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= shopName %></a>
-  <div class="w-10" aria-hidden="true"></div>
-</header>
+<%- include('./mobile-nav', { shopName, currentRole, currentUser, csrfToken, currentPath, pageTitle: typeof pageTitle !== 'undefined' ? pageTitle : '' }) %>
 
-<div class="mobile-backdrop fixed inset-0 bg-ink/40 opacity-0 pointer-events-none transition-opacity duration-200 z-40 hidden" aria-hidden="true"></div>
-
-<aside id="app-sidebar" class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex flex-col" aria-label="Main navigation">
+<aside id="app-sidebar" class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex-col hidden md:flex" aria-label="Main navigation">
   <a href="/" class="wordmark text-[28px] leading-[32px] mb-air block">
     <%= shopName %>
   </a>
@@ -82,7 +69,7 @@
 </aside>
 
 <%# Confirmation dialog — every authenticated page has the sidebar, so it has this too %>
-<dialog id="confirm-dialog" class="rounded-soft border border-rule-strong bg-cream p-0 w-full max-w-md text-ink shadow-2xl backdrop:bg-ink/40">
+<dialog id="confirm-dialog" class="confirm-dialog rounded-soft border border-rule-strong bg-cream p-0 w-full max-w-md text-ink shadow-2xl backdrop:bg-ink/40">
   <div class="bg-parchment">
     <header class="px-gutter-lg pt-gutter-lg pb-gutter border-b border-rule">
       <h2 id="confirm-title" class="card-title">Are you sure?</h2>
@@ -98,37 +85,10 @@
 </dialog>
 
 <script>
-  // ─── Mobile shell: hamburger drawer + skip-to-main anchor ─────────────
+  // Auto-tag the main element so the "Skip to main content" link can target it.
   (function () {
-    // Auto-tag the main element so the "Skip to main content" link can target it.
     var main = document.querySelector('main');
     if (main && !main.id) main.id = 'main';
-
-    var ham = document.getElementById('mobile-hamburger');
-    var backdrop = document.querySelector('.mobile-backdrop');
-    var body = document.body;
-    if (!ham) return;
-
-    function setOpen(open) {
-      body.classList.toggle('sidebar-open', open);
-      ham.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-    function close() { setOpen(false); }
-    function open()  { setOpen(true);  }
-    function toggle() { setOpen(!body.classList.contains('sidebar-open')); }
-
-    ham.addEventListener('click', toggle);
-    backdrop && backdrop.addEventListener('click', close);
-
-    // Tapping a nav link navigates — close the drawer so the user lands cleanly.
-    document.querySelectorAll('aside a.nav-link, aside .wordmark').forEach(function (el) {
-      el.addEventListener('click', close);
-    });
-
-    // Escape closes the drawer (parallels the dialog escape handling).
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && body.classList.contains('sidebar-open')) close();
-    });
   })();
 </script>
 
@@ -156,9 +116,9 @@
       if (!msg) return;
       e.preventDefault();
       pending = form;
-      titleEl.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
+      titleEl.textContent = form.getAttribute('data-confirm-title') || "Are you sure?";
       bodyEl.textContent = msg;
-      actionBtn.textContent = form.getAttribute('data-confirm-label') || 'Confirm';
+      actionBtn.textContent = form.getAttribute('data-confirm-label') || "Confirm";
       actionBtn.className = (form.getAttribute('data-confirm-variant') === 'danger') ? 'btn-danger' : 'btn-primary';
       if (typeof dialog.showModal === 'function') {
         dialog.showModal();

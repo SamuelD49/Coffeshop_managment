@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'New payroll run', shopName }) %>
+<%- include('../partials/head', { title: "New payroll run", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-2xl">
@@ -6,7 +6,8 @@
       <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
         <a href="/payroll" class="hover:text-ink transition-colors">Payroll</a> · New
       </p>
-      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Payroll sheet for the month of…</h1>
+      <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">New payroll run</h1>
+      <p class="font-sans text-coal mt-gutter">Pick the month. Every active employee will be pre-populated; you can tweak figures after.</p>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
@@ -15,7 +16,7 @@
 
     <form method="POST" action="/payroll" class="reveal reveal-3 card mb-air">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+      <div class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
         <label class="block">
           <span class="field-label">Month</span>
           <select name="month" class="field-input">
@@ -29,38 +30,28 @@
           <input type="number" name="year" value="<%= defaultYear %>" required class="field-input field-mono" />
         </label>
       </div>
-      <div class="px-gutter-lg pb-gutter-lg pt-gutter">
-        <p class="font-sans text-[13px] text-smoke">
-          A row will be created for each active employee
-          <% if (eligible.length > 0) { %>
-            (<span class="text-coal"><%= eligible.length %> ready</span><% if (incomplete.length > 0) { %>, <span class="text-coal"><%= incomplete.length %> skipped due to incomplete HR</span><% } %>).
-          <% } else { %>
-            — but none are eligible right now<% if (requireComplete) { %>; either finish onboarding or relax the setting under <a href="/settings" class="link">Settings</a><% } %>.
-          <% } %>
-        </p>
-      </div>
-      <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
+      <div class="px-gutter-lg pb-gutter-lg sticky-actions">
         <a href="/payroll" class="btn-secondary">Cancel</a>
-        <button class="btn-primary">Create run →</button>
+        <button class="btn-primary">Create payroll run →</button>
       </div>
     </form>
 
     <% if (eligible.length > 0 || incomplete.length > 0) { %>
       <details class="reveal reveal-3 font-sans text-[13px] text-smoke">
-        <summary class="cursor-pointer hover:text-ink transition-colors tracking-smallcaps uppercase text-[11px]">See who's included</summary>
+        <summary class="cursor-pointer hover:text-ink transition-colors tracking-smallcaps uppercase text-[11px]">Employees</summary>
         <div class="mt-gutter card">
           <ul class="divide-y divide-rule">
             <% eligible.forEach(e => { %>
               <li class="px-gutter-lg py-gutter flex items-center justify-between">
                 <span class="font-sans text-[14px] text-ink"><%= e.full_name %></span>
-                <span class="pip pip-approved">Eligible</span>
+                <span class="pip pip-approved">Complete</span>
               </li>
             <% }) %>
             <% incomplete.forEach(e => { %>
               <li class="px-gutter-lg py-gutter">
                 <div class="flex items-center justify-between">
                   <a href="/employees/<%= e.id %>" class="font-sans text-[14px] text-ink hover:text-ember transition-colors"><%= e.full_name %></a>
-                  <span class="pip pip-draft"><%= e.missing.length %> missing</span>
+                  <span class="pip pip-draft"><%= `${e.missing.length} missing` %></span>
                 </div>
                 <p class="font-mono text-[11px] text-smoke mt-1 truncate"><%= e.missing.join(', ') %></p>
               </li>

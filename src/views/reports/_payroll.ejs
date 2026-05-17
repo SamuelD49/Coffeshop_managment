@@ -3,11 +3,10 @@
 %>
 <article class="card">
   <header class="card-header">
-    <h2 class="card-title">Payroll runs</h2>
-    <p class="card-meta">All runs, newest first</p>
+    <h2 class="card-title">Payroll</h2>
   </header>
   <% if (data.runs.length === 0) { %>
-    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No payroll runs yet.</div>
+    <div class="card-body text-center py-air font-sans text-[14px] text-smoke">No payroll runs in this range.</div>
   <% } else { %>
     <table class="w-full">
       <thead>
@@ -24,7 +23,7 @@
           <tr class="border-b border-rule last:border-0">
             <td class="px-gutter-lg py-gutter font-display text-[15px] text-ink" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= monthNames[r.month - 1] %> <%= r.year %></td>
             <td class="py-gutter">
-              <span class="pip pip-<%= r.status === 'approved' ? 'approved' : 'draft' %>"><%= r.status %></span>
+              <span class="pip pip-<%= r.status === 'approved' ? 'approved' : 'draft' %>"><%= r.status === 'approved' ? 'Approved' : 'Draft' %></span>
             </td>
             <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.employee_count %></td>
             <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (r.total_gross / 100).toFixed(2) %></td>

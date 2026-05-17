@@ -2,7 +2,7 @@
   <div class="card mb-air">
     <div class="card-body text-center py-air">
       <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No guarantors yet.</p>
-      <p class="font-sans text-[13px] text-smoke mt-gutter">At least one is needed for a complete record.</p>
+      <p class="font-sans text-[13px] text-smoke mt-gutter">People who vouch for this employee. You need at least one with an ID on file before HR is considered complete.</p>
     </div>
   </div>
 <% } %>
@@ -12,26 +12,26 @@
      function gAtt(kind) { return gAtts.find(a => a.kind === kind) || null; }
 %>
   <article class="card mb-air">
-    <header class="card-header flex items-start justify-between">
+    <header class="card-header flex items-start justify-between gap-gutter flex-wrap">
       <div>
-        <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Guarantor #<%= i + 1 %></p>
+        <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke">Guarantors #<%= i + 1 %></p>
         <h3 class="card-title mt-1"><%= g.full_name %></h3>
         <% if (g.relation_to_employee) { %>
           <p class="card-meta"><%= g.relation_to_employee %></p>
         <% } %>
       </div>
       <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>/delete"
-            data-confirm="The guarantor and all their uploaded ID files will be removed. This can't be undone."
-            data-confirm-title="Remove this guarantor?"
-            data-confirm-label="Remove"
+            data-confirm="This guarantor and any attached IDs will be removed."
+            data-confirm-title="Remove guarantor?"
+            data-confirm-label="Delete"
             data-confirm-variant="danger">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Remove</button>
+        <button class="font-sans text-[12px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Delete</button>
       </form>
     </header>
-    <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>" class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+    <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>" class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <label class="block col-span-2">
+      <label class="block col-span-1 md:col-span-2">
         <span class="field-label">Full name</span>
         <input name="full_name" required value="<%= g.full_name %>" class="field-input" />
       </label>
@@ -40,48 +40,42 @@
         <input name="phone" value="<%= g.phone || '' %>" class="field-input field-mono" />
       </label>
       <label class="block">
-        <span class="field-label">Relation to employee</span>
+        <span class="field-label">Relation</span>
         <input name="relation_to_employee" value="<%= g.relation_to_employee || '' %>" class="field-input" />
       </label>
       <label class="block">
-        <span class="field-label">National ID type</span>
+        <span class="field-label">ID type</span>
         <select name="national_id_type" class="field-input">
-          <% ['', 'Kebele', 'Passport', 'Driving license', 'Other'].forEach(t => { %>
-            <option value="<%= t %>" <%= (g.national_id_type || '') === t ? 'selected' : '' %>><%= t || '—' %></option>
-          <% }) %>
+          <option value="" <%= !g.national_id_type ? 'selected' : '' %>>—</option>
+          <option value="Kebele"          <%= g.national_id_type === 'Kebele'          ? 'selected' : '' %>>Kebele ID</option>
+          <option value="Passport"        <%= g.national_id_type === 'Passport'        ? 'selected' : '' %>>Passport</option>
+          <option value="Driving license" <%= g.national_id_type === 'Driving license' ? 'selected' : '' %>>Driver's license</option>
+          <option value="Other"           <%= g.national_id_type === 'Other'           ? 'selected' : '' %>>Other</option>
         </select>
       </label>
       <label class="block">
-        <span class="field-label">National ID number</span>
+        <span class="field-label">ID number</span>
         <input name="national_id_number" value="<%= g.national_id_number || '' %>" class="field-input field-mono" />
       </label>
-      <label class="block col-span-2">
+      <label class="block col-span-1 md:col-span-2">
         <span class="field-label">Address</span>
         <input name="address" value="<%= g.address || '' %>" class="field-input" />
       </label>
-      <label class="block">
-        <span class="field-label">Occupation</span>
-        <input name="occupation" value="<%= g.occupation || '' %>" class="field-input" />
-      </label>
-      <label class="block">
-        <span class="field-label">Workplace</span>
-        <input name="workplace" value="<%= g.workplace || '' %>" class="field-input" />
-      </label>
-      <label class="block col-span-2">
+      <label class="block col-span-1 md:col-span-2">
         <span class="field-label">Notes</span>
         <textarea name="notes" rows="2" class="field-input"><%= g.notes || '' %></textarea>
       </label>
-      <div class="col-span-2 flex items-center justify-end">
-        <button class="btn-primary">Save guarantor</button>
+      <div class="col-span-1 md:col-span-2 sticky-actions">
+        <button class="btn-primary">Save</button>
       </div>
     </form>
 
     <div class="card-body border-t border-rule">
-      <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-gutter">Guarantor documents</p>
-      <div class="grid grid-cols-3 gap-gutter">
+      <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-gutter">Documents</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
         <% ['id_front', 'id_back', 'guarantor_letter'].forEach(kind => {
              const a = gAtt(kind);
-             const label = kind === 'id_front' ? 'ID — front' : kind === 'id_back' ? 'ID — back' : 'Letter of guarantee';
+             const label = kind === 'id_front' ? 'ID front' : kind === 'id_back' ? 'ID back' : 'Letter of guarantee';
         %>
           <div class="border border-rule rounded-soft p-gutter">
             <p class="font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke"><%= label %></p>
@@ -95,7 +89,7 @@
               <% } %>
               <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>/documents/<%= a.id %>/delete" class="mt-gutter">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                <button class="font-sans text-[11px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Remove</button>
+                <button class="font-sans text-[11px] tracking-smallcaps uppercase text-crimson hover:text-ember-deep transition-colors">Delete</button>
               </form>
             <% } else { %>
               <form method="POST" action="/employees/<%= employee.id %>/guarantors/<%= g.id %>/documents" enctype="multipart/form-data" class="mt-gutter space-y-1">
@@ -114,12 +108,11 @@
 
 <article class="card">
   <header class="card-header">
-    <h3 class="card-title">Add a guarantor</h3>
-    <p class="card-meta">You can add more than one if needed</p>
+    <h3 class="card-title">Add guarantor</h3>
   </header>
-  <form method="POST" action="/employees/<%= employee.id %>/guarantors" class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
+  <form method="POST" action="/employees/<%= employee.id %>/guarantors" class="card-body grid grid-cols-1 md:grid-cols-2 gap-x-air gap-y-gutter-lg">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-    <label class="block col-span-2">
+    <label class="block col-span-1 md:col-span-2">
       <span class="field-label">Full name</span>
       <input name="full_name" required class="field-input" />
     </label>
@@ -131,7 +124,7 @@
       <span class="field-label">Relation</span>
       <input name="relation_to_employee" class="field-input" />
     </label>
-    <div class="col-span-2 flex items-center justify-end">
+    <div class="col-span-1 md:col-span-2 sticky-actions">
       <button class="btn-primary">Add guarantor →</button>
     </div>
   </form>

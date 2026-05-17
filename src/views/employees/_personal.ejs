@@ -1,8 +1,7 @@
 <form method="POST" action="/employees/<%= employee.id %>/personal" class="card">
   <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
   <header class="card-header">
-    <h2 class="card-title">Personal information</h2>
-    <p class="card-meta">Identity, contact, emergency</p>
+    <h2 class="card-title">Personal details</h2>
   </header>
   <div class="card-body grid grid-cols-2 gap-x-air gap-y-gutter-lg">
     <label class="block col-span-2">
@@ -20,29 +19,33 @@
     <label class="block">
       <span class="field-label">Gender</span>
       <select name="gender" class="field-input">
-        <% ['', 'F', 'M', 'Other'].forEach(g => { %>
-          <option value="<%= g %>" <%= (employee.gender || '') === g ? 'selected' : '' %>><%= g || '—' %></option>
-        <% }) %>
+        <option value="" <%= !employee.gender ? 'selected' : '' %>>—</option>
+        <option value="F" <%= employee.gender === 'F' ? 'selected' : '' %>>Female</option>
+        <option value="M" <%= employee.gender === 'M' ? 'selected' : '' %>>Male</option>
+        <option value="Other" <%= employee.gender === 'Other' ? 'selected' : '' %>>Other</option>
       </select>
     </label>
     <label class="block">
       <span class="field-label">Marital status</span>
       <select name="marital_status" class="field-input">
-        <% ['', 'single', 'married', 'divorced', 'widowed'].forEach(s => { %>
-          <option value="<%= s %>" <%= (employee.marital_status || '') === s ? 'selected' : '' %>><%= s || '—' %></option>
+        <option value="" <%= !employee.marital_status ? 'selected' : '' %>>—</option>
+        <% ['single', 'married', 'divorced', 'widowed'].forEach(s => { %>
+          <option value="<%= s %>" <%= employee.marital_status === s ? 'selected' : '' %>><%= (s).charAt(0).toUpperCase() + (s).slice(1) %></option>
         <% }) %>
       </select>
     </label>
     <label class="block">
-      <span class="field-label">National ID type</span>
+      <span class="field-label">ID type</span>
       <select name="national_id_type" class="field-input">
-        <% ['', 'Kebele', 'Passport', 'Driving license', 'Other'].forEach(t => { %>
-          <option value="<%= t %>" <%= (employee.national_id_type || '') === t ? 'selected' : '' %>><%= t || '—' %></option>
-        <% }) %>
+        <option value="" <%= !employee.national_id_type ? 'selected' : '' %>>—</option>
+        <option value="Kebele"          <%= employee.national_id_type === 'Kebele'          ? 'selected' : '' %>>Kebele ID</option>
+        <option value="Passport"        <%= employee.national_id_type === 'Passport'        ? 'selected' : '' %>>Passport</option>
+        <option value="Driving license" <%= employee.national_id_type === 'Driving license' ? 'selected' : '' %>>Driver's license</option>
+        <option value="Other"           <%= employee.national_id_type === 'Other'           ? 'selected' : '' %>>Other</option>
       </select>
     </label>
     <label class="block">
-      <span class="field-label">National ID number</span>
+      <span class="field-label">ID number</span>
       <input name="national_id_number" value="<%= employee.national_id_number || '' %>" class="field-input field-mono" />
     </label>
     <label class="block col-span-2">
@@ -66,7 +69,7 @@
       <input name="emergency_contact_relation" value="<%= employee.emergency_contact_relation || '' %>" class="field-input" />
     </label>
   </div>
-  <div class="px-gutter-lg pb-gutter-lg flex items-center justify-end gap-gutter">
-    <button class="btn-primary">Save personal info</button>
+  <div class="px-gutter-lg pb-gutter-lg sticky-actions">
+    <button class="btn-primary">Save</button>
   </div>
 </form>

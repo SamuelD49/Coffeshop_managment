@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Employees', shopName }) %>
+<%- include('../partials/head', { title: "Employees", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
@@ -10,7 +10,7 @@
       </div>
       <div class="flex items-center gap-gutter">
         <a href="/employees?show=<%= showInactive ? 'active' : 'all' %>" class="font-sans text-[13px] text-smoke hover:text-ink transition-colors">
-          <%= showInactive ? 'Hide inactive' : 'Show inactive' %>
+          <%= (showInactive) ? "Hide inactive" : "Show inactive" %>
         </a>
         <a href="/employees/new" class="btn-primary">Add employee</a>
       </div>
@@ -29,7 +29,35 @@
         </div>
       </div>
     <% } else { %>
-      <div class="reveal reveal-3 card">
+      <%# ─── Mobile (md:hidden): tappable employee cards ─── %>
+      <div class="reveal reveal-3 md:hidden">
+        <% employees.forEach(({ employee, completeness }) => { %>
+          <a href="/employees/<%= employee.id %>" class="list-card">
+            <div class="min-w-0 flex-1">
+              <div class="list-card-primary <%= !employee.is_active ? 'italic text-smoke' : '' %>">
+                <%= employee.full_name %>
+                <% if (!employee.is_active) { %>
+                  <span class="font-sans text-[11px] tracking-smallcaps uppercase text-smoke ml-1">inactive</span>
+                <% } %>
+              </div>
+              <div class="list-card-secondary">
+                <%= employee.position || '—' %>
+                <% if (employee.role === 'owner') { %>· <span class="text-ember">Owner</span><% } %>
+              </div>
+            </div>
+            <div class="list-card-trailing">
+              <% if (completeness.complete) { %>
+                <span class="pip pip-approved">Complete</span>
+              <% } else { %>
+                <span class="pip pip-draft"><%= `${completeness.missing.length} missing` %></span>
+              <% } %>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+
+      <%# ─── Desktop (hidden md:block): the existing table ─── %>
+      <div class="reveal reveal-3 card hidden md:block">
         <table class="w-full">
           <thead>
             <tr class="border-b border-rule">
@@ -52,13 +80,13 @@
                   <% } %>
                 </td>
                 <td class="py-gutter-lg font-sans text-[14px] text-coal"><%= employee.position || '—' %></td>
-                <td class="py-gutter-lg font-sans text-[14px] capitalize <%= employee.role === 'owner' ? 'text-ember' : 'text-coal' %>"><%= employee.role %></td>
+                <td class="py-gutter-lg font-sans text-[14px] capitalize <%= employee.role === 'owner' ? 'text-ember' : 'text-coal' %>"><%= (employee.role === 'owner') ? "Owner" : "Employee" %></td>
                 <td class="py-gutter-lg">
                   <% if (completeness.complete) { %>
                     <span class="pip pip-approved">Complete</span>
                   <% } else { %>
-                    <span class="pip pip-draft" title="Missing: <%= completeness.missing.join(', ') %>">
-                      <%= completeness.missing.length %> missing
+                    <span class="pip pip-draft" title="<%= completeness.missing.join(', ') %>">
+                      <%= `${completeness.missing.length} missing` %>
                     </span>
                   <% } %>
                 </td>

@@ -1,9 +1,9 @@
-<%- include('../partials/head', { title: 'Reports', shopName }) %>
+<%- include('../partials/head', { title: "Reports", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-5xl">
-    <header class="reveal reveal-1 flex items-end justify-between">
+    <header class="reveal reveal-1 flex items-end justify-between flex-wrap gap-gutter">
       <div>
         <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Analytics</p>
         <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Reports</h1>
@@ -19,18 +19,18 @@
     <%- include('../partials/flash', { flash }) %>
 
     <% const tabs = [
-        { key: 'sales',      label: 'Sales' },
-        { key: 'purchases',  label: 'Purchases' },
-        { key: 'petty-cash', label: 'Petty cash' },
-        { key: 'payroll',    label: 'Payroll' },
+        { key: 'sales',      label: "Sales" },
+        { key: 'purchases',  label: "Purchases" },
+        { key: 'petty-cash', label: "Petty cash" },
+        { key: 'payroll',    label: "Payroll" },
     ]; %>
 
-    <nav class="reveal reveal-3 border-b border-rule-strong flex gap-air-lg mb-air">
-      <% tabs.forEach(t => { %>
-        <a href="/reports?tab=<%= t.key %>&from=<%= range.from %>&to=<%= range.to %>"
-           class="relative pb-gutter font-sans text-[14px] transition-colors <%= tab === t.key ? 'text-ink' : 'text-smoke hover:text-coal' %>">
-          <%= t.label %>
-          <% if (tab === t.key) { %>
+    <nav class="reveal reveal-3 border-b border-rule-strong flex gap-air-lg mb-air overflow-x-auto">
+      <% tabs.forEach(tb => { %>
+        <a href="/reports?tab=<%= tb.key %>&from=<%= range.from %>&to=<%= range.to %>"
+           class="relative pb-gutter font-sans text-[14px] transition-colors whitespace-nowrap <%= tab === tb.key ? 'text-ink' : 'text-smoke hover:text-coal' %>">
+          <%= tb.label %>
+          <% if (tab === tb.key) { %>
             <span class="absolute left-0 right-0 -bottom-px h-[2px] bg-ember"></span>
           <% } %>
         </a>
@@ -38,34 +38,31 @@
     </nav>
 
     <%
-      // Date arithmetic on YYYY-MM-DD strings — no TZ wobble.
       function _shift(yyyymmdd, days) {
         const [y, m, d] = yyyymmdd.split("-").map(Number);
         const dt = new Date(Date.UTC(y, m - 1, d));
         dt.setUTCDate(dt.getUTCDate() + days);
         return dt.toISOString().slice(0, 10);
       }
-      const _today = range.to; // controller defaults to today/today; this is "today" from the server's POV
+      const _today = range.to;
       const _yesterday = _shift(_today, -1);
-      const _last7From = _shift(_today, -6);   // 7-day window inclusive of today
+      const _last7From = _shift(_today, -6);
       const _last30From = _shift(_today, -29);
       const _thisMonthFrom = _today.slice(0, 7) + "-01";
-
-      // Last month: first day of the previous month → last day of the previous month
       const [_ty, _tm] = _today.split("-").map(Number);
-      const _lastMonthDate = new Date(Date.UTC(_ty, _tm - 2, 1)); // month is 0-indexed; -1 for previous, -1 for Date.UTC
+      const _lastMonthDate = new Date(Date.UTC(_ty, _tm - 2, 1));
       const _lmYear = _lastMonthDate.getUTCFullYear();
       const _lmMonth = String(_lastMonthDate.getUTCMonth() + 1).padStart(2, "0");
       const _lastMonthFrom = `${_lmYear}-${_lmMonth}-01`;
       const _lastMonthTo = _shift(`${_today.slice(0, 7)}-01`, -1);
 
       const _presets = [
-        { label: "Today",        from: _today,         to: _today      },
-        { label: "Yesterday",    from: _yesterday,     to: _yesterday  },
-        { label: "Last 7 days",  from: _last7From,     to: _today      },
-        { label: "Last 30 days", from: _last30From,    to: _today      },
-        { label: "This month",   from: _thisMonthFrom, to: _today      },
-        { label: "Last month",   from: _lastMonthFrom, to: _lastMonthTo },
+        { label: "Today",      from: _today,         to: _today      },
+        { label: "Yesterday",  from: _yesterday,     to: _yesterday  },
+        { label: "Last 7 days",       from: _last7From,     to: _today      },
+        { label: "Last 30 days",     from: _last30From,    to: _today      },
+        { label: "This month",  from: _thisMonthFrom, to: _today      },
+        { label: "Last month",  from: _lastMonthFrom, to: _lastMonthTo },
       ];
       function _isActive(p) { return p.from === range.from && p.to === range.to; }
     %>
@@ -85,7 +82,7 @@
       </div>
     </div>
 
-    <form method="GET" class="flex items-end gap-gutter mb-air">
+    <form method="GET" class="flex items-end gap-gutter mb-air flex-wrap">
       <input type="hidden" name="tab" value="<%= tab %>" />
       <label class="block">
         <span class="field-label">From</span>

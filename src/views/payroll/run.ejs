@@ -1,22 +1,23 @@
-<%- include('../partials/head', { title: month_name + ' ' + run.year + ' payroll', shopName }) %>
+<% const periodLabel = `${month_name} ${run.year}`; %>
+<%- include('../partials/head', { title: periodLabel + ' · ' + "Payroll", shopName}) %>
 <body class="text-ink font-sans antialiased min-h-screen flex">
   <%- include('../partials/sidebar', { shopName, currentRole, currentUser, csrfToken, currentPath }) %>
 
   <main class="flex-1 px-air-lg pt-chapter pb-air-lg max-w-6xl">
-    <header class="reveal reveal-1 flex items-end justify-between">
+    <header class="reveal reveal-1 flex items-end justify-between flex-wrap gap-gutter">
       <div>
         <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">
           <a href="/payroll" class="hover:text-ink transition-colors">Payroll</a> · Run
         </p>
         <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
-          <%= month_name %> <%= run.year %>
+          <%= periodLabel %>
         </h1>
         <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
-          <span class="pip pip-<%= run.status === 'approved' ? 'approved' : 'draft' %>"><%= run.status %></span>
+          <span class="pip pip-<%= run.status === 'approved' ? 'approved' : 'draft' %>"><%= run.status === 'approved' ? 'Approved' : 'Draft' %></span>
           <span class="ml-gutter">Standard days: <%= stdDays %></span>
         </p>
       </div>
-      <div class="flex items-center gap-gutter">
+      <div class="flex items-center gap-gutter flex-wrap">
         <a href="/payroll/<%= run.id %>/print" target="_blank" class="btn-secondary">Print</a>
         <% if (locked) { %>
           <form method="POST" action="/payroll/<%= run.id %>/revert">
@@ -26,7 +27,7 @@
         <% } else { %>
           <form method="POST" action="/payroll/<%= run.id %>/approve"
                 data-confirm="Approve this payroll? You will need to reopen it to edit further."
-                data-confirm-title="Approve payroll?"
+                data-confirm-title="<%= `Approve ${periodLabel}?` %>"
                 data-confirm-label="Approve & lock">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <button class="btn-primary">Approve & lock</button>
@@ -34,7 +35,7 @@
         <% } %>
         <form method="POST" action="/payroll/<%= run.id %>/delete"
               data-confirm="This whole payroll run and every employee entry on it will be removed. This can't be undone."
-              data-confirm-title="Delete <%= month_name %> <%= run.year %> payroll?"
+              data-confirm-title="<%= `Delete ${periodLabel}?` %>"
               data-confirm-label="Delete payroll"
               data-confirm-variant="danger">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -54,8 +55,6 @@
         </div>
       </div>
     <% } else { %>
-      <%# When the run is editable, render one hidden form per entry. The inputs
-          below reference these forms by id via the HTML5 form= attribute. %>
       <% if (!locked) { %>
         <% entries.forEach(e => { %>
           <form method="POST" action="/payroll/<%= run.id %>/entries/<%= e.id %>" id="entry-form-<%= e.id %>" class="hidden">
@@ -73,8 +72,8 @@
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Days</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Gross</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-leaf py-gutter">Bonus</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Pen Empr <span class="text-mist normal-case">(<%= entries[0].pension_employer_pct %>%)</span></th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Pen Empl <span class="text-mist normal-case">(<%= entries[0].pension_employee_pct %>%)</span></th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Pension (employer) <span class="text-mist normal-case">(<%= entries[0].pension_employer_pct %>%)</span></th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Pension (employee) <span class="text-mist normal-case">(<%= entries[0].pension_employee_pct %>%)</span></th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Tax</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Advance</th>
               <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-crimson py-gutter">Penalty</th>
@@ -89,7 +88,6 @@
                 <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink sticky left-0 bg-parchment"><%= e.full_name %></td>
                 <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.basic_salary / 100).toFixed(2) %></td>
 
-                <%# Days %>
                 <td class="py-gutter text-right">
                   <% if (locked) { %>
                     <span class="font-mono text-[13px] text-coal"><%= e.days_worked %></span>
@@ -102,7 +100,6 @@
 
                 <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.gross_salary / 100).toFixed(2) %></td>
 
-                <%# Bonus (leaf-green, addition) %>
                 <td class="py-gutter text-right">
                   <% if (locked) { %>
                     <span class="font-mono text-[13px] <%= e.bonus > 0 ? 'text-leaf' : 'text-mist' %>"><%= (e.bonus / 100).toFixed(2) %></span>
@@ -116,7 +113,6 @@
                 <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.pension_employer_amount / 100).toFixed(2) %></td>
                 <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= (e.pension_employee_amount / 100).toFixed(2) %></td>
 
-                <%# Tax %>
                 <td class="py-gutter text-right">
                   <% if (locked) { %>
                     <span class="font-mono text-[13px] text-coal"><%= (e.income_tax / 100).toFixed(2) %></span>
@@ -127,7 +123,6 @@
                   <% } %>
                 </td>
 
-                <%# Advance %>
                 <td class="py-gutter text-right">
                   <% if (locked) { %>
                     <span class="font-mono text-[13px] text-coal"><%= (e.advance_salary / 100).toFixed(2) %></span>
@@ -138,7 +133,6 @@
                   <% } %>
                 </td>
 
-                <%# Penalty (crimson, deduction) %>
                 <td class="py-gutter text-right">
                   <% if (locked) { %>
                     <span class="font-mono text-[13px] <%= e.penalty > 0 ? 'text-crimson' : 'text-mist' %>"><%= (e.penalty / 100).toFixed(2) %></span>

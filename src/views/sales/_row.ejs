@@ -23,15 +23,15 @@
   <td id="row-total-<%= item.id %>" class="text-right font-mono text-[14px] text-ink py-gutter px-gutter-lg num-flash">
     <%= line ? (line.total / 100).toFixed(2) : '0.00' %>
   </td>
-  <td class="py-gutter pl-gutter-lg pr-gutter-lg border-l-2 border-rule-strong bg-paper">
+  <td class="col-tally py-gutter pl-gutter-lg pr-gutter-lg border-l-2 border-rule-strong bg-paper">
     <div class="flex items-center gap-gutter">
       <button type="button"
               class="token-button shrink-0"
               onclick="window.dropToken && window.dropToken(this)"
-              aria-label="Drop one <%= item.name %> token">
+              aria-label="<%= `Drop one ${item.name} token` %>">
         <span class="token-disk" style="background-color: <%= tokenColor %>"></span>
       </button>
-      <div class="row-jar" aria-label="<%= item.name %> jar">
+      <div class="row-jar" aria-label="<%= `${item.name} jar` %>">
         <div data-jar class="row-jar-stack"></div>
       </div>
     </div>
