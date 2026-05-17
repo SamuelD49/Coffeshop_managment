@@ -4,7 +4,12 @@ import { currentDriver, sqliteHandle, getDb } from "./db";
 
 function backupDir(): string {
   const dir = resolve(process.cwd(), process.env.BACKUP_DIR ?? "./data/backups");
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  try {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  } catch (err) {
+    // In serverless environments, the filesystem is read-only. We can safely ignore this 
+    // because if they are using Supabase, backups are handled server-side.
+  }
   return dir;
 }
 
@@ -57,13 +62,17 @@ export function pruneOldBackups(retainDays: number): string[] {
 export function listBackups(): Array<{ name: string; size: number; mtime: Date }> {
   if (currentDriver() === "supabase") return [];
   const dir = backupDir();
-  return readdirSync(dir)
-    .filter((f) => /^shop-.*\.db$/.test(f))
-    .map((f) => {
-      const st = statSync(join(dir, f));
-      return { name: f, size: st.size, mtime: st.mtime };
-    })
-    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+  try {
+    return readdirSync(dir)
+      .filter((f) => /^shop-.*\.db$/.test(f))
+      .map((f) => {
+        const st = statSync(join(dir, f));
+        return { name: f, size: st.size, mtime: st.mtime };
+      })
+      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+  } catch (err) {
+    return [];
+  }
 }
 
 export function backupDirPath(): string {
