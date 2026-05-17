@@ -5,6 +5,7 @@ type TimestampString = string;
 export interface ShopsTable {
   id: Generated<number>;
   name: string;
+  is_active: ColumnType<number, number | undefined, number>;
   created_at: ColumnType<TimestampString, string | undefined, string>;
 }
 

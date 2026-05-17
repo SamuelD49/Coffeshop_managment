@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import * as Settings from "../models/settings";
 import * as Employees from "../models/employees";
+import * as Shops from "../models/shops";
 import { runWithShop } from "../lib/shopContext";
 
 export async function localsMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -20,17 +21,30 @@ export async function localsMiddleware(req: Request, res: Response, next: NextFu
   // Authenticated — load shop-specific data inside the shop's context.
   // Settings.get + Employees.findById are independent; firing in parallel
   // saves one query RTT on every authenticated page nav.
+  let isShopActive = true;
   await runWithShop(req.session.shopId, async () => {
-    const [shopName, u] = await Promise.all([
+    const [shopName, u, shop] = await Promise.all([
       Settings.get("shop_name"),
       Employees.findById(req.session.employeeId!),
+      Shops.findById(req.session.shopId!),
     ]);
     res.locals.shopName = shopName ?? "Coffee Shop";
     if (u) {
       res.locals.currentUser = u;
       res.locals.currentRole = u.role;
     }
+    if (!shop || !shop.is_active) {
+      isShopActive = false;
+    }
   });
+
+  if (!isShopActive) {
+    req.session.destroy(() => {
+      res.redirect("/login?deactivated=1");
+    });
+    return;
+  }
+
   next();
 }
 

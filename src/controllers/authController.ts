@@ -1,12 +1,16 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import * as Employees from "../models/employees";
+import * as Shops from "../models/shops";
 import { writeAudit } from "../lib/audit";
 import { pushFlash } from "../lib/flash";
 import { runWithShop } from "../lib/shopContext";
 
 export function showLogin(req: Request, res: Response) {
   if (req.session.employeeId) return res.redirect("/");
+  if (req.query.deactivated === "1") {
+    pushFlash(req, "error", "This account has been deactivated. Please contact support.");
+  }
   res.render("login");
 }
 
@@ -24,6 +28,13 @@ export async function submitLogin(req: Request, res: Response) {
     pushFlash(req, "error", "Invalid username or password");
     return res.redirect("/login");
   }
+  
+  const shop = await Shops.findById(user.shop_id);
+  if (!shop || !shop.is_active) {
+    pushFlash(req, "error", "This account has been deactivated. Please contact support.");
+    return res.redirect("/login");
+  }
+
   req.session.employeeId = user.id;
   req.session.role = user.role;
   req.session.shopId = user.shop_id;

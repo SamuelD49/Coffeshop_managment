@@ -36,3 +36,11 @@ export async function findByEmployeeId(employeeId: number): Promise<Shop | null>
     .executeTakeFirst();
   return r ?? null;
 }
+
+export async function setActive(id: number, active: boolean): Promise<void> {
+  await getDb()
+    .updateTable("shops")
+    .set({ is_active: active ? 1 : 0 })
+    .where("id", "=", id)
+    .execute();
+}
