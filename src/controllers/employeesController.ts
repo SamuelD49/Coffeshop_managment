@@ -144,7 +144,7 @@ export async function uploadDocument(req: Request, res: Response) {
   if (kind !== "other") {
     const existing = await Attachments.findOneByKind("employee", id, kind);
     if (existing) {
-      await deleteFile("employee", id, existing.filename, null);
+      await deleteFile("employee", id, existing.filename, existing.thumbnail);
       await Attachments.remove(existing.id);
     }
   }
@@ -172,7 +172,7 @@ export async function deleteDocument(req: Request, res: Response) {
   const attId = Number(req.params.attId);
   const att = await Attachments.findById(attId);
   if (!att || att.owner_id !== id || att.owner_type !== "employee") return res.status(404).render("errors/404");
-  await deleteFile("employee", id, att.filename, null);
+  await deleteFile("employee", id, att.filename, att.thumbnail);
   await Attachments.remove(attId);
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_document", entity: "attachments", entity_id: attId });
@@ -229,7 +229,7 @@ export async function removeGuarantor(req: Request, res: Response) {
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
   // delete guarantor files first
   const atts = await Attachments.findByOwner("guarantor", gid);
-  for (const a of atts) await deleteFile("guarantor", gid, a.filename, null);
+  for (const a of atts) await deleteFile("guarantor", gid, a.filename, a.thumbnail);
   await Attachments.removeByOwner("guarantor", gid);
   await Guarantors.remove(gid);
   await refreshOnboardingStatus(id);
@@ -256,7 +256,7 @@ export async function uploadGuarantorDocument(req: Request, res: Response) {
   if (kind !== "other") {
     const existing = await Attachments.findOneByKind("guarantor", gid, kind);
     if (existing) {
-      await deleteFile("guarantor", gid, existing.filename, null);
+      await deleteFile("guarantor", gid, existing.filename, existing.thumbnail);
       await Attachments.remove(existing.id);
     }
   }
@@ -287,7 +287,7 @@ export async function deleteGuarantorDocument(req: Request, res: Response) {
   if (!att || att.owner_type !== "guarantor" || att.owner_id !== gid) return res.status(404).render("errors/404");
   const g = await Guarantors.findById(gid);
   if (!g || g.employee_id !== id) return res.status(404).render("errors/404");
-  await deleteFile("guarantor", gid, att.filename, null);
+  await deleteFile("guarantor", gid, att.filename, att.thumbnail);
   await Attachments.remove(attId);
   await refreshOnboardingStatus(id);
   await writeAudit({ actor_id: actor(req), action: "delete_guarantor_document", entity: "attachments", entity_id: attId });
