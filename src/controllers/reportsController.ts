@@ -32,23 +32,23 @@ function safeTab(input: unknown): Tab {
 async function loadTabData(tab: Tab, range: { from: string; to: string }) {
   if (tab === "sales") {
     return {
-      byDay: Reports.salesByDay(range),
-      byMonth: Reports.salesByMonth(range),
-      byItem: Reports.salesByItem(range),
-      byEmployee: Reports.salesByEmployee(range),
+      byDay: await Reports.salesByDay(range),
+      byMonth: await Reports.salesByMonth(range),
+      byItem: await Reports.salesByItem(range),
+      byEmployee: await Reports.salesByEmployee(range),
     };
   }
   if (tab === "purchases") {
     return {
-      byDay: Reports.purchasesByDay(range),
-      byMonth: Reports.purchasesByMonth(range),
+      byDay: await Reports.purchasesByDay(range),
+      byMonth: await Reports.purchasesByMonth(range),
       details: await Purchases.listAll(range), // every line item in the range
     };
   }
   if (tab === "petty-cash") {
     return {
-      summary: Reports.pettyCashSummary(range),
-      byMonth: Reports.pettyCashByMonth(range),
+      summary: await Reports.pettyCashSummary(range),
+      byMonth: await Reports.pettyCashByMonth(range),
     };
   }
   // payroll
@@ -82,26 +82,26 @@ export async function exportCsv(req: Request, res: Response) {
   if (tab === "sales") {
     const grouping = (req.query.group as string) || "day";
     if (grouping === "item") {
-      const rows = Reports.salesByItem(range).map(r => ({ ...r, revenue: (r.revenue / 100).toFixed(2) }));
+      const rows = (await Reports.salesByItem(range)).map(r => ({ ...r, revenue: (r.revenue / 100).toFixed(2) }));
       csv = toCsv(["name", "qty", "revenue"], rows);
       filename = `sales-by-item-${range.from}-to-${range.to}.csv`;
     } else if (grouping === "employee") {
-      const rows = Reports.salesByEmployee(range).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
+      const rows = (await Reports.salesByEmployee(range)).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
       csv = toCsv(["full_name", "session_count", "subtotal"], rows);
       filename = `sales-by-employee-${range.from}-to-${range.to}.csv`;
     } else if (grouping === "month") {
-      const rows = Reports.salesByMonth(range).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
+      const rows = (await Reports.salesByMonth(range)).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
       csv = toCsv(["month", "session_count", "subtotal"], rows);
       filename = `sales-by-month-${range.from}-to-${range.to}.csv`;
     } else {
-      const rows = Reports.salesByDay(range).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
+      const rows = (await Reports.salesByDay(range)).map(r => ({ ...r, subtotal: (r.subtotal / 100).toFixed(2) }));
       csv = toCsv(["business_date", "session_count", "subtotal"], rows);
       filename = `sales-by-day-${range.from}-to-${range.to}.csv`;
     }
   } else if (tab === "purchases") {
     const grouping = (req.query.group as string) || "day";
     if (grouping === "month") {
-      const rows = Reports.purchasesByMonth(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
+      const rows = (await Reports.purchasesByMonth(range)).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
       csv = toCsv(["month", "row_count", "total"], rows);
       filename = `purchases-by-month-${range.from}-to-${range.to}.csv`;
     } else if (grouping === "detail") {
@@ -117,13 +117,13 @@ export async function exportCsv(req: Request, res: Response) {
       csv = toCsv(["date", "description", "unit", "qty", "unit_price", "total", "remark"], rows);
       filename = `purchases-detail-${range.from}-to-${range.to}.csv`;
     } else {
-      const rows = Reports.purchasesByDay(range).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
+      const rows = (await Reports.purchasesByDay(range)).map(r => ({ ...r, total: (r.total / 100).toFixed(2) }));
       csv = toCsv(["purchase_date", "row_count", "total"], rows);
     }
   } else if (tab === "petty-cash") {
     const grouping = (req.query.group as string) || "summary";
     if (grouping === "month") {
-      const rows = Reports.pettyCashByMonth(range).map(r => ({
+      const rows = (await Reports.pettyCashByMonth(range)).map(r => ({
         month: r.month,
         total_in:  (r.total_in / 100).toFixed(2),
         total_out: (r.total_out / 100).toFixed(2),
@@ -132,7 +132,7 @@ export async function exportCsv(req: Request, res: Response) {
       csv = toCsv(["month", "total_in", "total_out", "net"], rows);
       filename = `petty-cash-by-month-${range.from}-to-${range.to}.csv`;
     } else {
-      const s = Reports.pettyCashSummary(range);
+      const s = await Reports.pettyCashSummary(range);
       csv = toCsv(
         ["metric", "amount"],
         [

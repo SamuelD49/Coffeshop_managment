@@ -28,16 +28,16 @@ export async function show(_req: Request, res: Response) {
 
   // Today's snapshot (unchanged)
   const todayBlock = {
-    salesTotal: Reports.todaySalesTotal(today),
-    cashVsBank: Reports.todayCashVsBank(today),
-    purchasesTotal: Reports.todayPurchasesTotal(today),
-    pettyCashSpent: Reports.todayPettyCashSpent(today),
-    topItems: Reports.topItemsToday(today, 5),
+    salesTotal: await Reports.todaySalesTotal(today),
+    cashVsBank: await Reports.todayCashVsBank(today),
+    purchasesTotal: await Reports.todayPurchasesTotal(today),
+    pettyCashSpent: await Reports.todayPettyCashSpent(today),
+    topItems: await Reports.topItemsToday(today, 5),
   };
 
   // Last 7 days sparkline (today inclusive)
   const weekFrom = Reports.shiftDate(today, -6);
-  const weekDays = Reports.salesByDayDense({ from: weekFrom, to: today }).map(d => ({
+  const weekDays = (await Reports.salesByDayDense({ from: weekFrom, to: today })).map(d => ({
     date: d.business_date,
     label: dayLabel(d.business_date),
     total: d.subtotal,
@@ -48,7 +48,7 @@ export async function show(_req: Request, res: Response) {
   // Prior 7 days for the comparison
   const priorTo = Reports.shiftDate(today, -7);
   const priorFrom = Reports.shiftDate(today, -13);
-  const priorDays = Reports.salesByDay({ from: priorFrom, to: priorTo });
+  const priorDays = await Reports.salesByDay({ from: priorFrom, to: priorTo });
   const priorTotal = priorDays.reduce((s, d) => s + d.subtotal, 0);
   const weekDeltaPct = priorTotal > 0
     ? Math.round(((weekTotal - priorTotal) / priorTotal) * 100)
@@ -59,7 +59,7 @@ export async function show(_req: Request, res: Response) {
   const itemById: Record<number, { name: string; token_color: string | null }> = {};
   for (const m of items) itemById[m.id] = { name: m.name, token_color: m.token_color };
 
-  const trendingRaw = Reports.salesByItem({ from: weekFrom, to: today }).slice(0, 6);
+  const trendingRaw = (await Reports.salesByItem({ from: weekFrom, to: today })).slice(0, 6);
   const trendingMax = Math.max(0, ...trendingRaw.map(t => t.qty));
   const trending = trendingRaw.map(r => ({
     name: r.name,

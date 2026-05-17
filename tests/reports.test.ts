@@ -40,7 +40,7 @@ describe("Sales reports", () => {
     await Lines.upsert(s3.id, m.id, 4); // 20000
     await Sessions.updateHeader(s3.id, { cash_amount: 20000, bank_transfer_amount: 0, notes: null });
 
-    const result = Reports.salesByDay({ from: "2026-05-01", to: "2026-05-31" });
+    const result = await Reports.salesByDay({ from: "2026-05-01", to: "2026-05-31" });
     expect(result.find(r => r.business_date === "2026-05-10")?.subtotal).toBe(15000);
     expect(result.find(r => r.business_date === "2026-05-12")?.subtotal).toBe(20000);
   });
@@ -54,7 +54,7 @@ describe("Sales reports", () => {
     await Lines.upsert(s.id, latte.id, 3);     // qty 3, total 15000
     await Lines.upsert(s.id, espresso.id, 5);  // qty 5, total 15000
 
-    const result = Reports.salesByItem({ from: "2026-05-01", to: "2026-05-31" });
+    const result = await Reports.salesByItem({ from: "2026-05-01", to: "2026-05-31" });
     const r1 = result.find(r => r.name === "Latte")!;
     const r2 = result.find(r => r.name === "Espresso")!;
     expect(r1.qty).toBe(3);
@@ -73,7 +73,7 @@ describe("Sales reports", () => {
     const s2 = await Sessions.create({ employee_id: e2.id, business_date: "2026-05-12", shift: "e" });
     await Lines.upsert(s2.id, m.id, 2); // 10000
 
-    const result = Reports.salesByEmployee({ from: "2026-05-01", to: "2026-05-31" });
+    const result = await Reports.salesByEmployee({ from: "2026-05-01", to: "2026-05-31" });
     expect(result.find(r => r.full_name === "Almaz")?.subtotal).toBe(20000);
     expect(result.find(r => r.full_name === "Bekele")?.subtotal).toBe(10000);
   });
@@ -84,7 +84,7 @@ describe("Purchases reports", () => {
     await Purchases.create({ purchase_date: "2026-05-10", description: "Beans", unit: "kg", qty: 2, unit_price: 50000, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-10", description: "Milk",  unit: "L",  qty: 5, unit_price: 4000,  remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-12", description: "Sugar", unit: "kg", qty: 1, unit_price: 6000,  remark: null, entered_by: null });
-    const r = Reports.purchasesByDay({ from: "2026-05-01", to: "2026-05-31" });
+    const r = await Reports.purchasesByDay({ from: "2026-05-01", to: "2026-05-31" });
     expect(r.find(d => d.purchase_date === "2026-05-10")?.total).toBe(120000);
     expect(r.find(d => d.purchase_date === "2026-05-12")?.total).toBe(6000);
   });
@@ -96,7 +96,7 @@ describe("Petty cash reports", () => {
     await Petty.create({ entry_date: "2026-05-12", description: "Taxi",      payer_name: null, amount: 5000,   type: "expense",       remark: null, entered_by: null });
     await Petty.create({ entry_date: "2026-05-13", description: "Refunded",  payer_name: null, amount: 2000,   type: "refund",        remark: null, entered_by: null });
     await Petty.create({ entry_date: "2026-05-13", description: "Snacks",    payer_name: null, amount: 1500,   type: "expense",       remark: null, entered_by: null });
-    const r = Reports.pettyCashSummary({ from: "2026-05-01", to: "2026-05-31" });
+    const r = await Reports.pettyCashSummary({ from: "2026-05-01", to: "2026-05-31" });
     expect(r.totalIn).toBe(102000); // 100000 + 2000
     expect(r.totalOut).toBe(6500);  // 5000 + 1500
     expect(r.net).toBe(95500);
@@ -114,14 +114,14 @@ describe("Dashboard totals", () => {
     await Lines.upsert(s.id, m.id, 3); // 3000
     const sOther = await Sessions.create({ employee_id: e.id, business_date: "2026-05-11", shift: "m" });
     await Lines.upsert(sOther.id, m.id, 99); // shouldn't count
-    expect(Reports.todaySalesTotal("2026-05-12")).toBe(3000);
+    expect(await Reports.todaySalesTotal("2026-05-12")).toBe(3000);
   });
 
   it("todayCashVsBank() splits payment by tender", async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
     await Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 5000, notes: null });
-    const r = Reports.todayCashVsBank("2026-05-12");
+    const r = await Reports.todayCashVsBank("2026-05-12");
     expect(r.cash).toBe(15000);
     expect(r.bank).toBe(5000);
   });

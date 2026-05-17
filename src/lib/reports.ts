@@ -1,4 +1,5 @@
-import { _legacySqliteDb } from "./db";
+import { getDb } from "./kysely";
+import { sql } from "kysely";
 
 export type DateRange = { from: string; to: string };
 
@@ -16,23 +17,27 @@ export type PettyCashSummary = {
   byType: { expense: number; refund: number; replenishment: number };
 };
 
-export function salesByDay(range: DateRange): SalesByDayRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT s.business_date,
-           COALESCE(SUM(l.total), 0) AS subtotal,
-           COUNT(DISTINCT s.id) AS session_count
-    FROM sales_sessions s
-    LEFT JOIN sale_line_items l ON l.sales_session_id = s.id
-    WHERE s.business_date BETWEEN @from AND @to
-    GROUP BY s.business_date
-    ORDER BY s.business_date
-  `).all(range) as SalesByDayRow[];
+export async function salesByDay(range: DateRange): Promise<SalesByDayRow[]> {
+  const rows = await getDb()
+    .selectFrom("sales_sessions as s")
+    .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
+    .select((eb) => [
+      "s.business_date",
+      eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"),
+      eb.fn.count<number>("s.id").distinct().as("session_count"),
+    ])
+    .where("s.business_date", ">=", range.from)
+    .where("s.business_date", "<=", range.to)
+    .groupBy("s.business_date")
+    .orderBy("s.business_date")
+    .execute();
+  return rows.map((r) => ({ business_date: r.business_date, subtotal: Number(r.subtotal), session_count: Number(r.session_count) }));
 }
 
 // salesByDay but with zero-filled days for every date in the range — useful for
 // the dashboard sparkline where missing days still need a bar position.
-export function salesByDayDense(range: DateRange): SalesByDayRow[] {
-  const rows = salesByDay(range);
+export async function salesByDayDense(range: DateRange): Promise<SalesByDayRow[]> {
+  const rows = await salesByDay(range);
   const byDate: Record<string, SalesByDayRow> = {};
   for (const r of rows) byDate[r.business_date] = r;
 
@@ -45,7 +50,6 @@ export function salesByDayDense(range: DateRange): SalesByDayRow[] {
   return out;
 }
 
-// Pure date arithmetic on YYYY-MM-DD strings (no TZ confusion).
 function addDays(yyyymmdd: string, days: number): string {
   const [y, m, d] = yyyymmdd.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
@@ -57,96 +61,133 @@ export function shiftDate(yyyymmdd: string, days: number): string {
   return addDays(yyyymmdd, days);
 }
 
-export function salesByItem(range: DateRange): SalesByItemRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT l.menu_item_id, m.name,
-           COALESCE(SUM(l.qty), 0)   AS qty,
-           COALESCE(SUM(l.total), 0) AS revenue
-    FROM sale_line_items l
-    JOIN sales_sessions s ON s.id = l.sales_session_id
-    JOIN menu_items m     ON m.id = l.menu_item_id
-    WHERE s.business_date BETWEEN @from AND @to
-    GROUP BY l.menu_item_id, m.name
-    ORDER BY revenue DESC, m.name
-  `).all(range) as SalesByItemRow[];
+export async function salesByItem(range: DateRange): Promise<SalesByItemRow[]> {
+  const rows = await getDb()
+    .selectFrom("sale_line_items as l")
+    .innerJoin("sales_sessions as s", "s.id", "l.sales_session_id")
+    .innerJoin("menu_items as m", "m.id", "l.menu_item_id")
+    .select((eb) => [
+      "l.menu_item_id",
+      "m.name",
+      eb.fn.coalesce(eb.fn.sum<number>("l.qty"), eb.lit(0)).as("qty"),
+      eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("revenue"),
+    ])
+    .where("s.business_date", ">=", range.from)
+    .where("s.business_date", "<=", range.to)
+    .groupBy(["l.menu_item_id", "m.name"])
+    .orderBy("revenue", "desc")
+    .orderBy("m.name")
+    .execute();
+  return rows.map((r) => ({ menu_item_id: r.menu_item_id, name: r.name, qty: Number(r.qty), revenue: Number(r.revenue) }));
 }
 
-export function salesByEmployee(range: DateRange): SalesByEmployeeRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT s.employee_id, e.full_name,
-           COALESCE(SUM(l.total), 0) AS subtotal,
-           COUNT(DISTINCT s.id)      AS session_count
-    FROM sales_sessions s
-    JOIN employees e ON e.id = s.employee_id
-    LEFT JOIN sale_line_items l ON l.sales_session_id = s.id
-    WHERE s.business_date BETWEEN @from AND @to
-    GROUP BY s.employee_id, e.full_name
-    ORDER BY subtotal DESC, e.full_name
-  `).all(range) as SalesByEmployeeRow[];
+export async function salesByEmployee(range: DateRange): Promise<SalesByEmployeeRow[]> {
+  const rows = await getDb()
+    .selectFrom("sales_sessions as s")
+    .innerJoin("employees as e", "e.id", "s.employee_id")
+    .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
+    .select((eb) => [
+      "s.employee_id",
+      "e.full_name",
+      eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"),
+      eb.fn.count<number>("s.id").distinct().as("session_count"),
+    ])
+    .where("s.business_date", ">=", range.from)
+    .where("s.business_date", "<=", range.to)
+    .groupBy(["s.employee_id", "e.full_name"])
+    .orderBy("subtotal", "desc")
+    .orderBy("e.full_name")
+    .execute();
+  return rows.map((r) => ({ employee_id: r.employee_id, full_name: r.full_name, subtotal: Number(r.subtotal), session_count: Number(r.session_count) }));
 }
 
-export function purchasesByDay(range: DateRange): PurchasesByDayRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT purchase_date,
-           COALESCE(SUM(total), 0) AS total,
-           COUNT(*) AS row_count
-    FROM purchase_requisitions
-    WHERE purchase_date BETWEEN @from AND @to
-    GROUP BY purchase_date
-    ORDER BY purchase_date
-  `).all(range) as PurchasesByDayRow[];
+export async function purchasesByDay(range: DateRange): Promise<PurchasesByDayRow[]> {
+  const rows = await getDb()
+    .selectFrom("purchase_requisitions")
+    .select((eb) => [
+      "purchase_date",
+      eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("total"),
+      eb.fn.countAll<number>().as("row_count"),
+    ])
+    .where("purchase_date", ">=", range.from)
+    .where("purchase_date", "<=", range.to)
+    .groupBy("purchase_date")
+    .orderBy("purchase_date")
+    .execute();
+  return rows.map((r) => ({ purchase_date: r.purchase_date, total: Number(r.total), row_count: Number(r.row_count) }));
 }
 
-// Monthly aggregations — group by the YYYY-MM prefix of the date string.
-// SQLite's substr() is 1-indexed, so substr(date, 1, 7) gives "2026-05".
-export function salesByMonth(range: DateRange): SalesByMonthRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT substr(s.business_date, 1, 7) AS month,
-           COALESCE(SUM(l.total), 0) AS subtotal,
-           COUNT(DISTINCT s.id) AS session_count
-    FROM sales_sessions s
-    LEFT JOIN sale_line_items l ON l.sales_session_id = s.id
-    WHERE s.business_date BETWEEN @from AND @to
-    GROUP BY month
-    ORDER BY month
-  `).all(range) as SalesByMonthRow[];
+// Monthly aggregations group by the YYYY-MM prefix of the date string. Both
+// SQLite and Postgres support substr(col, 1, 7); we use the raw SQL helper to
+// keep the alias stable across dialects.
+export async function salesByMonth(range: DateRange): Promise<SalesByMonthRow[]> {
+  const rows = await getDb()
+    .selectFrom("sales_sessions as s")
+    .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
+    .select((eb) => [
+      sql<string>`substr(s.business_date, 1, 7)`.as("month"),
+      eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"),
+      eb.fn.count<number>("s.id").distinct().as("session_count"),
+    ])
+    .where("s.business_date", ">=", range.from)
+    .where("s.business_date", "<=", range.to)
+    .groupBy("month")
+    .orderBy("month")
+    .execute();
+  return rows.map((r) => ({ month: r.month, subtotal: Number(r.subtotal), session_count: Number(r.session_count) }));
 }
 
-export function purchasesByMonth(range: DateRange): PurchasesByMonthRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT substr(purchase_date, 1, 7) AS month,
-           COALESCE(SUM(total), 0) AS total,
-           COUNT(*) AS row_count
-    FROM purchase_requisitions
-    WHERE purchase_date BETWEEN @from AND @to
-    GROUP BY month
-    ORDER BY month
-  `).all(range) as PurchasesByMonthRow[];
+export async function purchasesByMonth(range: DateRange): Promise<PurchasesByMonthRow[]> {
+  const rows = await getDb()
+    .selectFrom("purchase_requisitions")
+    .select((eb) => [
+      sql<string>`substr(purchase_date, 1, 7)`.as("month"),
+      eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("total"),
+      eb.fn.countAll<number>().as("row_count"),
+    ])
+    .where("purchase_date", ">=", range.from)
+    .where("purchase_date", "<=", range.to)
+    .groupBy("month")
+    .orderBy("month")
+    .execute();
+  return rows.map((r) => ({ month: r.month, total: Number(r.total), row_count: Number(r.row_count) }));
 }
 
-export function pettyCashByMonth(range: DateRange): PettyCashByMonthRow[] {
-  const raw = _legacySqliteDb().prepare(`
-    SELECT substr(entry_date, 1, 7) AS month,
-           COALESCE(SUM(CASE WHEN type IN ('refund','replenishment') THEN amount ELSE 0 END), 0) AS total_in,
-           COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_out
-    FROM petty_cash_entries
-    WHERE entry_date BETWEEN @from AND @to
-    GROUP BY month
-    ORDER BY month
-  `).all(range) as Array<{ month: string; total_in: number; total_out: number }>;
-  return raw.map(r => ({ ...r, net: r.total_in - r.total_out }));
+export async function pettyCashByMonth(range: DateRange): Promise<PettyCashByMonthRow[]> {
+  const rows = await getDb()
+    .selectFrom("petty_cash_entries")
+    .select([
+      sql<string>`substr(entry_date, 1, 7)`.as("month"),
+      sql<number>`COALESCE(SUM(CASE WHEN type IN ('refund','replenishment') THEN amount ELSE 0 END), 0)`.as("total_in"),
+      sql<number>`COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0)`.as("total_out"),
+    ])
+    .where("entry_date", ">=", range.from)
+    .where("entry_date", "<=", range.to)
+    .groupBy("month")
+    .orderBy("month")
+    .execute();
+  return rows.map((r) => ({
+    month: r.month,
+    total_in: Number(r.total_in),
+    total_out: Number(r.total_out),
+    net: Number(r.total_in) - Number(r.total_out),
+  }));
 }
 
-export function pettyCashSummary(range: DateRange): PettyCashSummary {
-  const rows = _legacySqliteDb().prepare(`
-    SELECT type, COALESCE(SUM(amount), 0) AS total
-    FROM petty_cash_entries
-    WHERE entry_date BETWEEN @from AND @to
-    GROUP BY type
-  `).all(range) as Array<{ type: "expense" | "refund" | "replenishment"; total: number }>;
+export async function pettyCashSummary(range: DateRange): Promise<PettyCashSummary> {
+  const rows = await getDb()
+    .selectFrom("petty_cash_entries")
+    .select((eb) => [
+      "type",
+      eb.fn.coalesce(eb.fn.sum<number>("amount"), eb.lit(0)).as("total"),
+    ])
+    .where("entry_date", ">=", range.from)
+    .where("entry_date", "<=", range.to)
+    .groupBy("type")
+    .execute();
 
   const byType = { expense: 0, refund: 0, replenishment: 0 };
-  for (const r of rows) byType[r.type] = r.total;
+  for (const r of rows) byType[r.type as keyof typeof byType] = Number(r.total);
   const totalIn = byType.refund + byType.replenishment;
   const totalOut = byType.expense;
   return { totalIn, totalOut, net: totalIn - totalOut, byType };
@@ -154,47 +195,63 @@ export function pettyCashSummary(range: DateRange): PettyCashSummary {
 
 // Dashboard helpers
 
-export function todaySalesTotal(businessDate: string): number {
-  const r = _legacySqliteDb().prepare(`
-    SELECT COALESCE(SUM(l.total), 0) AS subtotal
-    FROM sales_sessions s
-    LEFT JOIN sale_line_items l ON l.sales_session_id = s.id
-    WHERE s.business_date = ?
-  `).get(businessDate) as { subtotal: number };
-  return r.subtotal;
+export async function todaySalesTotal(businessDate: string): Promise<number> {
+  const r = await getDb()
+    .selectFrom("sales_sessions as s")
+    .leftJoin("sale_line_items as l", "l.sales_session_id", "s.id")
+    .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("subtotal"))
+    .where("s.business_date", "=", businessDate)
+    .executeTakeFirstOrThrow();
+  return Number(r.subtotal);
 }
 
-export function todayCashVsBank(businessDate: string): { cash: number; bank: number } {
-  const r = _legacySqliteDb().prepare(`
-    SELECT COALESCE(SUM(cash_amount), 0)         AS cash,
-           COALESCE(SUM(bank_transfer_amount), 0) AS bank
-    FROM sales_sessions
-    WHERE business_date = ?
-  `).get(businessDate) as { cash: number; bank: number };
-  return r;
+export async function todayCashVsBank(businessDate: string): Promise<{ cash: number; bank: number }> {
+  const r = await getDb()
+    .selectFrom("sales_sessions")
+    .select((eb) => [
+      eb.fn.coalesce(eb.fn.sum<number>("cash_amount"), eb.lit(0)).as("cash"),
+      eb.fn.coalesce(eb.fn.sum<number>("bank_transfer_amount"), eb.lit(0)).as("bank"),
+    ])
+    .where("business_date", "=", businessDate)
+    .executeTakeFirstOrThrow();
+  return { cash: Number(r.cash), bank: Number(r.bank) };
 }
 
-export function todayPurchasesTotal(businessDate: string): number {
-  const r = _legacySqliteDb().prepare("SELECT COALESCE(SUM(total), 0) AS s FROM purchase_requisitions WHERE purchase_date = ?").get(businessDate) as { s: number };
-  return r.s;
+export async function todayPurchasesTotal(businessDate: string): Promise<number> {
+  const r = await getDb()
+    .selectFrom("purchase_requisitions")
+    .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("total"), eb.lit(0)).as("s"))
+    .where("purchase_date", "=", businessDate)
+    .executeTakeFirstOrThrow();
+  return Number(r.s);
 }
 
-export function todayPettyCashSpent(businessDate: string): number {
-  const r = _legacySqliteDb().prepare("SELECT COALESCE(SUM(amount), 0) AS s FROM petty_cash_entries WHERE entry_date = ? AND type = 'expense'").get(businessDate) as { s: number };
-  return r.s;
+export async function todayPettyCashSpent(businessDate: string): Promise<number> {
+  const r = await getDb()
+    .selectFrom("petty_cash_entries")
+    .select((eb) => eb.fn.coalesce(eb.fn.sum<number>("amount"), eb.lit(0)).as("s"))
+    .where("entry_date", "=", businessDate)
+    .where("type", "=", "expense")
+    .executeTakeFirstOrThrow();
+  return Number(r.s);
 }
 
-export function topItemsToday(businessDate: string, limit: number = 5): SalesByItemRow[] {
-  return _legacySqliteDb().prepare(`
-    SELECT l.menu_item_id, m.name,
-           COALESCE(SUM(l.qty), 0)   AS qty,
-           COALESCE(SUM(l.total), 0) AS revenue
-    FROM sale_line_items l
-    JOIN sales_sessions s ON s.id = l.sales_session_id
-    JOIN menu_items m     ON m.id = l.menu_item_id
-    WHERE s.business_date = ?
-    GROUP BY l.menu_item_id, m.name
-    ORDER BY qty DESC, m.name
-    LIMIT ?
-  `).all(businessDate, limit) as SalesByItemRow[];
+export async function topItemsToday(businessDate: string, limit: number = 5): Promise<SalesByItemRow[]> {
+  const rows = await getDb()
+    .selectFrom("sale_line_items as l")
+    .innerJoin("sales_sessions as s", "s.id", "l.sales_session_id")
+    .innerJoin("menu_items as m", "m.id", "l.menu_item_id")
+    .select((eb) => [
+      "l.menu_item_id",
+      "m.name",
+      eb.fn.coalesce(eb.fn.sum<number>("l.qty"), eb.lit(0)).as("qty"),
+      eb.fn.coalesce(eb.fn.sum<number>("l.total"), eb.lit(0)).as("revenue"),
+    ])
+    .where("s.business_date", "=", businessDate)
+    .groupBy(["l.menu_item_id", "m.name"])
+    .orderBy("qty", "desc")
+    .orderBy("m.name")
+    .limit(limit)
+    .execute();
+  return rows.map((r) => ({ menu_item_id: r.menu_item_id, name: r.name, qty: Number(r.qty), revenue: Number(r.revenue) }));
 }
