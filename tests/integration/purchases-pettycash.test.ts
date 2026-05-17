@@ -87,7 +87,7 @@ describe("Petty cash", () => {
     const list = await agent.get("/petty-cash");
     expect(list.text).toContain("Initial");
     expect(list.text).toContain("Taxi");
-    expect(Petty.currentBalance()).toBe(95000); // 100000 - 5000
+    expect(await Petty.currentBalance()).toBe(95000); // 100000 - 5000
   });
 
   it("cashier cannot reach /petty-cash", async () => {

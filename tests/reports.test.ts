@@ -91,11 +91,11 @@ describe("Purchases reports", () => {
 });
 
 describe("Petty cash reports", () => {
-  it("pettyCashSummary() returns totals per type and net delta", () => {
-    Petty.create({ entry_date: "2026-05-12", description: "Initial",   payer_name: null, amount: 100000, type: "replenishment", remark: null, entered_by: null });
-    Petty.create({ entry_date: "2026-05-12", description: "Taxi",      payer_name: null, amount: 5000,   type: "expense",       remark: null, entered_by: null });
-    Petty.create({ entry_date: "2026-05-13", description: "Refunded",  payer_name: null, amount: 2000,   type: "refund",        remark: null, entered_by: null });
-    Petty.create({ entry_date: "2026-05-13", description: "Snacks",    payer_name: null, amount: 1500,   type: "expense",       remark: null, entered_by: null });
+  it("pettyCashSummary() returns totals per type and net delta", async () => {
+    await Petty.create({ entry_date: "2026-05-12", description: "Initial",   payer_name: null, amount: 100000, type: "replenishment", remark: null, entered_by: null });
+    await Petty.create({ entry_date: "2026-05-12", description: "Taxi",      payer_name: null, amount: 5000,   type: "expense",       remark: null, entered_by: null });
+    await Petty.create({ entry_date: "2026-05-13", description: "Refunded",  payer_name: null, amount: 2000,   type: "refund",        remark: null, entered_by: null });
+    await Petty.create({ entry_date: "2026-05-13", description: "Snacks",    payer_name: null, amount: 1500,   type: "expense",       remark: null, entered_by: null });
     const r = Reports.pettyCashSummary({ from: "2026-05-01", to: "2026-05-31" });
     expect(r.totalIn).toBe(102000); // 100000 + 2000
     expect(r.totalOut).toBe(6500);  // 5000 + 1500

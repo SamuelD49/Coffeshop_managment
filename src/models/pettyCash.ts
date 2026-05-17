@@ -1,20 +1,9 @@
-import { _legacySqliteDb } from "../lib/db";
+import { getDb, nowIso } from "../lib/kysely";
+import type { PettyCashEntriesTable } from "../lib/db-types";
+import type { Selectable } from "kysely";
 
 export type PettyType = "expense" | "refund" | "replenishment";
-
-export type PettyEntry = {
-  id: number;
-  entry_date: string;
-  description: string;
-  payer_name: string | null;
-  amount: number;
-  type: PettyType;
-  remark: string | null;
-  entered_by: number | null;
-  created_at: string;
-  updated_at: string;
-};
-
+export type PettyEntry = Selectable<PettyCashEntriesTable>;
 export type PettyEntryWithBalance = PettyEntry & { running_balance: number };
 
 export type CreateInput = Omit<PettyEntry, "id" | "created_at" | "updated_at">;
@@ -24,55 +13,59 @@ export function signedAmount(e: Pick<PettyEntry, "amount" | "type">): number {
   return e.type === "expense" ? -e.amount : e.amount;
 }
 
-export function create(input: CreateInput): PettyEntry {
-  const r = _legacySqliteDb().prepare(`
-    INSERT INTO petty_cash_entries (entry_date, description, payer_name, amount, type, remark, entered_by)
-    VALUES (@entry_date, @description, @payer_name, @amount, @type, @remark, @entered_by)
-  `).run(input);
-  return findById(Number(r.lastInsertRowid))!;
+export async function create(input: CreateInput): Promise<PettyEntry> {
+  const now = nowIso();
+  const r = await getDb()
+    .insertInto("petty_cash_entries")
+    .values({ ...input, created_at: now, updated_at: now })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return (await findById(r.id))!;
 }
 
-export function findById(id: number): PettyEntry | null {
-  const r = _legacySqliteDb().prepare("SELECT * FROM petty_cash_entries WHERE id = ?").get(id) as PettyEntry | undefined;
+export async function findById(id: number): Promise<PettyEntry | null> {
+  const r = await getDb().selectFrom("petty_cash_entries").selectAll().where("id", "=", id).executeTakeFirst();
   return r ?? null;
 }
 
-export function update(id: number, input: UpdateInput): void {
-  _legacySqliteDb().prepare(`
-    UPDATE petty_cash_entries
-    SET entry_date = @entry_date, description = @description, payer_name = @payer_name,
-        amount = @amount, type = @type, remark = @remark, updated_at = datetime('now')
-    WHERE id = @id
-  `).run({ ...input, id });
+export async function update(id: number, input: UpdateInput): Promise<void> {
+  await getDb()
+    .updateTable("petty_cash_entries")
+    .set({ ...input, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function remove(id: number): void {
-  _legacySqliteDb().prepare("DELETE FROM petty_cash_entries WHERE id = ?").run(id);
+export async function remove(id: number): Promise<void> {
+  await getDb().deleteFrom("petty_cash_entries").where("id", "=", id).execute();
 }
 
 // Returns rows newest-first, but with running_balance computed chronologically
 // (each row's running_balance is the cumulative signed sum at and including that row's date/id).
-export function listWithBalance(filters: { from?: string; to?: string } = {}): PettyEntryWithBalance[] {
-  const where: string[] = [];
-  const params: any = {};
-  if (filters.from) { where.push("entry_date >= @from"); params.from = filters.from; }
-  if (filters.to)   { where.push("entry_date <= @to");   params.to = filters.to; }
-  const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-
-  // Fetch chronologically to build the balance, then reverse for display.
-  const asc = _legacySqliteDb().prepare(`SELECT * FROM petty_cash_entries ${whereSql} ORDER BY entry_date ASC, id ASC`).all(params) as PettyEntry[];
+export async function listWithBalance(filters: { from?: string; to?: string } = {}): Promise<PettyEntryWithBalance[]> {
+  let q = getDb().selectFrom("petty_cash_entries").selectAll();
+  if (filters.from) q = q.where("entry_date", ">=", filters.from);
+  if (filters.to)   q = q.where("entry_date", "<=", filters.to);
+  const asc = await q.orderBy("entry_date", "asc").orderBy("id", "asc").execute();
   let bal = 0;
-  const annotated: PettyEntryWithBalance[] = asc.map(row => {
+  const annotated: PettyEntryWithBalance[] = asc.map((row) => {
     bal += signedAmount(row);
     return { ...row, running_balance: bal };
   });
   return annotated.reverse();
 }
 
-export function currentBalance(): number {
-  const r = _legacySqliteDb().prepare(`
-    SELECT COALESCE(SUM(CASE WHEN type = 'expense' THEN -amount ELSE amount END), 0) AS bal
-    FROM petty_cash_entries
-  `).get() as { bal: number };
-  return r.bal;
+export async function currentBalance(): Promise<number> {
+  const r = await getDb()
+    .selectFrom("petty_cash_entries")
+    .select((eb) =>
+      eb.fn
+        .coalesce(
+          eb.fn.sum<number>(eb.case().when("type", "=", "expense").then(eb.neg(eb.ref("amount"))).else(eb.ref("amount")).end()),
+          eb.lit(0),
+        )
+        .as("bal"),
+    )
+    .executeTakeFirstOrThrow();
+  return Number(r.bal);
 }

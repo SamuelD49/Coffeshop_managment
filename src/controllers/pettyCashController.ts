@@ -24,8 +24,8 @@ export async function list(req: Request, res: Response) {
   const filters: { from?: string; to?: string } = {};
   if (req.query.from) filters.from = String(req.query.from);
   if (req.query.to)   filters.to   = String(req.query.to);
-  const entries = Petty.listWithBalance(filters);
-  const balance = Petty.currentBalance();
+  const entries = await Petty.listWithBalance(filters);
+  const balance = await Petty.currentBalance();
   res.render("petty-cash/list", { entries, balance, filters, today: await todayDate() });
 }
 
@@ -35,7 +35,7 @@ export async function create(req: Request, res: Response) {
     pushFlash(req, "error", "Description is required");
     return res.redirect("/petty-cash");
   }
-  const e = Petty.create({
+  const e = await Petty.create({
     entry_date: (req.body.entry_date ?? (await todayDate())).toString(),
     description,
     payer_name: (req.body.payer_name || null) as string | null,
@@ -49,17 +49,17 @@ export async function create(req: Request, res: Response) {
   res.redirect("/petty-cash");
 }
 
-export function showEdit(req: Request, res: Response) {
-  const e = Petty.findById(Number(req.params.id));
+export async function showEdit(req: Request, res: Response) {
+  const e = await Petty.findById(Number(req.params.id));
   if (!e) return res.status(404).render("errors/404");
   res.render("petty-cash/edit", { entry: e });
 }
 
 export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const e = Petty.findById(id);
+  const e = await Petty.findById(id);
   if (!e) return res.status(404).render("errors/404");
-  Petty.update(id, {
+  await Petty.update(id, {
     entry_date: (req.body.entry_date || e.entry_date).toString(),
     description: (req.body.description || e.description).toString(),
     payer_name: (req.body.payer_name || null) as string | null,
@@ -74,8 +74,8 @@ export async function update(req: Request, res: Response) {
 
 export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
-  if (!Petty.findById(id)) return res.status(404).render("errors/404");
-  Petty.remove(id);
+  if (!(await Petty.findById(id))) return res.status(404).render("errors/404");
+  await Petty.remove(id);
   await writeAudit({ actor_id: actor(req), action: "delete_petty_cash", entity: "petty_cash_entries", entity_id: id });
   pushFlash(req, "success", "Entry removed");
   res.redirect("/petty-cash");
