@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: coffeshop-management
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+    buildCommand: npm install && npm run build && npm run css:build
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_DRIVER
+        value: supabase
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_STORAGE_BUCKET
+        value: coffeeshop
+      # The remaining four are secrets. sync: false makes Render prompt you
+      # to fill them in the dashboard on first deploy; they never live in
+      # the repo or in this file.
+      - key: SESSION_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
