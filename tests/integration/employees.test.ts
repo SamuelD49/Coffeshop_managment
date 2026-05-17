@@ -5,6 +5,8 @@ import { unlinkSync, existsSync, rmSync } from "fs";
 import { closeDb, runMigrations } from "../../src/lib/db";
 import * as Employees from "../../src/models/employees";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-employees-int.db";
 process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
@@ -21,14 +23,19 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
   const r = await agent.get(path);
   return /name="_csrf" value="([^"]+)"/.exec(r.text)![1];
 }
+let shopId: number;
+
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   if (existsSync("./data/uploads")) rmSync("./data/uploads", { recursive: true, force: true });
   await runMigrations();
-  const hash = await bcrypt.hash("secret123", 12);
-  await Employees.create({ full_name: "Owner", username: "owner", password_hash: hash, role: "owner" });
+  shopId = await seedTestShop();
+  await runInShop(shopId, async () => {
+    const hash = await bcrypt.hash("secret123", 12);
+    await Employees.create({ full_name: "Owner", username: "owner", password_hash: hash, role: "owner" });
+  });
 });
 
 afterAll(async () => {
@@ -39,6 +46,8 @@ afterAll(async () => {
 
 describe("Employees onboarding flow", () => {
   it("renders the employees list with an empty state", async () => {
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     const res = await agent.get("/employees");
@@ -47,9 +56,16 @@ describe("Employees onboarding flow", () => {
     // The seeded Owner row now appears on the list (the page shows everyone in
     // the system, including owners, so the count matches payroll).
     expect(res.text).toContain("Owner");
+  
+
+    });
+
   });
 
   it("creates an employee via POST /employees", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     const csrf = await csrfFrom(agent, "/employees/new");
@@ -58,9 +74,18 @@ describe("Employees onboarding flow", () => {
     expect(res.headers.location).toMatch(/^\/employees\/\d+$/);
     const list = await agent.get("/employees");
     expect(list.text).toContain("Almaz");
+  
+
+
+    });
+
+
   });
 
   it("renders the profile and personal tab with form fields", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     const csrf = await csrfFrom(agent, "/employees/new");
@@ -73,9 +98,18 @@ describe("Employees onboarding flow", () => {
     expect(res.text).toContain("Guarantors");
     expect(res.text).toContain("Employment");
     expect(res.text).toContain("missing"); // status badge
+  
+
+
+    });
+
+
   });
 
   it("saves personal info and updates onboarding completeness", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     let csrf = await csrfFrom(agent, "/employees/new");
@@ -102,9 +136,18 @@ describe("Employees onboarding flow", () => {
     const full = await Employees.findFull(id);
     expect(full?.phone).toBe("+251911234567");
     expect(full?.onboarding_status).toBe("incomplete"); // docs + guarantor still missing
+  
+
+
+    });
+
+
   });
 
   it("blocks employee role from /employees", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     // employee account
     const hash = await bcrypt.hash("emp123", 12);
@@ -115,5 +158,11 @@ describe("Employees onboarding flow", () => {
     await agent.post("/login").type("form").send({ _csrf: csrf, username: "cash", password: "emp123" });
     const res = await agent.get("/employees");
     expect(res.status).toBe(403);
+  
+
+
+    });
+
+
   });
 });

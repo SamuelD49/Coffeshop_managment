@@ -9,13 +9,18 @@ import * as Purchases from "../src/models/purchases";
 import * as Petty from "../src/models/pettyCash";
 import * as Reports from "../src/lib/reports";
 
+import { seedTestShop, runInShop } from "./lib/testShop";
+
 const TEST_DB = "./data/test-reports.db";
 process.env.DB_PATH = TEST_DB;
+
+let shopId: number;
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
+  shopId = await seedTestShop();
 });
 
 afterAll(async () => {
@@ -25,6 +30,8 @@ afterAll(async () => {
 
 describe("Sales reports", () => {
   it("salesByDay() sums totals per business_date", async () => {
+
+    await runInShop(shopId, async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
 
@@ -43,9 +50,16 @@ describe("Sales reports", () => {
     const result = await Reports.salesByDay({ from: "2026-05-01", to: "2026-05-31" });
     expect(result.find(r => r.business_date === "2026-05-10")?.subtotal).toBe(15000);
     expect(result.find(r => r.business_date === "2026-05-12")?.subtotal).toBe(20000);
+  
+
+    });
+
   });
 
   it("salesByItem() sums qty + revenue per menu item", async () => {
+
+
+    await runInShop(shopId, async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const latte = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
     const espresso = await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
@@ -61,9 +75,18 @@ describe("Sales reports", () => {
     expect(r1.revenue).toBe(15000);
     expect(r2.qty).toBe(5);
     expect(r2.revenue).toBe(15000);
+  
+
+
+    });
+
+
   });
 
   it("salesByEmployee() sums per cashier", async () => {
+
+
+    await runInShop(shopId, async () => {
     const e1 = await Employees.create({ full_name: "Almaz", username: "a", password_hash: "h", role: "employee" });
     const e2 = await Employees.create({ full_name: "Bekele", username: "b", password_hash: "h", role: "employee" });
     const m = await Menu.create({ name: "Latte", price: 5000, sort_order: 1 });
@@ -76,22 +99,36 @@ describe("Sales reports", () => {
     const result = await Reports.salesByEmployee({ from: "2026-05-01", to: "2026-05-31" });
     expect(result.find(r => r.full_name === "Almaz")?.subtotal).toBe(20000);
     expect(result.find(r => r.full_name === "Bekele")?.subtotal).toBe(10000);
+  
+
+
+    });
+
+
   });
 });
 
 describe("Purchases reports", () => {
   it("purchasesByDay() sums totals per date", async () => {
+
+    await runInShop(shopId, async () => {
     await Purchases.create({ purchase_date: "2026-05-10", description: "Beans", unit: "kg", qty: 2, unit_price: 50000, remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-10", description: "Milk",  unit: "L",  qty: 5, unit_price: 4000,  remark: null, entered_by: null });
     await Purchases.create({ purchase_date: "2026-05-12", description: "Sugar", unit: "kg", qty: 1, unit_price: 6000,  remark: null, entered_by: null });
     const r = await Reports.purchasesByDay({ from: "2026-05-01", to: "2026-05-31" });
     expect(r.find(d => d.purchase_date === "2026-05-10")?.total).toBe(120000);
     expect(r.find(d => d.purchase_date === "2026-05-12")?.total).toBe(6000);
+  
+
+    });
+
   });
 });
 
 describe("Petty cash reports", () => {
   it("pettyCashSummary() returns totals per type and net delta", async () => {
+
+    await runInShop(shopId, async () => {
     await Petty.create({ entry_date: "2026-05-12", description: "Initial",   payer_name: null, amount: 100000, type: "replenishment", remark: null, entered_by: null });
     await Petty.create({ entry_date: "2026-05-12", description: "Taxi",      payer_name: null, amount: 5000,   type: "expense",       remark: null, entered_by: null });
     await Petty.create({ entry_date: "2026-05-13", description: "Refunded",  payer_name: null, amount: 2000,   type: "refund",        remark: null, entered_by: null });
@@ -103,11 +140,17 @@ describe("Petty cash reports", () => {
     expect(r.byType.expense).toBe(6500);
     expect(r.byType.refund).toBe(2000);
     expect(r.byType.replenishment).toBe(100000);
+  
+
+    });
+
   });
 });
 
 describe("Dashboard totals", () => {
   it("todaySalesTotal() sums only the given business date", async () => {
+
+    await runInShop(shopId, async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const m = await Menu.create({ name: "L", price: 1000, sort_order: 1 });
     const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
@@ -115,14 +158,27 @@ describe("Dashboard totals", () => {
     const sOther = await Sessions.create({ employee_id: e.id, business_date: "2026-05-11", shift: "m" });
     await Lines.upsert(sOther.id, m.id, 99); // shouldn't count
     expect(await Reports.todaySalesTotal("2026-05-12")).toBe(3000);
+  
+
+    });
+
   });
 
   it("todayCashVsBank() splits payment by tender", async () => {
+
+
+    await runInShop(shopId, async () => {
     const e = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const s = await Sessions.create({ employee_id: e.id, business_date: "2026-05-12", shift: "m" });
     await Sessions.updateHeader(s.id, { cash_amount: 15000, bank_transfer_amount: 5000, notes: null });
     const r = await Reports.todayCashVsBank("2026-05-12");
     expect(r.cash).toBe(15000);
     expect(r.bank).toBe(5000);
+  
+
+
+    });
+
+
   });
 });

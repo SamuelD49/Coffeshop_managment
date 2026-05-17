@@ -5,13 +5,18 @@ import * as Employees from "../../src/models/employees";
 import * as Runs from "../../src/models/payrollRuns";
 import * as Entries from "../../src/models/payrollEntries";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-payroll-entries.db";
 process.env.DB_PATH = TEST_DB;
+
+let shopId: number;
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
+  shopId = await seedTestShop();
 });
 
 afterAll(async () => {
@@ -29,6 +34,8 @@ async function seed() {
 
 describe("PayrollEntries", () => {
   it("createFromEmployee() snapshots rates and computes totals", async () => {
+
+    await runInShop(shopId, async () => {
     const { e, run } = await seed();
     const entry = await Entries.createFromEmployee({
       run_id: run.id,
@@ -48,15 +55,31 @@ describe("PayrollEntries", () => {
     expect(entry.net_payment).toBe(465000);
     expect(entry.income_tax).toBe(0);
     expect(entry.advance_salary).toBe(0);
+  
+
+    });
+
   });
 
   it("unique (run, employee) constraint", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { e, run } = await seed();
     await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 1, days_worked: 1, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
     await expect(Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 1, days_worked: 1, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 })).rejects.toThrow();
+  
+
+
+    });
+
+
   });
 
   it("update() re-runs the calculation with new inputs", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { e, run } = await seed();
     const entry = await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
     await Entries.update(entry.id, { days_worked: 20, income_tax: 30000, advance_salary: 50000 });
@@ -70,22 +93,46 @@ describe("PayrollEntries", () => {
     expect(got?.total_deduction).toBe(103333);
     // net = 333333 - 103333 = 230000
     expect(got?.net_payment).toBe(230000);
+  
+
+
+    });
+
+
   });
 
   it("listForRun() returns entries with employee full_name", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { e, run } = await seed();
     await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
     const list = await Entries.listForRun(run.id);
     expect(list).toHaveLength(1);
     expect(list[0].full_name).toBe("Almaz");
+  
+
+
+    });
+
+
   });
 
   it("listForEmployee() returns past entries with run year/month", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { e, run } = await seed();
     await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
     const list = await Entries.listForEmployee(e.id);
     expect(list).toHaveLength(1);
     expect(list[0].year).toBe(2026);
     expect(list[0].month).toBe(5);
+  
+
+
+    });
+
+
   });
 });

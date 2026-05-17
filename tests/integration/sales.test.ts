@@ -6,6 +6,8 @@ import { closeDb, runMigrations } from "../../src/lib/db";
 import * as Employees from "../../src/models/employees";
 import * as Menu from "../../src/models/menuItems";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-sales-int.db";
 process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
@@ -22,16 +24,21 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
   const r = await agent.get(path);
   return /name="_csrf" value="([^"]+)"/.exec(r.text)![1];
 }
+let shopId: number;
+
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
-  const hash = await bcrypt.hash("pw123", 12);
-  await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
-  await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
-  await Menu.create({ name: "Latte",    price: 5000, sort_order: 1 });
-  await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
+  shopId = await seedTestShop();
+  await runInShop(shopId, async () => {
+    const hash = await bcrypt.hash("pw123", 12);
+    await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
+    await Employees.create({ full_name: "Cashier", username: "cash",  password_hash: hash, role: "employee" });
+    await Menu.create({ name: "Latte",    price: 5000, sort_order: 1 });
+    await Menu.create({ name: "Espresso", price: 3000, sort_order: 2 });
+  });
 });
 
 afterAll(async () => {
@@ -41,6 +48,8 @@ afterAll(async () => {
 
 describe("Sales flow", () => {
   it("cashier can create a shift and enter line items", async () => {
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAs(app, "cash", "pw123");
 
@@ -72,9 +81,16 @@ describe("Sales flow", () => {
     // back on the entry page, "Reopen shift" is not visible to cashier
     const after = await agent.get(sessionUrl);
     expect(after.text).not.toContain("Reopen shift");
+  
+
+    });
+
   });
 
   it("owner can see all shifts; cashier only their own", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
 
     // cashier creates a shift
@@ -90,9 +106,18 @@ describe("Sales flow", () => {
     // cashier sees their own
     const cashierList = await cashierAgent.get("/sales");
     expect(cashierList.text).toContain("2026-05-12");
+  
+
+
+    });
+
+
   });
 
   it("non-owner can't edit a closed shift", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const cashierAgent = await loginAs(app, "cash", "pw123");
     let csrf = await csrfFrom(cashierAgent, "/sales/new");
@@ -109,5 +134,11 @@ describe("Sales flow", () => {
       .set("x-csrf-token", csrf)
       .type("form").send({ qty: 1 });
     expect(post.status).toBe(403);
+  
+
+
+    });
+
+
   });
 });

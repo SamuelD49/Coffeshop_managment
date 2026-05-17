@@ -6,13 +6,18 @@ import * as Employees from "../../src/models/employees";
 import * as Sessions from "../../src/models/salesSessions";
 import * as Lines from "../../src/models/saleLineItems";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-menu.db";
 process.env.DB_PATH = TEST_DB;
+
+let shopId: number;
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
+  shopId = await seedTestShop();
 });
 
 afterAll(async () => {
@@ -22,44 +27,89 @@ afterAll(async () => {
 
 describe("MenuItems", () => {
   it("create() and findById()", async () => {
+
+    await runInShop(shopId, async () => {
     const m = await Menu.create({ name: "Macchiato", price: 4500 });
     expect(m.id).toBeGreaterThan(0);
     expect(m.name).toBe("Macchiato");
     expect(m.price).toBe(4500);
     expect((await Menu.findById(m.id))?.name).toBe("Macchiato");
+  
+
+    });
+
   });
 
   it("listActive() returns only active rows ordered alphabetically", async () => {
+
+
+    await runInShop(shopId, async () => {
     await Menu.create({ name: "B", price: 100 });
     await Menu.create({ name: "A", price: 100 });
     await Menu.create({ name: "C", price: 100 });
     expect((await Menu.listActive()).map(m => m.name)).toEqual(["A", "B", "C"]);
+  
+
+
+    });
+
+
   });
 
   it("listAll() includes inactive", async () => {
+
+
+    await runInShop(shopId, async () => {
     const a = await Menu.create({ name: "A", price: 1 });
     await Menu.setActive(a.id, false);
     await Menu.create({ name: "B", price: 1 });
     expect(await Menu.listAll()).toHaveLength(2);
     expect(await Menu.listActive()).toHaveLength(1);
+  
+
+
+    });
+
+
   });
 
   it("update() persists changes", async () => {
+
+
+    await runInShop(shopId, async () => {
     const m = await Menu.create({ name: "Macchiato", price: 4500 });
     await Menu.update(m.id, { name: "Espresso", price: 3500 });
     const got = await Menu.findById(m.id);
     expect(got?.name).toBe("Espresso");
     expect(got?.price).toBe(3500);
+  
+
+
+    });
+
+
   });
 
   it("setActive() toggles is_active", async () => {
+
+
+    await runInShop(shopId, async () => {
     const m = await Menu.create({ name: "X", price: 1 });
     expect((await Menu.findById(m.id))?.is_active).toBe(1);
     await Menu.setActive(m.id, false);
     expect((await Menu.findById(m.id))?.is_active).toBe(0);
+  
+
+
+    });
+
+
   });
 
   it("listActiveByPopularity() orders by lifetime qty sold desc, then name asc", async () => {
+
+
+    await runInShop(shopId, async () => {
     const cashier = await Employees.create({ full_name: "C", username: "c", password_hash: "h", role: "employee" });
     const latte    = await Menu.create({ name: "Latte",    price: 5000 });
     const espresso = await Menu.create({ name: "Espresso", price: 3000 });
@@ -75,5 +125,11 @@ describe("MenuItems", () => {
 
     const ordered = (await Menu.listActiveByPopularity()).map(m => m.name);
     expect(ordered).toEqual(["Espresso", "Latte", "Tea", "Water"]);
+  
+
+
+    });
+
+
   });
 });

@@ -8,6 +8,8 @@ import * as Settings from "../../src/models/settings";
 import * as Runs from "../../src/models/payrollRuns";
 import * as Entries from "../../src/models/payrollEntries";
 
+import { seedTestShop, runInShop } from "../lib/testShop";
+
 const TEST_DB = "./data/test-payroll-int.db";
 process.env.DB_PATH = TEST_DB;
 process.env.SESSION_SECRET = "test-secret";
@@ -24,17 +26,22 @@ async function csrfFrom(agent: any, path: string): Promise<string> {
   const r = await agent.get(path);
   return /name="_csrf" value="([^"]+)"/.exec(r.text)![1];
 }
+let shopId: number;
+
 
 beforeEach(async () => {
   await closeDb();
   if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
   await runMigrations();
-  // Relax HR completeness for tests so auto-populate includes our seeded employees.
-  await Settings.set("require_complete_hr_before_payroll", "false");
-  const hash = await bcrypt.hash("pw", 12);
-  await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
-  const e1 = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: hash, role: "employee" });
-  await Employees.updateEmployment(e1.id, { position: "Barista", hire_date: "2025-06-01", basic_salary: 500000, role: "employee", is_active: true, username: "alm" });
+  shopId = await seedTestShop();
+  await runInShop(shopId, async () => {
+    // Relax HR completeness for tests so auto-populate includes our seeded employees.
+    await Settings.set("require_complete_hr_before_payroll", "false");
+    const hash = await bcrypt.hash("pw", 12);
+    await Employees.create({ full_name: "Owner",   username: "owner", password_hash: hash, role: "owner" });
+    const e1 = await Employees.create({ full_name: "Almaz", username: "alm", password_hash: hash, role: "employee" });
+    await Employees.updateEmployment(e1.id, { position: "Barista", hire_date: "2025-06-01", basic_salary: 500000, role: "employee", is_active: true, username: "alm" });
+  });
 });
 
 afterAll(async () => {
@@ -44,14 +51,23 @@ afterAll(async () => {
 
 describe("Payroll flow", () => {
   it("renders the list with empty state", async () => {
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     const res = await agent.get("/payroll");
     expect(res.status).toBe(200);
     expect(res.text).toContain("No payroll runs yet");
+  
+
+    });
+
   });
 
   it("creates a run and auto-populates entries for active employees", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     const csrf = await csrfFrom(agent, "/payroll/new");
@@ -66,9 +82,18 @@ describe("Payroll flow", () => {
     expect(almazEntry.pension_employer_pct).toBe(11);
     expect(almazEntry.pension_employee_pct).toBe(7);
     expect(almazEntry.gross_salary).toBe(500000);
+  
+
+
+    });
+
+
   });
 
   it("updates an entry recomputes totals", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     let csrf = await csrfFrom(agent, "/payroll/new");
@@ -85,9 +110,18 @@ describe("Payroll flow", () => {
     expect(got.gross_salary).toBe(333333); // 500000 * 20/30
     expect(got.income_tax).toBe(3000);
     expect(got.advance_salary).toBe(5000);
+  
+
+
+    });
+
+
   });
 
   it("approve locks editing; revert unlocks", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     let csrf = await csrfFrom(agent, "/payroll/new");
@@ -112,9 +146,18 @@ describe("Payroll flow", () => {
     csrf = await csrfFrom(agent, `/payroll/${run.id}`);
     await agent.post(`/payroll/${run.id}/revert`).type("form").send({ _csrf: csrf });
     expect((await Runs.findById(run.id))?.status).toBe("draft");
+  
+
+
+    });
+
+
   });
 
   it("print view renders without sidebar", async () => {
+
+
+    await runInShop(shopId, async () => {
     const { app } = await import("../../src/app");
     const agent = await loginAsOwner(app);
     let csrf = await csrfFrom(agent, "/payroll/new");
@@ -126,5 +169,11 @@ describe("Payroll flow", () => {
     expect(res.text).toContain("For the month of May 2026");
     // Sidebar nav links should not be present
     expect(res.text).not.toContain("Dashboard");
+  
+
+
+    });
+
+
   });
 });
