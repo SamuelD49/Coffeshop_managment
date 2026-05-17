@@ -13,8 +13,12 @@ import { purchasesRouter } from "./purchases";
 import { pettyCashRouter } from "./pettyCash";
 import { payrollRouter } from "./payroll";
 import { reportsRouter } from "./reports";
+import { superadminRouter } from "./superadmin";
 
 export const router = Router();
+
+// SuperAdmin control panel (SaaS suspension)
+router.use("/superadmin", superadminRouter);
 
 // Signup — creates a new shop + first owner. Public.
 router.get("/signup", Signup.showSignup);

@@ -1,0 +1,29 @@
+<%- include('../partials/head', { title: "SuperAdmin Login", shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen flex items-center justify-center">
+  <main class="w-full max-w-sm px-gutter-lg">
+    <div class="text-center reveal reveal-1">
+      <h1 class="wordmark wordmark-lg text-[56px] leading-[60px]"><%= shopName %></h1>
+      <p class="font-display italic text-[20px] text-coal mt-gutter" style="font-variation-settings:'opsz' 24,'SOFT' 50">SaaS Control Center</p>
+    </div>
+
+    <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
+
+    <div class="reveal reveal-3">
+      <%- include('../partials/flash', { flash }) %>
+      <form method="POST" action="/superadmin/login" class="space-y-air">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label class="block">
+          <span class="field-label">SaaS Owner Password</span>
+          <input name="password" type="password" required autofocus class="field-input" />
+        </label>
+        <div class="pt-gutter">
+          <button class="btn-primary w-full">Access Control Panel →</button>
+        </div>
+      </form>
+      <p class="text-center text-[14px] text-coal mt-air">
+        <a href="/login" class="link">← Return to Shop Login</a>
+      </p>
+    </div>
+  </main>
+</body>
+</html>

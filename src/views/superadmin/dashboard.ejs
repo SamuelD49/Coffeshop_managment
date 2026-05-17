@@ -1,0 +1,97 @@
+<%- include('../partials/head', { title: "SaaS Control Center", shopName }) %>
+<body class="text-ink font-sans antialiased min-h-screen bg-sand">
+  <header class="border-b border-rule bg-paper">
+    <div class="max-w-4xl mx-auto px-gutter-lg py-gutter flex justify-between items-center">
+      <div class="flex items-center gap-gutter">
+        <span class="wordmark text-[24px]">SaaS Console</span>
+        <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-ember text-ember-deep font-sans">SaaS Owner</span>
+      </div>
+      <form method="POST" action="/superadmin/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button class="font-sans text-[12px] tracking-smallcaps uppercase text-smoke hover:text-ink transition-colors">Sign out</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-gutter-lg py-air-md">
+    <%- include('../partials/flash', { flash }) %>
+
+    <div class="mb-air flex flex-col md:flex-row md:items-end justify-between gap-gutter reveal reveal-1">
+      <div>
+        <h1 class="font-display italic text-[36px] text-ink leading-tight" style="font-variation-settings:'opsz' 40,'SOFT' 50">Registered Shops</h1>
+        <p class="font-sans text-[14px] text-smoke mt-1">Manage active tenant status and suspensions.</p>
+      </div>
+      <div class="card p-gutter-lg flex items-center gap-gutter-lg">
+        <div>
+          <div class="font-mono text-[24px] text-ink leading-none"><%= shops.length %></div>
+          <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke mt-1">Total Tenants</div>
+        </div>
+        <div class="border-l border-rule pl-gutter-lg">
+          <div class="font-mono text-[24px] text-leaf leading-none">
+            <%= shops.filter(s => s.is_active !== 0).length %>
+          </div>
+          <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke mt-1">Active</div>
+        </div>
+      </div>
+    </div>
+
+    <% if (shops.length === 0) { %>
+      <div class="card reveal reveal-2">
+        <div class="card-body text-center py-air-lg">
+          <p class="font-display italic text-[22px] text-coal" style="font-variation-settings:'opsz' 36,'SOFT' 50">No registered shops yet.</p>
+          <p class="font-sans text-[14px] text-smoke mt-gutter">When new customers sign up, they will appear here.</p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="card overflow-hidden reveal reveal-2">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-rule bg-paper">
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Shop Name</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Created At</th>
+              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Status</th>
+              <th class="px-gutter-lg py-gutter"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% shops.forEach(shop => { %>
+              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+                <td class="px-gutter-lg py-gutter-lg font-sans text-[15px] text-ink font-medium">
+                  <%= shop.name %>
+                  <span class="block font-mono text-[11px] text-smoke font-normal mt-0.5">ID: <%= shop.id %></span>
+                </td>
+                <td class="py-gutter-lg font-mono text-[13px] text-coal">
+                  <%= new Date(shop.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' }) %>
+                </td>
+                <td class="py-gutter-lg">
+                  <% if (shop.is_active !== 0) { %>
+                    <span class="pip pip-approved">Active</span>
+                  <% } else { %>
+                    <span class="pip pip-draft">Suspended</span>
+                  <% } %>
+                </td>
+                <td class="px-gutter-lg py-gutter-lg text-right">
+                  <form method="POST" action="/superadmin/shops/<%= shop.id %>/toggle" class="inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <% if (shop.is_active !== 0) { %>
+                      <input type="hidden" name="active" value="false" />
+                      <button class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-crimson text-crimson hover:bg-crimson hover:text-cream transition-colors duration-200">
+                        Suspend Account
+                      </button>
+                    <% } else { %>
+                      <input type="hidden" name="active" value="true" />
+                      <button class="font-sans text-[12px] tracking-smallcaps uppercase px-3 py-1.5 rounded-soft border border-leaf text-leaf hover:bg-leaf hover:text-cream transition-colors duration-200">
+                        Reactivate Account
+                      </button>
+                    <% } %>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>

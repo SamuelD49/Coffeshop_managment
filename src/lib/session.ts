@@ -63,6 +63,7 @@ declare module "express-session" {
     employeeId?: number;
     role?: "owner" | "employee";
     csrfToken?: string;
+    isSuperAdmin?: boolean;
     flash?: { type: "success" | "error" | "info"; text: string }[];
   }
 }
