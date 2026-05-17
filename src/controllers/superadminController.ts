@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as Shops from "../models/shops";
 import { pushFlash } from "../lib/flash";
 import { getDb } from "../lib/kysely";
+import bcrypt from "bcrypt";
 
 export function showLogin(req: Request, res: Response) {
   if (req.session.isSuperAdmin) {
@@ -127,10 +128,18 @@ export async function shopDetails(req: Request, res: Response) {
     .orderBy("id", "asc")
     .execute();
 
+  // 8. Find owner details
+  const owner = await db.selectFrom("employees")
+    .select(["id", "full_name", "username"])
+    .where("shop_id", "=", shopId)
+    .where("role", "=", "owner")
+    .executeTakeFirst();
+
   res.render("superadmin/shopDetails", {
     shop,
     shopName: "SaaS Admin",
     title: `${shop.name} Analytics`,
+    owner: owner || null,
     analytics: {
       employeeCount,
       menuItemCount,
@@ -141,4 +150,100 @@ export async function shopDetails(req: Request, res: Response) {
       employeesList
     }
   });
+}
+
+export async function impersonate(req: Request, res: Response) {
+  const shopId = Number(req.params.id);
+  const shop = await Shops.findById(shopId);
+  if (!shop) {
+    pushFlash(req, "error", "Shop not found");
+    return res.redirect("/superadmin");
+  }
+
+  const db = getDb();
+  const owner = await db.selectFrom("employees")
+    .select(["id"])
+    .where("shop_id", "=", shopId)
+    .where("role", "=", "owner")
+    .executeTakeFirst();
+
+  if (!owner) {
+    pushFlash(req, "error", "This shop has no registered owner to impersonate.");
+    return res.redirect(`/superadmin/shops/${shopId}`);
+  }
+
+  // Set the session fields for this shop owner
+  req.session.shopId = shopId;
+  req.session.employeeId = owner.id;
+  req.session.role = "owner";
+  
+  pushFlash(req, "success", `Now impersonating owner of "${shop.name}".`);
+  res.redirect("/");
+}
+
+export function exitImpersonation(req: Request, res: Response) {
+  if (!req.session.isSuperAdmin) {
+    pushFlash(req, "error", "Unauthorized exit call.");
+    return res.redirect("/login");
+  }
+
+  // Clear owner context but preserve isSuperAdmin status
+  delete req.session.shopId;
+  delete req.session.employeeId;
+  delete req.session.role;
+
+  pushFlash(req, "info", "Exited impersonation control panel.");
+  res.redirect("/superadmin");
+}
+
+export async function resetCredentials(req: Request, res: Response) {
+  const shopId = Number(req.params.id);
+  const { username, password } = req.body as Record<string, string>;
+
+  const shop = await Shops.findById(shopId);
+  if (!shop) {
+    pushFlash(req, "error", "Shop not found");
+    return res.redirect("/superadmin");
+  }
+
+  if (!username || username.trim().length < 3) {
+    pushFlash(req, "error", "Username must be at least 3 characters.");
+    return res.redirect(`/superadmin/shops/${shopId}`);
+  }
+
+  const db = getDb();
+  
+  // Find owner first
+  const owner = await db.selectFrom("employees")
+    .select(["id"])
+    .where("shop_id", "=", shopId)
+    .where("role", "=", "owner")
+    .executeTakeFirst();
+
+  if (!owner) {
+    pushFlash(req, "error", "No owner account found to update.");
+    return res.redirect(`/superadmin/shops/${shopId}`);
+  }
+
+  // Prepare updates
+  const updates: Record<string, any> = {
+    username: username.trim(),
+    updated_at: new Date().toISOString().replace("T", " ").slice(0, 19)
+  };
+
+  if (password && password.trim().length > 0) {
+    if (password.trim().length < 8) {
+      pushFlash(req, "error", "Password must be at least 8 characters.");
+      return res.redirect(`/superadmin/shops/${shopId}`);
+    }
+    updates.password_hash = await bcrypt.hash(password, 10);
+  }
+
+  await db.updateTable("employees")
+    .set(updates)
+    .where("id", "=", owner.id)
+    .execute();
+
+  pushFlash(req, "success", "Owner credentials updated successfully!");
+  res.redirect(`/superadmin/shops/${shopId}`);
 }

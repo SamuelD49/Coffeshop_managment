@@ -29,24 +29,68 @@
         <p class="font-sans text-[14px] text-smoke mt-1">Tenant ID: <%= shop.id %> • Registered on <%= new Date(shop.created_at).toLocaleDateString(undefined, { dateStyle: 'long' }) %></p>
       </div>
 
-      <form method="POST" action="/superadmin/shops/<%= shop.id %>/toggle" class="inline">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <% if (shop.is_active !== 0) { %>
-          <input type="hidden" name="active" value="false" />
-          <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2 rounded-soft border border-crimson text-crimson hover:bg-crimson hover:text-cream transition-all duration-200">
-            Suspend Account
+      <div class="flex items-center gap-2">
+        <form method="POST" action="/superadmin/shops/<%= shop.id %>/toggle" class="inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <% if (shop.is_active !== 0) { %>
+            <input type="hidden" name="active" value="false" />
+            <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2.5 rounded-soft border border-crimson text-crimson hover:bg-crimson hover:text-cream transition-all duration-200">
+              Suspend Account
+            </button>
+          <% } else { %>
+            <input type="hidden" name="active" value="true" />
+            <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2.5 rounded-soft border border-leaf text-leaf hover:bg-leaf hover:text-cream transition-all duration-200">
+              Reactivate Account
+            </button>
+          <% } %>
+        </form>
+      </div>
+    </div>
+
+    <!-- Owner Credentials and Impersonation -->
+    <div class="card mb-air reveal reveal-2 overflow-hidden">
+      <div class="card-header bg-paper flex flex-col md:flex-row md:items-center justify-between gap-gutter">
+        <div>
+          <h2 class="card-title text-[20px]">Owner Account Settings</h2>
+          <p class="font-sans text-[12px] text-smoke mt-0.5">Edit credentials or log in directly to verify operations</p>
+        </div>
+        <form method="POST" action="/superadmin/shops/<%= shop.id %>/impersonate" class="inline" hx-boost="false">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2.5 rounded-soft bg-ember text-ember-deep hover:bg-ember-deep hover:text-cream transition-all duration-200 w-full md:w-auto text-center font-bold">
+            ⚡ Sign In as Owner
           </button>
+        </form>
+      </div>
+      <div class="p-gutter-lg bg-cream">
+        <% if (owner) { %>
+          <form method="POST" action="/superadmin/shops/<%= shop.id %>/reset-credentials" class="grid grid-cols-1 md:grid-cols-3 gap-gutter items-end">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <div>
+              <label class="block font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-1">Full Name (Owner)</label>
+              <div class="font-sans text-[15px] text-coal py-2 border-b border-rule">
+                <%= owner.full_name %>
+              </div>
+            </div>
+            <div>
+              <label for="username" class="block font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-1">Username</label>
+              <input type="text" id="username" name="username" value="<%= owner.username %>" required class="input w-full" />
+            </div>
+            <div class="flex gap-gutter items-end">
+              <div class="flex-1">
+                <label for="password" class="block font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke mb-1">New Password <span class="text-mist font-normal">(Leave blank to keep current)</span></label>
+                <input type="password" id="password" name="password" placeholder="••••••••" class="input w-full" />
+              </div>
+              <button class="btn-primary h-10 px-4 text-[12px] tracking-button uppercase shrink-0">Update</button>
+            </div>
+          </form>
         <% } else { %>
-          <input type="hidden" name="active" value="true" />
-          <button class="font-sans text-[12px] tracking-button uppercase px-4 py-2 rounded-soft border border-leaf text-leaf hover:bg-leaf hover:text-cream transition-all duration-200">
-            Reactivate Account
-          </button>
+          <div class="text-center py-gutter font-sans text-smoke text-[14px]">No owner account found. A shop owner is automatically created during registration.</div>
         <% } %>
-      </form>
+      </div>
     </div>
 
     <!-- Analytics Key Metrics Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-gutter mb-air reveal reveal-2">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-gutter mb-air reveal reveal-3">
       <!-- Total Revenue -->
       <div class="card p-gutter-lg">
         <div class="font-sans font-medium text-[9px] tracking-smallcaps uppercase text-smoke">Total Revenue</div>
@@ -98,7 +142,7 @@
     </div>
 
     <!-- Details Columns -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter reveal reveal-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter reveal reveal-4">
       <!-- Left Column: Recent Activity Log -->
       <div class="card overflow-hidden">
         <div class="card-header bg-paper">

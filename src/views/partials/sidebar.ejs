@@ -3,6 +3,22 @@
 <%- include('./mobile-nav', { shopName, currentRole, currentUser, csrfToken, currentPath, pageTitle: typeof pageTitle !== 'undefined' ? pageTitle : '' }) %>
 
 <aside id="app-sidebar" class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex-col hidden md:flex" aria-label="Main navigation" hx-boost="true">
+  <% if (typeof isSuperAdmin !== 'undefined' && isSuperAdmin && shopId) { %>
+    <div class="mb-gutter p-3 bg-ember/30 border border-ember text-ember-deep rounded-soft text-[12px] font-sans">
+      <div class="font-bold flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-ember animate-pulse"></span>
+        SaaS Impersonation
+      </div>
+      <div class="text-smoke mt-0.5">Active on <%= shopName %></div>
+      <form action="/superadmin/impersonate/exit" method="POST" class="mt-2" hx-boost="false">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button class="w-full text-center py-1 bg-ember text-ember-deep font-semibold rounded-soft border border-ember-deep/20 hover:bg-ember/80 transition-colors">
+          Exit Control
+        </button>
+      </form>
+    </div>
+  <% } %>
+  
   <a href="/" class="wordmark text-[28px] leading-[32px] mb-air block">
     <%= shopName %>
   </a>

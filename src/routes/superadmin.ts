@@ -17,3 +17,6 @@ superadminRouter.post("/logout", Ctrl.logout);
 superadminRouter.get("/", requireSuperAdmin, Ctrl.dashboard);
 superadminRouter.get("/shops/:id", requireSuperAdmin, Ctrl.shopDetails);
 superadminRouter.post("/shops/:id/toggle", requireSuperAdmin, Ctrl.toggleShop);
+superadminRouter.post("/shops/:id/impersonate", requireSuperAdmin, Ctrl.impersonate);
+superadminRouter.post("/impersonate/exit", requireSuperAdmin, Ctrl.exitImpersonation);
+superadminRouter.post("/shops/:id/reset-credentials", requireSuperAdmin, Ctrl.resetCredentials);

@@ -10,6 +10,7 @@ export async function localsMiddleware(req: Request, res: Response, next: NextFu
   res.locals.currentUser = null;
   res.locals.currentRole = null;
   res.locals.shopId = req.session.shopId ?? null;
+  res.locals.isSuperAdmin = !!req.session.isSuperAdmin;
 
   if (!req.session.shopId || !req.session.employeeId) {
     // Unauthenticated request (login/signup pages). Use a neutral default
