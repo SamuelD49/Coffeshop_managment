@@ -40,3 +40,33 @@ To auto-start the app at login + restart on crash + log to `data/logs/`, install
 ```bash
 npm test
 ```
+
+## Database & storage backends
+
+The app supports two backends, switched via env vars:
+
+- **`DB_DRIVER=sqlite`** (default) — local `data/shop.db` via better-sqlite3. No setup needed.
+- **`DB_DRIVER=supabase`** — Supabase Postgres. Requires `DATABASE_URL` (the **direct** or **session pooler** URI; **not** the transaction pooler — that breaks Kysely's prepared statements).
+
+Files:
+
+- **`STORAGE_DRIVER=local`** (default) — uploads live under `data/uploads/`.
+- **`STORAGE_DRIVER=supabase`** — uploads live in Supabase Storage. Requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET` (default: `coffeshop`).
+
+Schema migrations are dialect-aware (`migrations/sqlite/` vs `migrations/postgres/`) and applied automatically at boot.
+
+### Migrating an existing install to Supabase
+
+Full operator checklist with click-by-click setup: [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md).
+
+Short version:
+
+1. Create a Supabase project + private storage bucket. Fill in `.env.local` (see `.env.example`).
+2. Boot once with `DB_DRIVER=supabase` to apply migrations: `DB_DRIVER=supabase npm run build && DB_DRIVER=supabase node dist/server.js`. Stop the app.
+3. Copy data: `npm run copy:supabase`.
+4. Copy uploaded files: `npm run copy:uploads`.
+5. Set both drivers to `supabase` in `.env.local`. Start the app.
+
+The local `data/shop.db` and `data/uploads/` directory stay on disk as a backup. Roll back by flipping the drivers back to `sqlite` / `local`.
+
+Nightly backup cron is a no-op under `DB_DRIVER=supabase` — Supabase handles PITR + daily snapshots server-side.
