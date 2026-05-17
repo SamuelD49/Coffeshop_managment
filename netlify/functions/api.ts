@@ -24,6 +24,8 @@ app.use(async (req, res, next) => {
   }
 });
 
-const handlerFunction = serverless(app);
+const handlerFunction = serverless(app, {
+  binary: ['image/*', 'application/pdf', 'application/octet-stream', 'font/*', 'image/webp', 'image/png', 'image/jpeg']
+});
 module.exports = { handler: handlerFunction };
 module.exports.handler = handlerFunction;
