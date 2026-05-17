@@ -6,7 +6,7 @@
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 30,
-      "includeFiles": "src/views/**"
+      "includeFiles": "{src/views/**,node_modules/ejs/**}"
     }
   },
   "rewrites": [
