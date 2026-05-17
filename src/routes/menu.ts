@@ -9,6 +9,7 @@ menuRouter.use(requireAuth, requireOwner);
 menuRouter.get("/",            Ctrl.list);
 menuRouter.get("/new",         Ctrl.showNew);
 menuRouter.post("/",           Ctrl.create);
+menuRouter.post("/bulk-delete", Ctrl.bulkDelete);
 menuRouter.get("/:id/edit",    Ctrl.showEdit);
 menuRouter.post("/:id",        Ctrl.update);
 menuRouter.post("/:id/active", Ctrl.toggleActive);

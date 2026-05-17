@@ -138,3 +138,14 @@ export async function destroy(id: number): Promise<void> {
     .execute();
   bustMenuCaches();
 }
+
+export async function destroyMany(ids: number[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const result = await getDb()
+    .deleteFrom("menu_items")
+    .where("shop_id", "=", currentShopId())
+    .where("id", "in", ids)
+    .executeTakeFirst();
+  bustMenuCaches();
+  return Number(result.numDeletedRows);
+}

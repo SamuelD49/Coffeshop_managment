@@ -113,3 +113,27 @@ export async function destroy(req: Request, res: Response) {
   
   res.redirect("/menu");
 }
+
+export async function bulkDelete(req: Request, res: Response) {
+  const idsRaw = req.body.item_ids;
+  if (!idsRaw) {
+    pushFlash(req, "error", "No items selected");
+    return res.redirect("/menu");
+  }
+  
+  const ids = (Array.isArray(idsRaw) ? idsRaw : [idsRaw]).map(Number).filter(id => !isNaN(id));
+  if (ids.length === 0) {
+    return res.redirect("/menu");
+  }
+  
+  try {
+    const numDeleted = await Menu.destroyMany(ids);
+    await writeAudit({ actor_id: actor(req), action: "bulk_delete_menu_items", entity: "menu_items", entity_id: null });
+    pushFlash(req, "success", `${numDeleted} item${numDeleted === 1 ? '' : 's'} deleted`);
+  } catch (err: any) {
+    // Foreign key constraint failure if any item has been sold
+    pushFlash(req, "error", "Could not delete one or more items because they have been used in sales.");
+  }
+  
+  res.redirect("/menu");
+}
