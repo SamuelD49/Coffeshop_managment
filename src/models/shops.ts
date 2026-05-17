@@ -44,3 +44,12 @@ export async function setActive(id: number, active: boolean): Promise<void> {
     .where("id", "=", id)
     .execute();
 }
+
+export async function listAll(): Promise<Shop[]> {
+  const rows = await getDb()
+    .selectFrom("shops")
+    .selectAll()
+    .orderBy("id", "desc")
+    .execute();
+  return rows as Shop[];
+}
