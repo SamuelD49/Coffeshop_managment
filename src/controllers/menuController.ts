@@ -45,6 +45,11 @@ export async function create(req: Request, res: Response) {
     pushFlash(req, "error", "Name is required");
     return res.redirect("/menu/new");
   }
+  const existing = await Menu.findByName(name);
+  if (existing) {
+    pushFlash(req, "error", `A menu item named "${name}" already exists`);
+    return res.redirect("/menu/new");
+  }
   const price = parsePriceMajor(req.body.price);
   const token_color = parseTokenColor(req.body.token_color);
   const m = await Menu.create({ name, price, token_color });
@@ -64,6 +69,13 @@ export async function update(req: Request, res: Response) {
   const item = await Menu.findById(id);
   if (!item) return res.status(404).render("errors/404");
   const name = (req.body.name ?? item.name).toString().trim() || item.name;
+  if (name.toLowerCase() !== item.name.toLowerCase()) {
+    const existing = await Menu.findByName(name);
+    if (existing) {
+      pushFlash(req, "error", `A menu item named "${name}" already exists`);
+      return res.redirect(`/menu/${id}/edit`);
+    }
+  }
   await Menu.update(id, {
     name,
     price: parsePriceMajor(req.body.price),

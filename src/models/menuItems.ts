@@ -47,6 +47,16 @@ export async function findById(id: number): Promise<MenuItem | null> {
   return row ?? null;
 }
 
+export async function findByName(name: string): Promise<MenuItem | null> {
+  const row = await getDb()
+    .selectFrom("menu_items")
+    .selectAll()
+    .where("shop_id", "=", currentShopId())
+    .where(sql`lower(name)`, "=", name.toLowerCase())
+    .executeTakeFirst();
+  return row ?? null;
+}
+
 export async function listAll(): Promise<MenuItem[]> {
   const shopId = currentShopId();
   return memoize(`menu:shop:${shopId}:listAll`, 30_000, async () => {
