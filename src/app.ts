@@ -22,10 +22,12 @@ app.set("view engine", "ejs");
 // process.cwd() is the project root in both modes when started normally.
 app.set("views", resolve(process.cwd(), "src/views"));
 
-app.use("/css", express.static(resolve(process.cwd(), "public/css")));
-app.use("/js", express.static(resolve(process.cwd(), "public/js")));
+// CSS/JS rebuild on every deploy, so 1 hour is safe; the browser
+// re-validates after that. Fonts/images are immutable so cache them hard.
+app.use("/css", express.static(resolve(process.cwd(), "public/css"), { maxAge: "1h" }));
+app.use("/js", express.static(resolve(process.cwd(), "public/js"), { maxAge: "1h" }));
 app.use("/fonts", express.static(resolve(process.cwd(), "public/fonts"), { maxAge: "1y", immutable: true }));
-app.use("/img", express.static(resolve(process.cwd(), "public/img")));
+app.use("/img", express.static(resolve(process.cwd(), "public/img"), { maxAge: "1y", immutable: true }));
 
 // Signature data URLs from the canvas pad can run ~50-100 KB after base64
 // encoding; the default 100 KB limit is right on the edge. Raise to 500 KB.

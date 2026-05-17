@@ -18,9 +18,14 @@ export async function localsMiddleware(req: Request, res: Response, next: NextFu
   }
 
   // Authenticated — load shop-specific data inside the shop's context.
+  // Settings.get + Employees.findById are independent; firing in parallel
+  // saves one query RTT on every authenticated page nav.
   await runWithShop(req.session.shopId, async () => {
-    res.locals.shopName = (await Settings.get("shop_name")) ?? "Coffee Shop";
-    const u = await Employees.findById(req.session.employeeId!);
+    const [shopName, u] = await Promise.all([
+      Settings.get("shop_name"),
+      Employees.findById(req.session.employeeId!),
+    ]);
+    res.locals.shopName = shopName ?? "Coffee Shop";
     if (u) {
       res.locals.currentUser = u;
       res.locals.currentRole = u.role;
