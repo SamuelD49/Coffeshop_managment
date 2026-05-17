@@ -39,10 +39,12 @@ export function logout(req: Request, res: Response) {
 
 export async function dashboard(req: Request, res: Response) {
   const allShops = await Shops.listAll();
+  const requireApproval = await getGlobalSetting("require_approval", "false") === "true";
   res.render("superadmin/dashboard", { 
     shops: allShops, 
     shopName: "SaaS Admin", 
-    title: "SaaS Control Center" 
+    title: "SaaS Control Center",
+    requireApproval
   });
 }
 
@@ -246,4 +248,47 @@ export async function resetCredentials(req: Request, res: Response) {
 
   pushFlash(req, "success", "Owner credentials updated successfully!");
   res.redirect(`/superadmin/shops/${shopId}`);
+}
+
+export async function getGlobalSetting(key: string, defaultValue: string): Promise<string> {
+  const db = getDb();
+  const row = await db.selectFrom("settings")
+    .select("value")
+    .where("shop_id", "=", 1)
+    .where("key", "=", `global:${key}`)
+    .executeTakeFirst();
+  return row ? row.value : defaultValue;
+}
+
+export async function setGlobalSetting(key: string, value: string): Promise<void> {
+  const db = getDb();
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+  
+  const exists = await db.selectFrom("settings")
+    .select("key")
+    .where("shop_id", "=", 1)
+    .where("key", "=", `global:${key}`)
+    .executeTakeFirst();
+
+  if (exists) {
+    await db.updateTable("settings")
+      .set({ value, updated_at: now })
+      .where("shop_id", "=", 1)
+      .where("key", "=", `global:${key}`)
+      .execute();
+  } else {
+    await db.insertInto("settings")
+      .values({ shop_id: 1, key: `global:${key}`, value, updated_at: now })
+      .execute();
+  }
+}
+
+export async function updateSettings(req: Request, res: Response) {
+  const { requireApproval } = req.body as { requireApproval?: string };
+  const requireApprovalBool = requireApproval === "true";
+  
+  await setGlobalSetting("require_approval", requireApprovalBool ? "true" : "false");
+  
+  pushFlash(req, "success", "Global security settings updated successfully!");
+  res.redirect("/superadmin");
 }

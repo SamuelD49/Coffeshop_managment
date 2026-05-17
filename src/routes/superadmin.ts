@@ -20,3 +20,4 @@ superadminRouter.post("/shops/:id/toggle", requireSuperAdmin, Ctrl.toggleShop);
 superadminRouter.post("/shops/:id/impersonate", requireSuperAdmin, Ctrl.impersonate);
 superadminRouter.post("/impersonate/exit", requireSuperAdmin, Ctrl.exitImpersonation);
 superadminRouter.post("/shops/:id/reset-credentials", requireSuperAdmin, Ctrl.resetCredentials);
+superadminRouter.post("/settings", requireSuperAdmin, Ctrl.updateSettings);

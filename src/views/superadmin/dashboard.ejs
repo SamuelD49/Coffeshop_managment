@@ -35,6 +35,35 @@
       </div>
     </div>
 
+    <!-- SaaS Global Security Policy Configuration -->
+    <div class="card mb-air reveal reveal-1 overflow-hidden">
+      <div class="card-header bg-paper flex flex-col md:flex-row md:items-center justify-between gap-gutter">
+        <div>
+          <h2 class="card-title text-[18px]">SaaS Global Security Settings</h2>
+          <p class="font-sans text-[12px] text-smoke mt-0.5">Toggle sign-up authorization requirements across the entire platform</p>
+        </div>
+      </div>
+      <div class="p-gutter-lg bg-cream">
+        <form method="POST" action="/superadmin/settings" class="flex flex-col md:flex-row md:items-center justify-between gap-gutter">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div class="flex items-start gap-3">
+            <input type="checkbox" id="requireApproval" name="requireApproval" value="true" <%= requireApproval ? 'checked' : '' %> class="w-4 h-4 text-ember border-rule rounded focus:ring-ember mt-1 cursor-pointer" />
+            <div>
+              <label for="requireApproval" class="block font-sans font-bold text-[14px] text-ink cursor-pointer">
+                Require Manual Owner Approval
+              </label>
+              <p class="font-sans text-[12px] text-smoke mt-0.5">
+                When checked, new shop owners must wait for you to reactivate their account before they can sign in.
+              </p>
+            </div>
+          </div>
+          <button class="btn-primary px-5 py-2.5 text-[12px] tracking-button uppercase font-bold w-full md:w-auto text-center shrink-0">
+            Save Settings
+          </button>
+        </form>
+      </div>
+    </div>
+
     <% if (shops.length === 0) { %>
       <div class="card reveal reveal-2">
         <div class="card-body text-center py-air-lg">

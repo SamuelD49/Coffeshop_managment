@@ -57,6 +57,16 @@ export async function signup(req: Request, res: Response) {
   const hash = await bcrypt.hash(v.password, 10);
   const now = nowIso();
 
+  // Check if we require administrator approval for new signups
+  const settingRow = await getDb()
+    .selectFrom("settings")
+    .select("value")
+    .where("shop_id", "=", 1)
+    .where("key", "=", "global:require_approval")
+    .executeTakeFirst();
+  const requireApproval = settingRow ? settingRow.value === "true" : false;
+  const initialActive = requireApproval ? 0 : 1;
+
   // Whole signup is one transaction. If anything fails, the shop, owner,
   // and seeded settings all roll back. Username uniqueness is per-shop
   // (CREATE UNIQUE INDEX idx_employees_username_per_shop) — a new shop
@@ -64,7 +74,7 @@ export async function signup(req: Request, res: Response) {
   const result = await getDb().transaction().execute(async (trx) => {
     const shop = await trx
       .insertInto("shops")
-      .values({ name: v.shop_name, is_active: 0, created_at: now })
+      .values({ name: v.shop_name, is_active: initialActive, created_at: now })
       .returning(["id"])
       .executeTakeFirstOrThrow();
 
@@ -105,10 +115,22 @@ export async function signup(req: Request, res: Response) {
     return { shopId: shop.id, ownerId: owner.id };
   });
 
-  // Do NOT log the new user in automatically. They must wait for approval.
-  await runWithShop(result.shopId, async () => {
-    await writeAudit({ actor_id: result.ownerId, action: "signup", entity: "shops", entity_id: result.shopId });
-  });
-  pushFlash(req, "success", `Shop "${v.shop_name}" registered successfully! It is currently pending administrator approval.`);
-  res.redirect("/login?pending=1");
+  if (initialActive === 0) {
+    // Do NOT log the new user in automatically. They must wait for approval.
+    await runWithShop(result.shopId, async () => {
+      await writeAudit({ actor_id: result.ownerId, action: "signup", entity: "shops", entity_id: result.shopId });
+    });
+    pushFlash(req, "success", `Shop "${v.shop_name}" registered successfully! It is currently pending administrator approval.`);
+    res.redirect("/login?pending=1");
+  } else {
+    // Log the new user in automatically.
+    req.session.employeeId = result.ownerId;
+    req.session.shopId = result.shopId;
+    req.session.role = "owner";
+    await runWithShop(result.shopId, async () => {
+      await writeAudit({ actor_id: result.ownerId, action: "signup", entity: "shops", entity_id: result.shopId });
+    });
+    pushFlash(req, "success", `Welcome to ${v.shop_name}.`);
+    res.redirect("/");
+  }
 }
