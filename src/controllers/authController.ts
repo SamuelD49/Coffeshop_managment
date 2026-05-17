@@ -9,7 +9,9 @@ import { runWithShop } from "../lib/shopContext";
 export function showLogin(req: Request, res: Response) {
   if (req.session.employeeId) return res.redirect("/");
   if (req.query.deactivated === "1") {
-    pushFlash(req, "error", "This account has been deactivated. Please contact support.");
+    pushFlash(req, "error", "This shop has been suspended. Please contact the administrator.");
+  } else if (req.query.pending === "1") {
+    pushFlash(req, "info", "Your shop registration is pending administrator approval. Please wait for confirmation.");
   }
   res.render("login");
 }
@@ -31,7 +33,7 @@ export async function submitLogin(req: Request, res: Response) {
   
   const shop = await Shops.findById(user.shop_id);
   if (!shop || !shop.is_active) {
-    pushFlash(req, "error", "This account has been deactivated. Please contact support.");
+    pushFlash(req, "error", "This shop is pending administrator approval or has been suspended.");
     return res.redirect("/login");
   }
 

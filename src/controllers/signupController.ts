@@ -64,7 +64,7 @@ export async function signup(req: Request, res: Response) {
   const result = await getDb().transaction().execute(async (trx) => {
     const shop = await trx
       .insertInto("shops")
-      .values({ name: v.shop_name, created_at: now })
+      .values({ name: v.shop_name, is_active: 0, created_at: now })
       .returning(["id"])
       .executeTakeFirstOrThrow();
 
@@ -105,13 +105,10 @@ export async function signup(req: Request, res: Response) {
     return { shopId: shop.id, ownerId: owner.id };
   });
 
-  // Log the new user in.
-  req.session.employeeId = result.ownerId;
-  req.session.shopId = result.shopId;
-  req.session.role = "owner";
+  // Do NOT log the new user in automatically. They must wait for approval.
   await runWithShop(result.shopId, async () => {
     await writeAudit({ actor_id: result.ownerId, action: "signup", entity: "shops", entity_id: result.shopId });
   });
-  pushFlash(req, "success", `Welcome to ${v.shop_name}.`);
-  res.redirect("/");
+  pushFlash(req, "success", `Shop "${v.shop_name}" registered successfully! It is currently pending administrator approval.`);
+  res.redirect("/login?pending=1");
 }
