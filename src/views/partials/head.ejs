@@ -12,4 +12,22 @@
   <link rel="preload" href="/fonts/IBMPlexSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/app.css" />
   <script src="/js/htmx.min.js" defer></script>
+  <script>
+    // htmx normally puts the htmx-request class on the requesting element.
+    // For hx-boost nav we want a visible page-level indicator instead, so
+    // mirror the loading state onto <body> while a request is in flight.
+    // CSS in app.css.src renders a top progress bar + progress cursor.
+    document.addEventListener("htmx:beforeRequest", function () {
+      document.body.classList.add("htmx-request");
+    });
+    document.addEventListener("htmx:afterSettle", function () {
+      document.body.classList.remove("htmx-request");
+    });
+    document.addEventListener("htmx:responseError", function () {
+      document.body.classList.remove("htmx-request");
+    });
+    document.addEventListener("htmx:sendError", function () {
+      document.body.classList.remove("htmx-request");
+    });
+  </script>
 </head>
