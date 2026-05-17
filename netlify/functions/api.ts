@@ -24,4 +24,6 @@ app.use(async (req, res, next) => {
   }
 });
 
-export const handler = serverless(app);
+const handlerFunction = serverless(app);
+module.exports = { handler: handlerFunction };
+module.exports.handler = handlerFunction;
