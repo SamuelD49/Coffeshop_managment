@@ -41,7 +41,7 @@ export async function set(key: string, value: string): Promise<void> {
   await getDb()
     .insertInto("settings")
     .values({ key, value, updated_at: now })
-    .onConflict((oc) => oc.column("key").doUpdateSet({ value, updated_at: now }))
+    .onConflict((oc) => oc.columns(["shop_id", "key"]).doUpdateSet({ value, updated_at: now }))
     .execute();
   invalidate();
 }
