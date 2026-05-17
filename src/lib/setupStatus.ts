@@ -28,12 +28,17 @@ async function tableHasRows(table: keyof DB): Promise<boolean> {
 }
 
 export async function getStatus(): Promise<SetupStatus> {
-  const shopName = await Settings.get("shop_name");
+  // All five reads are independent — fan out in parallel. With ~100ms RTT
+  // to Supabase that's a 5x speedup on the dashboard onboarding strip.
+  const [shopName, hasMenu, hasEmployees, hasSales, sig] = await Promise.all([
+    Settings.get("shop_name"),
+    tableHasRows("menu_items"),
+    tableHasRows("employees"),
+    tableHasRows("sales_sessions"),
+    Settings.get("shop_signature"),
+  ]);
+
   const hasShopName = !!shopName && shopName.trim().length > 0 && shopName !== "Coffee Shop";
-  const hasMenu = await tableHasRows("menu_items");
-  const hasEmployees = await tableHasRows("employees");
-  const hasSales = await tableHasRows("sales_sessions");
-  const sig = await Settings.get("shop_signature");
   const hasSignature = !!sig && sig.length > 0;
 
   const steps: SetupStep[] = [

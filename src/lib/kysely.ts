@@ -51,6 +51,14 @@ export async function closeDb(): Promise<void> {
   }
   _sqliteHandle = null;
   _pgPool = null;
+  // Settings module caches reads in-memory; closing the DB invalidates it.
+  // Defer-loaded to avoid a circular import with the model layer.
+  try {
+    const { _invalidateCache } = await import("../models/settings");
+    _invalidateCache();
+  } catch {
+    /* settings module may not have loaded yet — fine */
+  }
 }
 
 // Format matches SQLite's datetime('now') output ("YYYY-MM-DD HH:MM:SS")

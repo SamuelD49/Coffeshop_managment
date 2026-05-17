@@ -1,12 +1,39 @@
 import { getDb, nowIso } from "../lib/kysely";
 
+// In-memory cache of the entire settings table. Settings are read on almost
+// every request (timezone, business-day cutoff, currency formatting, etc.)
+// but written rarely (only through the /settings page). One round trip to
+// Supabase costs ~100ms from Africa; without this cache, a single dashboard
+// render fires 4-6 settings lookups serially. With it, the first request
+// fills the cache and every subsequent settings read is in-process.
+//
+// Invalidation: any successful Settings.set() clears the cache.
+let _cache: Map<string, string> | null = null;
+let _cacheLoadedAt = 0;
+const CACHE_TTL_MS = 30_000;
+
+async function loadCache(): Promise<Map<string, string>> {
+  const rows = await getDb().selectFrom("settings").select(["key", "value"]).execute();
+  const m = new Map<string, string>();
+  for (const r of rows) m.set(r.key, r.value);
+  _cache = m;
+  _cacheLoadedAt = Date.now();
+  return m;
+}
+
+function invalidate(): void {
+  _cache = null;
+  _cacheLoadedAt = 0;
+}
+
+async function cache(): Promise<Map<string, string>> {
+  if (_cache && Date.now() - _cacheLoadedAt < CACHE_TTL_MS) return _cache;
+  return await loadCache();
+}
+
 export async function get(key: string): Promise<string | null> {
-  const row = await getDb()
-    .selectFrom("settings")
-    .select("value")
-    .where("key", "=", key)
-    .executeTakeFirst();
-  return row?.value ?? null;
+  const m = await cache();
+  return m.has(key) ? m.get(key)! : null;
 }
 
 export async function set(key: string, value: string): Promise<void> {
@@ -16,11 +43,12 @@ export async function set(key: string, value: string): Promise<void> {
     .values({ key, value, updated_at: now })
     .onConflict((oc) => oc.column("key").doUpdateSet({ value, updated_at: now }))
     .execute();
+  invalidate();
 }
 
 export async function getAll(): Promise<Record<string, string>> {
-  const rows = await getDb().selectFrom("settings").select(["key", "value"]).execute();
-  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  const m = await cache();
+  return Object.fromEntries(m);
 }
 
 export async function getNumber(key: string): Promise<number> {
@@ -33,4 +61,10 @@ export async function getNumber(key: string): Promise<number> {
 
 export async function getBool(key: string): Promise<boolean> {
   return (await get(key)) === "true";
+}
+
+// Test hook: lets the model tests wipe the cache between tests without
+// having to know about its existence.
+export function _invalidateCache(): void {
+  invalidate();
 }

@@ -21,56 +21,69 @@ function dayLabel(yyyymmdd: string): string {
 }
 
 export async function show(_req: Request, res: Response) {
+  // Settings are now cached in-process, so these two reads collapse to ~0ms
+  // on the second-and-following requests in a 30s window.
   const today = todayBusinessDate(
     (await Settings.get("business_day_cutoff")) ?? "00:00",
     (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
   );
-
-  // Today's snapshot (unchanged)
-  const todayBlock = {
-    salesTotal: await Reports.todaySalesTotal(today),
-    cashVsBank: await Reports.todayCashVsBank(today),
-    purchasesTotal: await Reports.todayPurchasesTotal(today),
-    pettyCashSpent: await Reports.todayPettyCashSpent(today),
-    topItems: await Reports.topItemsToday(today, 5),
-  };
-
-  // Last 7 days sparkline (today inclusive)
   const weekFrom = Reports.shiftDate(today, -6);
-  const weekDays = (await Reports.salesByDayDense({ from: weekFrom, to: today })).map(d => ({
+  const priorTo = Reports.shiftDate(today, -7);
+  const priorFrom = Reports.shiftDate(today, -13);
+
+  // All independent reads in parallel. Each one used to be a 100ms round
+  // trip; running them in flight together collapses the dashboard render
+  // from ~12 sequential RTTs to one.
+  const [
+    salesTotal,
+    cashVsBank,
+    purchasesTotal,
+    pettyCashSpent,
+    topItems,
+    weekDense,
+    priorDays,
+    items,
+    trendingRaw,
+    setup,
+  ] = await Promise.all([
+    Reports.todaySalesTotal(today),
+    Reports.todayCashVsBank(today),
+    Reports.todayPurchasesTotal(today),
+    Reports.todayPettyCashSpent(today),
+    Reports.topItemsToday(today, 5),
+    Reports.salesByDayDense({ from: weekFrom, to: today }),
+    Reports.salesByDay({ from: priorFrom, to: priorTo }),
+    Menu.listAll(),
+    Reports.salesByItem({ from: weekFrom, to: today }),
+    getSetupStatus(),
+  ]);
+
+  const todayBlock = { salesTotal, cashVsBank, purchasesTotal, pettyCashSpent, topItems };
+
+  const weekDays = weekDense.map((d) => ({
     date: d.business_date,
     label: dayLabel(d.business_date),
     total: d.subtotal,
   }));
   const weekTotal = weekDays.reduce((s, d) => s + d.total, 0);
-  const weekMax = Math.max(0, ...weekDays.map(d => d.total));
+  const weekMax = Math.max(0, ...weekDays.map((d) => d.total));
 
-  // Prior 7 days for the comparison
-  const priorTo = Reports.shiftDate(today, -7);
-  const priorFrom = Reports.shiftDate(today, -13);
-  const priorDays = await Reports.salesByDay({ from: priorFrom, to: priorTo });
   const priorTotal = priorDays.reduce((s, d) => s + d.subtotal, 0);
   const weekDeltaPct = priorTotal > 0
     ? Math.round(((weekTotal - priorTotal) / priorTotal) * 100)
     : null;
 
-  // Trending products (top 6 by qty over the last 7 days)
-  const items = await Menu.listAll();
   const itemById: Record<number, { name: string; token_color: string | null }> = {};
   for (const m of items) itemById[m.id] = { name: m.name, token_color: m.token_color };
 
-  const trendingRaw = (await Reports.salesByItem({ from: weekFrom, to: today })).slice(0, 6);
-  const trendingMax = Math.max(0, ...trendingRaw.map(t => t.qty));
-  const trending = trendingRaw.map(r => ({
+  const trendingTop = trendingRaw.slice(0, 6);
+  const trendingMax = Math.max(0, ...trendingTop.map((t) => t.qty));
+  const trending = trendingTop.map((r) => ({
     name: r.name,
     qty: r.qty,
     revenue: r.revenue,
     color: colorForItem(r.menu_item_id, itemById[r.menu_item_id]?.token_color ?? null),
   }));
-
-  // Onboarding checklist — only shown to owners and only until every step
-  // is ticked. Hides itself once complete (no manual dismiss).
-  const setup = await getSetupStatus();
 
   const data = {
     today,
