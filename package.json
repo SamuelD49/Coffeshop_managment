@@ -16,7 +16,9 @@
     "css:watch": "tailwindcss -i public/css/app.css.src -o public/css/app.css --watch",
     "seed:demo": "tsx bin/seed-demo.ts",
     "install:demo": "bash bin/install-demo.sh",
-    "demo:share": "bash bin/demo-share.sh"
+    "demo:share": "bash bin/demo-share.sh",
+    "copy:supabase": "tsx bin/copy-sqlite-to-supabase.ts",
+    "copy:uploads": "tsx bin/copy-uploads-to-supabase.ts"
   },
   "repository": {
     "type": "git",
