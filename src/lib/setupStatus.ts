@@ -1,5 +1,6 @@
 import { getDb } from "./kysely";
 import { currentShopId } from "./shopContext";
+import { memoize } from "./cache";
 import * as Settings from "../models/settings";
 import type { DB } from "./db-types";
 
@@ -34,15 +35,20 @@ async function tableHasRows(table: keyof DB): Promise<boolean> {
 }
 
 export async function getStatus(): Promise<SetupStatus> {
-  // All five reads are independent — fan out in parallel. With ~100ms RTT
-  // to Supabase that's a 5x speedup on the dashboard onboarding strip.
-  const [shopName, hasMenu, hasEmployees, hasSales, sig] = await Promise.all([
-    Settings.get("shop_name"),
-    tableHasRows("menu_items"),
-    tableHasRows("employees"),
-    tableHasRows("sales_sessions"),
-    Settings.get("shop_signature"),
-  ]);
+  // Memoize the whole thing per-shop. Setup state changes rarely (once,
+  // basically — when the owner completes the 5-step checklist). 30s TTL
+  // is short enough that a write that flips a step is visible within
+  // half a minute even without explicit invalidation; the writes in
+  // models/employees, models/menuItems, models/salesSessions, and
+  // models/settings call invalidate() to bust it immediately.
+  return memoize(`setupStatus:shop:${currentShopId()}`, 30_000, async () => {
+    const [shopName, hasMenu, hasEmployees, hasSales, sig] = await Promise.all([
+      Settings.get("shop_name"),
+      tableHasRows("menu_items"),
+      tableHasRows("employees"),
+      tableHasRows("sales_sessions"),
+      Settings.get("shop_signature"),
+    ]);
 
   const hasShopName = !!shopName && shopName.trim().length > 0 && shopName !== "Coffee Shop";
   const hasSignature = !!sig && sig.length > 0;
@@ -55,11 +61,12 @@ export async function getStatus(): Promise<SetupStatus> {
     { key: "signature", done: hasSignature, href: "/settings" },
   ];
 
-  const doneCount = steps.filter((s) => s.done).length;
-  return {
-    complete: doneCount === steps.length,
-    doneCount,
-    totalCount: steps.length,
-    steps,
-  };
+    const doneCount = steps.filter((s) => s.done).length;
+    return {
+      complete: doneCount === steps.length,
+      doneCount,
+      totalCount: steps.length,
+      steps,
+    };
+  });
 }

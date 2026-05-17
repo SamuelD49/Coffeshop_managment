@@ -19,6 +19,12 @@ function bustReportsCache(): void {
   invalidate(`reports:shop:${currentShopId()}:`);
 }
 
+// First sale flips the "Log your first sale" step in the onboarding
+// checklist. Bust setupStatus on create so the strip updates.
+function bustSetupStatus(): void {
+  invalidate(`setupStatus:shop:${currentShopId()}`);
+}
+
 export async function create(input: CreateInput): Promise<SalesSession> {
   const now = nowIso();
   const r = await getDb()
@@ -34,6 +40,7 @@ export async function create(input: CreateInput): Promise<SalesSession> {
     .returning("id")
     .executeTakeFirstOrThrow();
   bustReportsCache();
+  bustSetupStatus();
   return (await findById(r.id))!;
 }
 

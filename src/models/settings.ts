@@ -1,5 +1,6 @@
 import { getDb, nowIso } from "../lib/kysely";
 import { currentShopId } from "../lib/shopContext";
+import { invalidate } from "../lib/cache";
 
 // Per-shop cache: each shop's settings are loaded on first access and held
 // for CACHE_TTL_MS. A Settings.set() invalidates only its own shop's cache.
@@ -40,6 +41,11 @@ export async function set(key: string, value: string): Promise<void> {
     .onConflict((oc) => oc.columns(["shop_id", "key"]).doUpdateSet({ value, updated_at: now }))
     .execute();
   invalidateShop(shopId);
+  // Two settings drive the onboarding checklist — shop_name (off the
+  // default placeholder) and shop_signature. Bust setup cache on either.
+  if (key === "shop_name" || key === "shop_signature") {
+    invalidate(`setupStatus:shop:${shopId}`);
+  }
 }
 
 export async function getAll(): Promise<Record<string, string>> {

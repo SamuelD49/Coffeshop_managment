@@ -1,5 +1,6 @@
 import { getDb, nowIso } from "../lib/kysely";
 import { currentShopId } from "../lib/shopContext";
+import { invalidate } from "../lib/cache";
 import type { EmployeesTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -49,6 +50,8 @@ export async function create(input: CreateInput): Promise<Employee> {
     })
     .returning("id")
     .executeTakeFirstOrThrow();
+  // First employee added → "Add an employee" step ticks done.
+  invalidate(`setupStatus:shop:${currentShopId()}`);
   return (await findById(result.id))!;
 }
 

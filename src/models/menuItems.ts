@@ -1,8 +1,17 @@
 import { getDb, nowIso } from "../lib/kysely";
 import { currentShopId } from "../lib/shopContext";
+import { memoize, invalidate } from "../lib/cache";
 import type { MenuItemsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 import { sql } from "kysely";
+
+function bustMenuCaches(): void {
+  const shopId = currentShopId();
+  invalidate(`menu:shop:${shopId}:`);
+  // Setup status checks "shop has menu items" — bust it too so the
+  // checklist updates when the first menu item lands.
+  invalidate(`setupStatus:shop:${shopId}`);
+}
 
 export type MenuItem = Selectable<MenuItemsTable>;
 
@@ -24,6 +33,7 @@ export async function create(input: CreateInput): Promise<MenuItem> {
     })
     .returning("id")
     .executeTakeFirstOrThrow();
+  bustMenuCaches();
   return (await findById(Number(r.id)))!;
 }
 
@@ -38,22 +48,28 @@ export async function findById(id: number): Promise<MenuItem | null> {
 }
 
 export async function listAll(): Promise<MenuItem[]> {
-  return await getDb()
-    .selectFrom("menu_items")
-    .selectAll()
-    .where("shop_id", "=", currentShopId())
-    .orderBy("name")
-    .execute();
+  const shopId = currentShopId();
+  return memoize(`menu:shop:${shopId}:listAll`, 30_000, async () => {
+    return await getDb()
+      .selectFrom("menu_items")
+      .selectAll()
+      .where("shop_id", "=", shopId)
+      .orderBy("name")
+      .execute();
+  });
 }
 
 export async function listActive(): Promise<MenuItem[]> {
-  return await getDb()
-    .selectFrom("menu_items")
-    .selectAll()
-    .where("shop_id", "=", currentShopId())
-    .where("is_active", "=", 1)
-    .orderBy("name")
-    .execute();
+  const shopId = currentShopId();
+  return memoize(`menu:shop:${shopId}:listActive`, 30_000, async () => {
+    return await getDb()
+      .selectFrom("menu_items")
+      .selectAll()
+      .where("shop_id", "=", shopId)
+      .where("is_active", "=", 1)
+      .orderBy("name")
+      .execute();
+  });
 }
 
 // Active menu items ordered by lifetime qty sold (descending). The join
@@ -87,6 +103,7 @@ export async function update(id: number, input: UpdateInput): Promise<void> {
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustMenuCaches();
 }
 
 export async function setActive(id: number, active: boolean): Promise<void> {
@@ -96,6 +113,7 @@ export async function setActive(id: number, active: boolean): Promise<void> {
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustMenuCaches();
 }
 
 export async function remove(id: number): Promise<void> {
