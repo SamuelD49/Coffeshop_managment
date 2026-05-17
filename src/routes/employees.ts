@@ -3,6 +3,7 @@ import * as Ctrl from "../controllers/employeesController";
 import { requireAuth } from "../middleware/requireAuth";
 import { requireOwner } from "../middleware/requireOwner";
 import { upload } from "../lib/uploads";
+import { csrfMultipart } from "../lib/csrf";
 
 export const employeesRouter = Router();
 
@@ -21,14 +22,14 @@ employeesRouter.post("/:id/employment", Ctrl.updateEmployment);
 employeesRouter.post("/:id/active",     Ctrl.toggleActive);
 
 // Documents (employee)
-employeesRouter.post("/:id/documents",          upload.single("file"), Ctrl.uploadDocument);
+employeesRouter.post("/:id/documents",          upload.single("file"), csrfMultipart, Ctrl.uploadDocument);
 employeesRouter.post("/:id/documents/:attId/delete", Ctrl.deleteDocument);
 
 // Guarantors
 employeesRouter.post("/:id/guarantors",                       Ctrl.addGuarantor);
 employeesRouter.post("/:id/guarantors/:gid",                  Ctrl.updateGuarantor);
 employeesRouter.post("/:id/guarantors/:gid/delete",           Ctrl.removeGuarantor);
-employeesRouter.post("/:id/guarantors/:gid/documents",        upload.single("file"), Ctrl.uploadGuarantorDocument);
+employeesRouter.post("/:id/guarantors/:gid/documents",        upload.single("file"), csrfMultipart, Ctrl.uploadGuarantorDocument);
 employeesRouter.post("/:id/guarantors/:gid/documents/:attId/delete", Ctrl.deleteGuarantorDocument);
 
 // File serving (auth-gated)

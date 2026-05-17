@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { invalidate } from "../lib/cache";
 import type { SalesSessionsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -26,6 +27,7 @@ export async function create(input: CreateInput): Promise<SalesSession> {
     })
     .returning("id")
     .executeTakeFirstOrThrow();
+  invalidate("reports:");
   return (await findById(r.id))!;
 }
 
@@ -53,6 +55,7 @@ export async function updateHeader(id: number, input: HeaderInput): Promise<void
     .set({ ...input, updated_at: nowIso() })
     .where("id", "=", id)
     .execute();
+  invalidate("reports:");
 }
 
 export async function close(id: number): Promise<void> {
@@ -61,6 +64,7 @@ export async function close(id: number): Promise<void> {
     .set({ status: "closed", updated_at: nowIso() })
     .where("id", "=", id)
     .execute();
+  invalidate("reports:");
 }
 
 export async function reopen(id: number): Promise<void> {
@@ -69,11 +73,13 @@ export async function reopen(id: number): Promise<void> {
     .set({ status: "open", updated_at: nowIso() })
     .where("id", "=", id)
     .execute();
+  invalidate("reports:");
 }
 
 // Deletes a session and (via ON DELETE CASCADE in the schema) all its sale_line_items.
 export async function remove(id: number): Promise<void> {
   await getDb().deleteFrom("sales_sessions").where("id", "=", id).execute();
+  invalidate("reports:");
 }
 
 export async function listAll(filters: { from?: string; to?: string; employeeId?: number; status?: "open" | "closed" } = {}): Promise<SalesSession[]> {

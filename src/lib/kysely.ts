@@ -59,6 +59,13 @@ export async function closeDb(): Promise<void> {
   } catch {
     /* settings module may not have loaded yet — fine */
   }
+  // Same for the reports cache.
+  try {
+    const { invalidate } = await import("./cache");
+    invalidate("");
+  } catch {
+    /* not loaded yet — fine */
+  }
 }
 
 // Format matches SQLite's datetime('now') output ("YYYY-MM-DD HH:MM:SS")

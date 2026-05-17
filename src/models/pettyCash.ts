@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { invalidate } from "../lib/cache";
 import type { PettyCashEntriesTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -20,6 +21,7 @@ export async function create(input: CreateInput): Promise<PettyEntry> {
     .values({ ...input, created_at: now, updated_at: now })
     .returning("id")
     .executeTakeFirstOrThrow();
+  invalidate("reports:");
   return (await findById(r.id))!;
 }
 
@@ -34,10 +36,12 @@ export async function update(id: number, input: UpdateInput): Promise<void> {
     .set({ ...input, updated_at: nowIso() })
     .where("id", "=", id)
     .execute();
+  invalidate("reports:");
 }
 
 export async function remove(id: number): Promise<void> {
   await getDb().deleteFrom("petty_cash_entries").where("id", "=", id).execute();
+  invalidate("reports:");
 }
 
 // Returns rows newest-first, but with running_balance computed chronologically

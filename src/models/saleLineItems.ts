@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { invalidate } from "../lib/cache";
 import type { SaleLineItemsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -30,6 +31,7 @@ export async function upsert(sessionId: number, menuItemId: number, qty: number)
   if (qty <= 0) {
     if (existing) {
       await db.deleteFrom("sale_line_items").where("id", "=", existing.id).execute();
+      invalidate("reports:");
     }
     return null;
   }
@@ -48,6 +50,7 @@ export async function upsert(sessionId: number, menuItemId: number, qty: number)
       .set({ qty, total, updated_at: now })
       .where("id", "=", existing.id)
       .execute();
+    invalidate("reports:");
     return (await findForMenuItem(sessionId, menuItemId))!;
   } else {
     const r = await db
@@ -63,6 +66,7 @@ export async function upsert(sessionId: number, menuItemId: number, qty: number)
       })
       .returning("id")
       .executeTakeFirstOrThrow();
+    invalidate("reports:");
     return await db.selectFrom("sale_line_items").selectAll().where("id", "=", r.id).executeTakeFirstOrThrow();
   }
 }
@@ -73,8 +77,10 @@ export async function updateRemark(id: number, remark: string | null): Promise<v
     .set({ remark, updated_at: nowIso() })
     .where("id", "=", id)
     .execute();
+  // remark doesn't affect aggregates — no cache invalidation needed
 }
 
 export async function removeForSession(sessionId: number): Promise<void> {
   await getDb().deleteFrom("sale_line_items").where("sales_session_id", "=", sessionId).execute();
+  invalidate("reports:");
 }

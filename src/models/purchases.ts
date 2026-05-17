@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { invalidate } from "../lib/cache";
 import type { PurchaseRequisitionsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -15,6 +16,7 @@ export async function create(input: CreateInput): Promise<Purchase> {
     .values({ ...input, total, created_at: now, updated_at: now })
     .returning("id")
     .executeTakeFirstOrThrow();
+  invalidate("reports:");
   return (await findById(r.id))!;
 }
 
@@ -30,10 +32,12 @@ export async function update(id: number, input: UpdateInput): Promise<void> {
     .set({ ...input, total, updated_at: nowIso() })
     .where("id", "=", id)
     .execute();
+  invalidate("reports:");
 }
 
 export async function remove(id: number): Promise<void> {
   await getDb().deleteFrom("purchase_requisitions").where("id", "=", id).execute();
+  invalidate("reports:");
 }
 
 export async function listAll(filters: { from?: string; to?: string } = {}): Promise<Purchase[]> {
