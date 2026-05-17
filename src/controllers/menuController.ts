@@ -81,6 +81,23 @@ export async function toggleActive(req: Request, res: Response) {
   const next = !item.is_active;
   await Menu.setActive(id, next);
   await writeAudit({ actor_id: actor(req), action: next ? "activate_menu_item" : "deactivate_menu_item", entity: "menu_items", entity_id: id });
-  pushFlash(req, "success", res.locals.t(next ? "flash.menu.activated" : "flash.menu.deactivated", { name: item.name }));
+  pushFlash(req, "success", next ? `${item.name} activated` : `${item.name} deactivated`);
+  res.redirect("/menu");
+}
+
+export async function destroy(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  const item = await Menu.findById(id);
+  if (!item) return res.status(404).render("errors/404");
+  
+  try {
+    await Menu.destroy(id);
+    await writeAudit({ actor_id: actor(req), action: "delete_menu_item", entity: "menu_items", entity_id: id });
+    pushFlash(req, "success", `${item.name} deleted`);
+  } catch (err: any) {
+    // If it fails (e.g., due to a foreign key constraint from sales), show an error
+    pushFlash(req, "error", `Cannot delete ${item.name} because it has been used in sales. Try deactivating it instead.`);
+  }
+  
   res.redirect("/menu");
 }

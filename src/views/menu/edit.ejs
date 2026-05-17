@@ -24,10 +24,22 @@
         </label>
         <%- include('_color_picker', { palette: locals.palette, selected: item.token_color }) %>
       </div>
-      <div class="px-gutter-lg pb-gutter-lg sticky-actions">
-        <a href="/menu" class="btn-secondary">Cancel</a>
-        <button class="btn-primary">Save changes</button>
+      <div class="px-gutter-lg pb-gutter-lg sticky-actions flex justify-between items-center">
+        <div>
+          <button form="delete-form" type="submit" class="btn-danger">Delete</button>
+        </div>
+        <div class="flex gap-gutter">
+          <a href="/menu" class="btn-secondary">Cancel</a>
+          <button class="btn-primary">Save changes</button>
+        </div>
       </div>
+    </form>
+
+    <form id="delete-form" method="POST" action="/menu/<%= item.id %>/delete" 
+          data-confirm="Are you sure you want to permanently delete this menu item?" 
+          data-confirm-label="Delete" 
+          data-confirm-variant="danger">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
     </form>
   </main>
 </body>

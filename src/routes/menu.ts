@@ -12,3 +12,4 @@ menuRouter.post("/",           Ctrl.create);
 menuRouter.get("/:id/edit",    Ctrl.showEdit);
 menuRouter.post("/:id",        Ctrl.update);
 menuRouter.post("/:id/active", Ctrl.toggleActive);
+menuRouter.post("/:id/delete", Ctrl.destroy);

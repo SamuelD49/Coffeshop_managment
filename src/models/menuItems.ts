@@ -119,3 +119,12 @@ export async function setActive(id: number, active: boolean): Promise<void> {
 export async function remove(id: number): Promise<void> {
   await setActive(id, false);
 }
+
+export async function destroy(id: number): Promise<void> {
+  await getDb()
+    .deleteFrom("menu_items")
+    .where("shop_id", "=", currentShopId())
+    .where("id", "=", id)
+    .execute();
+  bustMenuCaches();
+}
