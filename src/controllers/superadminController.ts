@@ -13,8 +13,13 @@ export function showLogin(req: Request, res: Response) {
 
 export function submitLogin(req: Request, res: Response) {
   const { password } = req.body as Record<string, string>;
-  const adminPass = process.env.SUPERADMIN_PASSWORD || "admin123";
+  const adminPass = process.env.SUPERADMIN_PASSWORD;
   
+  if (!adminPass) {
+    pushFlash(req, "error", "SuperAdmin access is not configured on the server.");
+    return res.redirect("/superadmin/login");
+  }
+
   if (password === adminPass) {
     req.session.isSuperAdmin = true;
     pushFlash(req, "success", "Welcome, SaaS Super Admin!");
