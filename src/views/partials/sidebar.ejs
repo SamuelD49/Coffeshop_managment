@@ -2,7 +2,7 @@
 
 <%- include('./mobile-nav', { shopName, currentRole, currentUser, csrfToken, currentPath, pageTitle: typeof pageTitle !== 'undefined' ? pageTitle : '' }) %>
 
-<aside id="app-sidebar" class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex-col hidden md:flex" aria-label="Main navigation">
+<aside id="app-sidebar" class="w-60 min-h-screen px-gutter-lg pt-air pb-air border-r border-rule-strong flex-col hidden md:flex" aria-label="Main navigation" hx-boost="true">
   <a href="/" class="wordmark text-[28px] leading-[32px] mb-air block">
     <%= shopName %>
   </a>
