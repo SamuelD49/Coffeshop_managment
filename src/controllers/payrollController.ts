@@ -20,16 +20,17 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export function list(_req: Request, res: Response) {
-  const runs = Runs.listAll().map(r => {
-    const entries = Entries.listForRun(r.id);
+export async function list(_req: Request, res: Response) {
+  const rawRuns = await Runs.listAll();
+  const runs = await Promise.all(rawRuns.map(async r => {
+    const entries = await Entries.listForRun(r.id);
     return {
       ...r,
       month_name: MONTH_NAMES[r.month - 1] || `Month ${r.month}`,
       employee_count: entries.length,
       total_net: sumColumn(entries, "net_payment"),
     };
-  });
+  }));
   res.render("payroll/list", { runs });
 }
 
@@ -66,12 +67,12 @@ export async function create(req: Request, res: Response) {
     pushFlash(req, "error", "Pick a valid year and month");
     return res.redirect("/payroll/new");
   }
-  if (Runs.findByYearMonth(year, month)) {
+  if (await Runs.findByYearMonth(year, month)) {
     pushFlash(req, "error", "A payroll run for that month already exists");
     return res.redirect("/payroll/new");
   }
 
-  const run = Runs.create({ year, month, prepared_by: actor(req) });
+  const run = await Runs.create({ year, month, prepared_by: actor(req) });
   await writeAudit({ actor_id: actor(req), action: "create_payroll_run", entity: "payroll_runs", entity_id: run.id });
 
   // Auto-populate entries for active employees
@@ -83,7 +84,7 @@ export async function create(req: Request, res: Response) {
   const employees = await Employees.listAll({ activeOnly: true });
   for (const e of employees) {
     if (requireComplete && !(await calculateCompleteness(e.id)).complete) continue;
-    Entries.createFromEmployee({
+    await Entries.createFromEmployee({
       run_id: run.id,
       employee_id: e.id,
       basic_salary: e.basic_salary,
@@ -99,9 +100,9 @@ export async function create(req: Request, res: Response) {
 
 export async function run(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const r = Runs.findById(id);
+  const r = await Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
-  const entries = Entries.listForRun(id);
+  const entries = await Entries.listForRun(id);
   const totals = {
     gross_salary: sumColumn(entries, "gross_salary"),
     pension_employer_amount: sumColumn(entries, "pension_employer_amount"),
@@ -121,17 +122,17 @@ export async function run(req: Request, res: Response) {
 export async function updateEntry(req: Request, res: Response) {
   const runId = Number(req.params.id);
   const entryId = Number(req.params.entryId);
-  const r = Runs.findById(runId);
+  const r = await Runs.findById(runId);
   if (!r) return res.status(404).render("errors/404");
   if (r.status === "approved") {
     pushFlash(req, "error", "This run is approved and locked");
     return res.redirect(`/payroll/${runId}`);
   }
-  const entry = Entries.findById(entryId);
+  const entry = await Entries.findById(entryId);
   if (!entry || entry.payroll_run_id !== runId) return res.status(404).render("errors/404");
 
   const stdDays = await Settings.getNumber("standard_days_in_month");
-  Entries.update(entryId, {
+  await Entries.update(entryId, {
     days_worked: Number(req.body.days_worked || 0),
     income_tax: parseMajor(req.body.income_tax),
     advance_salary: parseMajor(req.body.advance_salary),
@@ -146,9 +147,9 @@ export async function updateEntry(req: Request, res: Response) {
 
 export async function approve(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const r = Runs.findById(id);
+  const r = await Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
-  Runs.approve(id, actor(req));
+  await Runs.approve(id, actor(req));
   await writeAudit({ actor_id: actor(req), action: "approve_payroll_run", entity: "payroll_runs", entity_id: id });
   pushFlash(req, "success", "Payroll approved and locked");
   res.redirect(`/payroll/${id}`);
@@ -156,9 +157,9 @@ export async function approve(req: Request, res: Response) {
 
 export async function revert(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const r = Runs.findById(id);
+  const r = await Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
-  Runs.revert(id);
+  await Runs.revert(id);
   await writeAudit({ actor_id: actor(req), action: "revert_payroll_run", entity: "payroll_runs", entity_id: id });
   pushFlash(req, "success", "Payroll reopened for edits");
   res.redirect(`/payroll/${id}`);
@@ -166,10 +167,10 @@ export async function revert(req: Request, res: Response) {
 
 export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const r = Runs.findById(id);
+  const r = await Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
   const label = `${r.year}-${String(r.month).padStart(2, "0")}`;
-  Runs.remove(id);
+  await Runs.remove(id);
   await writeAudit({ actor_id: actor(req), action: "delete_payroll_run", entity: "payroll_runs", entity_id: id });
   pushFlash(req, "success", `Payroll for ${label} deleted`);
   res.redirect("/payroll");
@@ -177,9 +178,9 @@ export async function remove(req: Request, res: Response) {
 
 export async function print(req: Request, res: Response) {
   const id = Number(req.params.id);
-  const r = Runs.findById(id);
+  const r = await Runs.findById(id);
   if (!r) return res.status(404).render("errors/404");
-  const entries = Entries.listForRun(id);
+  const entries = await Entries.listForRun(id);
   const totals = {
     gross_salary: sumColumn(entries, "gross_salary"),
     pension_employer_amount: sumColumn(entries, "pension_employer_amount"),

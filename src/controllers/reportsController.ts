@@ -52,15 +52,16 @@ async function loadTabData(tab: Tab, range: { from: string; to: string }) {
     };
   }
   // payroll
-  const runs = Runs.listAll().map(r => {
-    const entries = Entries.listForRun(r.id);
+  const rawRuns = await Runs.listAll();
+  const runs = await Promise.all(rawRuns.map(async r => {
+    const entries = await Entries.listForRun(r.id);
     return {
       ...r,
       employee_count: entries.length,
       total_gross: entries.reduce((s, e) => s + e.gross_salary, 0),
       total_net: entries.reduce((s, e) => s + e.net_payment, 0),
     };
-  });
+  }));
   return { runs };
 }
 
@@ -146,8 +147,9 @@ export async function exportCsv(req: Request, res: Response) {
     }
   } else if (tab === "payroll") {
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const rows = Runs.listAll().map(r => {
-      const entries = Entries.listForRun(r.id);
+    const rawRuns = await Runs.listAll();
+    const rows = await Promise.all(rawRuns.map(async r => {
+      const entries = await Entries.listForRun(r.id);
       return {
         period: `${monthNames[r.month - 1]} ${r.year}`,
         status: r.status,
@@ -155,7 +157,7 @@ export async function exportCsv(req: Request, res: Response) {
         gross: (entries.reduce((s, e) => s + e.gross_salary, 0) / 100).toFixed(2),
         net:   (entries.reduce((s, e) => s + e.net_payment,  0) / 100).toFixed(2),
       };
-    });
+    }));
     csv = toCsv(["period", "status", "employees", "gross", "net"], rows);
     filename = `payroll-runs.csv`;
   }

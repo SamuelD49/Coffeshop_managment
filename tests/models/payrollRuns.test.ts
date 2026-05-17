@@ -21,7 +21,7 @@ afterAll(async () => {
 describe("PayrollRuns", () => {
   it("create() inserts a draft run", async () => {
     const owner = await Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
-    const r = Runs.create({ year: 2026, month: 5, prepared_by: owner.id });
+    const r = await Runs.create({ year: 2026, month: 5, prepared_by: owner.id });
     expect(r.id).toBeGreaterThan(0);
     expect(r.status).toBe("draft");
     expect(r.prepared_by).toBe(owner.id);
@@ -30,19 +30,19 @@ describe("PayrollRuns", () => {
 
   it("unique (year, month) constraint", async () => {
     const o = await Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
-    Runs.create({ year: 2026, month: 5, prepared_by: o.id });
-    expect(() => Runs.create({ year: 2026, month: 5, prepared_by: o.id })).toThrow();
+    await Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    await expect(Runs.create({ year: 2026, month: 5, prepared_by: o.id })).rejects.toThrow();
   });
 
   it("findById(), findByYearMonth(), listAll() ordering", async () => {
     const o = await Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
-    const a = Runs.create({ year: 2026, month: 3, prepared_by: o.id });
-    const b = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
-    Runs.create({ year: 2025, month: 12, prepared_by: o.id });
-    expect(Runs.findById(a.id)?.month).toBe(3);
-    expect(Runs.findByYearMonth(2026, 5)?.id).toBe(b.id);
-    expect(Runs.findByYearMonth(2027, 1)).toBeNull();
-    const list = Runs.listAll();
+    const a = await Runs.create({ year: 2026, month: 3, prepared_by: o.id });
+    const b = await Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    await Runs.create({ year: 2025, month: 12, prepared_by: o.id });
+    expect((await Runs.findById(a.id))?.month).toBe(3);
+    expect((await Runs.findByYearMonth(2026, 5))?.id).toBe(b.id);
+    expect(await Runs.findByYearMonth(2027, 1)).toBeNull();
+    const list = await Runs.listAll();
     expect(list[0].year).toBe(2026);
     expect(list[0].month).toBe(5); // newest first
     expect(list[list.length - 1].year).toBe(2025);
@@ -50,19 +50,19 @@ describe("PayrollRuns", () => {
 
   it("approve() sets status + approved_by", async () => {
     const o = await Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
-    const r = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
-    Runs.approve(r.id, o.id);
-    const got = Runs.findById(r.id);
+    const r = await Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    await Runs.approve(r.id, o.id);
+    const got = await Runs.findById(r.id);
     expect(got?.status).toBe("approved");
     expect(got?.approved_by).toBe(o.id);
   });
 
   it("revert() flips an approved run back to draft", async () => {
     const o = await Employees.create({ full_name: "O", username: "o", password_hash: "h", role: "owner" });
-    const r = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
-    Runs.approve(r.id, o.id);
-    Runs.revert(r.id);
-    expect(Runs.findById(r.id)?.status).toBe("draft");
-    expect(Runs.findById(r.id)?.approved_by).toBeNull();
+    const r = await Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+    await Runs.approve(r.id, o.id);
+    await Runs.revert(r.id);
+    expect((await Runs.findById(r.id))?.status).toBe("draft");
+    expect((await Runs.findById(r.id))?.approved_by).toBeNull();
   });
 });

@@ -23,14 +23,14 @@ async function seed() {
   const o = await Employees.create({ full_name: "Owner", username: "o", password_hash: "h", role: "owner" });
   const e = await Employees.create({ full_name: "Almaz", username: "a", password_hash: "h", role: "employee" });
   await Employees.updateEmployment(e.id, { position: "Barista", hire_date: "2025-06-01", basic_salary: 500000, role: "employee", is_active: true, username: "a" });
-  const run = Runs.create({ year: 2026, month: 5, prepared_by: o.id });
+  const run = await Runs.create({ year: 2026, month: 5, prepared_by: o.id });
   return { o, e, run };
 }
 
 describe("PayrollEntries", () => {
   it("createFromEmployee() snapshots rates and computes totals", async () => {
     const { e, run } = await seed();
-    const entry = Entries.createFromEmployee({
+    const entry = await Entries.createFromEmployee({
       run_id: run.id,
       employee_id: e.id,
       basic_salary: 500000,
@@ -52,15 +52,15 @@ describe("PayrollEntries", () => {
 
   it("unique (run, employee) constraint", async () => {
     const { e, run } = await seed();
-    Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 1, days_worked: 1, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
-    expect(() => Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 1, days_worked: 1, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 })).toThrow();
+    await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 1, days_worked: 1, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
+    await expect(Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 1, days_worked: 1, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 })).rejects.toThrow();
   });
 
   it("update() re-runs the calculation with new inputs", async () => {
     const { e, run } = await seed();
-    const entry = Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
-    Entries.update(entry.id, { days_worked: 20, income_tax: 30000, advance_salary: 50000 });
-    const got = Entries.findById(entry.id);
+    const entry = await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
+    await Entries.update(entry.id, { days_worked: 20, income_tax: 30000, advance_salary: 50000 });
+    const got = await Entries.findById(entry.id);
     expect(got?.days_worked).toBe(20);
     // gross = 500000 * 20/30 = 333333
     expect(got?.gross_salary).toBe(333333);
@@ -74,16 +74,16 @@ describe("PayrollEntries", () => {
 
   it("listForRun() returns entries with employee full_name", async () => {
     const { e, run } = await seed();
-    Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
-    const list = Entries.listForRun(run.id);
+    await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
+    const list = await Entries.listForRun(run.id);
     expect(list).toHaveLength(1);
     expect(list[0].full_name).toBe("Almaz");
   });
 
   it("listForEmployee() returns past entries with run year/month", async () => {
     const { e, run } = await seed();
-    Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
-    const list = Entries.listForEmployee(e.id);
+    await Entries.createFromEmployee({ run_id: run.id, employee_id: e.id, basic_salary: 500000, days_worked: 30, standard_days_in_month: 30, pension_employer_pct: 11, pension_employee_pct: 7 });
+    const list = await Entries.listForEmployee(e.id);
     expect(list).toHaveLength(1);
     expect(list[0].year).toBe(2026);
     expect(list[0].month).toBe(5);

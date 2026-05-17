@@ -1,48 +1,62 @@
-import { _legacySqliteDb } from "../lib/db";
+import { getDb, nowIso } from "../lib/kysely";
+import type { PayrollRunsTable } from "../lib/db-types";
+import type { Selectable } from "kysely";
 
-export type PayrollRun = {
-  id: number;
-  year: number;
-  month: number;
-  status: "draft" | "approved";
-  prepared_by: number | null;
-  approved_by: number | null;
-  created_at: string;
-  updated_at: string;
-};
+export type PayrollRun = Selectable<PayrollRunsTable>;
 
 export type CreateInput = { year: number; month: number; prepared_by: number | null };
 
-export function create(input: CreateInput): PayrollRun {
-  const r = _legacySqliteDb().prepare(`
-    INSERT INTO payroll_runs (year, month, prepared_by) VALUES (@year, @month, @prepared_by)
-  `).run(input);
-  return findById(Number(r.lastInsertRowid))!;
+export async function create(input: CreateInput): Promise<PayrollRun> {
+  const now = nowIso();
+  const r = await getDb()
+    .insertInto("payroll_runs")
+    .values({ ...input, created_at: now, updated_at: now })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return (await findById(r.id))!;
 }
 
-export function findById(id: number): PayrollRun | null {
-  const r = _legacySqliteDb().prepare("SELECT * FROM payroll_runs WHERE id = ?").get(id) as PayrollRun | undefined;
+export async function findById(id: number): Promise<PayrollRun | null> {
+  const r = await getDb().selectFrom("payroll_runs").selectAll().where("id", "=", id).executeTakeFirst();
   return r ?? null;
 }
 
-export function findByYearMonth(year: number, month: number): PayrollRun | null {
-  const r = _legacySqliteDb().prepare("SELECT * FROM payroll_runs WHERE year = ? AND month = ?").get(year, month) as PayrollRun | undefined;
+export async function findByYearMonth(year: number, month: number): Promise<PayrollRun | null> {
+  const r = await getDb()
+    .selectFrom("payroll_runs")
+    .selectAll()
+    .where("year", "=", year)
+    .where("month", "=", month)
+    .executeTakeFirst();
   return r ?? null;
 }
 
-export function listAll(): PayrollRun[] {
-  return _legacySqliteDb().prepare("SELECT * FROM payroll_runs ORDER BY year DESC, month DESC").all() as PayrollRun[];
+export async function listAll(): Promise<PayrollRun[]> {
+  return await getDb()
+    .selectFrom("payroll_runs")
+    .selectAll()
+    .orderBy("year", "desc")
+    .orderBy("month", "desc")
+    .execute();
 }
 
-export function approve(id: number, approverId: number): void {
-  _legacySqliteDb().prepare("UPDATE payroll_runs SET status = 'approved', approved_by = ?, updated_at = datetime('now') WHERE id = ?").run(approverId, id);
+export async function approve(id: number, approverId: number): Promise<void> {
+  await getDb()
+    .updateTable("payroll_runs")
+    .set({ status: "approved", approved_by: approverId, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
-export function revert(id: number): void {
-  _legacySqliteDb().prepare("UPDATE payroll_runs SET status = 'draft', approved_by = NULL, updated_at = datetime('now') WHERE id = ?").run(id);
+export async function revert(id: number): Promise<void> {
+  await getDb()
+    .updateTable("payroll_runs")
+    .set({ status: "draft", approved_by: null, updated_at: nowIso() })
+    .where("id", "=", id)
+    .execute();
 }
 
 // Deletes a run and (via ON DELETE CASCADE in the schema) all its entries.
-export function remove(id: number): void {
-  _legacySqliteDb().prepare("DELETE FROM payroll_runs WHERE id = ?").run(id);
+export async function remove(id: number): Promise<void> {
+  await getDb().deleteFrom("payroll_runs").where("id", "=", id).execute();
 }
