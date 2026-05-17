@@ -1,6 +1,6 @@
 import { resolve, join } from "path";
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from "fs";
-import { _legacySqliteDb } from "./db";
+import { currentDriver, sqliteHandle, getDb } from "./db";
 
 function backupDir(): string {
   const dir = resolve(process.cwd(), process.env.BACKUP_DIR ?? "./data/backups");
@@ -19,15 +19,26 @@ function timestamp(): string {
 }
 
 export async function runBackup(): Promise<string> {
+  if (currentDriver() === "supabase") {
+    // Supabase handles PITR + daily snapshots server-side. The local nightly
+    // job is a no-op when running against Supabase; restore via the Supabase
+    // dashboard or `supabase db dump`.
+    return "(supabase-managed)";
+  }
+  // Force initialization so sqliteHandle() returns a non-null value.
+  getDb();
+  const handle = sqliteHandle();
+  if (!handle) throw new Error("sqlite handle unavailable for backup");
   const dir = backupDir();
   const filename = `shop-${timestamp()}.db`;
   const dest = join(dir, filename);
-  // better-sqlite3's backup() is a Promise-returning method that uses SQLite's online backup API.
-  await _legacySqliteDb().backup(dest);
+  // better-sqlite3's backup() uses SQLite's online backup API.
+  await handle.backup(dest);
   return dest;
 }
 
 export function pruneOldBackups(retainDays: number): string[] {
+  if (currentDriver() === "supabase") return [];
   const dir = backupDir();
   const cutoff = Date.now() - retainDays * 24 * 60 * 60 * 1000;
   const removed: string[] = [];
@@ -44,10 +55,11 @@ export function pruneOldBackups(retainDays: number): string[] {
 }
 
 export function listBackups(): Array<{ name: string; size: number; mtime: Date }> {
+  if (currentDriver() === "supabase") return [];
   const dir = backupDir();
   return readdirSync(dir)
-    .filter(f => /^shop-.*\.db$/.test(f))
-    .map(f => {
+    .filter((f) => /^shop-.*\.db$/.test(f))
+    .map((f) => {
       const st = statSync(join(dir, f));
       return { name: f, size: st.size, mtime: st.mtime };
     })

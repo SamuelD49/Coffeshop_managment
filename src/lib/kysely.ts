@@ -44,15 +44,6 @@ export function sqliteHandle(): Database.Database | null {
   return _sqliteHandle;
 }
 
-// Transitional scaffold: lets not-yet-converted models keep using the
-// better-sqlite3 sync API while we migrate file-by-file. Delete once
-// every model is on Kysely (end of Task 17).
-export function _legacySqliteDb(): Database.Database {
-  getDb();
-  if (!_sqliteHandle) throw new Error("_legacySqliteDb requires DB_DRIVER=sqlite during the transition");
-  return _sqliteHandle;
-}
-
 export async function closeDb(): Promise<void> {
   if (_db) {
     await _db.destroy();

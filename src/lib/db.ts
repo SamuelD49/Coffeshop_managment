@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { sql } from "kysely";
 import { Pool } from "pg";
-import { getDb, closeDb, currentDriver, sqliteHandle, nowIso, _legacySqliteDb } from "./kysely";
+import { getDb, closeDb, currentDriver, sqliteHandle, nowIso } from "./kysely";
 
-export { getDb, closeDb, currentDriver, sqliteHandle, nowIso, _legacySqliteDb };
+export { getDb, closeDb, currentDriver, sqliteHandle, nowIso };
 
 // Migration files contain multiple statements separated by `;`. Kysely's
 // `sql.raw` routes through `prepare()` which is single-statement on

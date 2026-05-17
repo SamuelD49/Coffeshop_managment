@@ -1,5 +1,6 @@
-import { _legacySqliteDb } from "./db";
+import { getDb } from "./kysely";
 import * as Settings from "../models/settings";
+import type { DB } from "./db-types";
 
 /**
  * First-run onboarding status — drives the "Getting started" checklist on
@@ -21,22 +22,17 @@ export type SetupStatus = {
   steps: SetupStep[];
 };
 
-function tableHasRows(table: string): boolean {
-  const row = _legacySqliteDb()
-    .prepare(`SELECT 1 FROM ${table} LIMIT 1`)
-    .get() as unknown;
+async function tableHasRows(table: keyof DB): Promise<boolean> {
+  const row = await getDb().selectFrom(table).select("id" as any).limit(1).executeTakeFirst();
   return !!row;
 }
 
 export async function getStatus(): Promise<SetupStatus> {
   const shopName = await Settings.get("shop_name");
   const hasShopName = !!shopName && shopName.trim().length > 0 && shopName !== "Coffee Shop";
-  const hasMenu = tableHasRows("menu_items");
-  // employees table always contains the owner. The meaningful check is
-  // "has at least one non-owner record" — but a single-owner shop is valid,
-  // so we treat "any employees row" as true. Owner counts.
-  const hasEmployees = tableHasRows("employees");
-  const hasSales = tableHasRows("sales_sessions");
+  const hasMenu = await tableHasRows("menu_items");
+  const hasEmployees = await tableHasRows("employees");
+  const hasSales = await tableHasRows("sales_sessions");
   const sig = await Settings.get("shop_signature");
   const hasSignature = !!sig && sig.length > 0;
 
