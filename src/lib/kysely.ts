@@ -48,11 +48,21 @@ export function getDb(): Kysely<DB> {
   } else {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is required when DB_DRIVER=supabase");
-    // On serverless we want a small pool because each cold function creates
-    // a fresh one. Long-running hosts can use a bigger pool by setting
-    // PG_POOL_MAX. Default 4 is safe for either case.
-    const max = Number(process.env.PG_POOL_MAX ?? 4);
-    _pgPool = new Pool({ connectionString: url, max });
+    // On serverless we want a *very* small pool because each cold function
+    // creates a fresh one. Vercel sets process.env.VERCEL=1 — detect that and
+    // cap at 2 connections (sufficient for our Promise.all fan-outs since
+    // pg supports queue-and-reuse within a Pool). Long-running hosts can
+    // override via PG_POOL_MAX.
+    const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const max = Number(process.env.PG_POOL_MAX ?? (isServerless ? 2 : 10));
+    _pgPool = new Pool({
+      connectionString: url,
+      max,
+      // Short idle timeout on serverless so abandoned connections get
+      // released back to Supabase's pooler quickly. Long-running hosts
+      // keep the pg default (10s).
+      idleTimeoutMillis: isServerless ? 1_000 : 10_000,
+    });
     _db = new Kysely<DB>({ dialect: new PostgresDialect({ pool: _pgPool }) });
   }
   return _db;

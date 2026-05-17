@@ -24,7 +24,14 @@ export function sessionMiddleware() {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is required when DB_DRIVER=supabase");
     const PgSessionStore = pgSession(session);
-    if (!_pgSessionPool) _pgSessionPool = new Pool({ connectionString: url, max: 4 });
+    if (!_pgSessionPool) {
+      const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+      _pgSessionPool = new Pool({
+        connectionString: url,
+        max: isServerless ? 1 : 4,
+        idleTimeoutMillis: isServerless ? 1_000 : 10_000,
+      });
+    }
     store = new PgSessionStore({
       pool: _pgSessionPool,
       createTableIfMissing: true,
