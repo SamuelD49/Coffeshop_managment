@@ -1,25 +1,39 @@
 import session from "express-session";
 import connectSqlite3 from "connect-sqlite3";
+import pgSession from "connect-pg-simple";
+import { Pool } from "pg";
 import { resolve } from "path";
 import { existsSync, mkdirSync } from "fs";
+import { currentDriver } from "./kysely";
 
-const SQLiteStore = connectSqlite3(session);
+let _pgSessionPool: Pool | null = null;
 
 export function sessionMiddleware() {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET is not set");
 
-  // The SQLite session store opens its file on first session use. The data/
-  // directory might not exist yet (e.g. after `rm -rf data`), so make sure
-  // it's there before the store tries to write to it.
-  const dataDir = resolve(process.cwd(), "data");
-  if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+  const driver = currentDriver();
+  let store: session.Store;
+
+  if (driver === "sqlite") {
+    const SQLiteStore = connectSqlite3(session);
+    const dataDir = resolve(process.cwd(), "data");
+    if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+    store = new SQLiteStore({ db: "sessions.db", dir: dataDir }) as session.Store;
+  } else {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL is required when DB_DRIVER=supabase");
+    const PgSessionStore = pgSession(session);
+    if (!_pgSessionPool) _pgSessionPool = new Pool({ connectionString: url, max: 4 });
+    store = new PgSessionStore({
+      pool: _pgSessionPool,
+      createTableIfMissing: true,
+      tableName: "user_sessions",
+    });
+  }
 
   return session({
-    store: new SQLiteStore({
-      db: "sessions.db",
-      dir: dataDir,
-    }) as session.Store,
+    store,
     secret,
     resave: false,
     saveUninitialized: false,
