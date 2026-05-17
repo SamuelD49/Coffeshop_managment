@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { currentShopId } from "../lib/shopContext";
 import type { AttachmentsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -7,8 +8,6 @@ export type OwnerType = "employee" | "guarantor";
 
 export type Attachment = Selectable<AttachmentsTable>;
 
-// `thumbnail` is optional so existing callers (and tests) keep working while
-// Task 19 wires up the storage rewrite that actually fills this column.
 export type AttachmentInput = {
   owner_type: OwnerType;
   owner_id: number;
@@ -25,6 +24,7 @@ export async function create(input: AttachmentInput): Promise<Attachment> {
   const result = await getDb()
     .insertInto("attachments")
     .values({
+      shop_id: currentShopId(),
       owner_type: input.owner_type,
       owner_id: input.owner_id,
       kind: input.kind,
@@ -45,6 +45,7 @@ export async function findById(id: number): Promise<Attachment | null> {
   const row = await getDb()
     .selectFrom("attachments")
     .selectAll()
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .executeTakeFirst();
   return row ?? null;
@@ -54,6 +55,7 @@ export async function findByOwner(ownerType: OwnerType, ownerId: number): Promis
   return await getDb()
     .selectFrom("attachments")
     .selectAll()
+    .where("shop_id", "=", currentShopId())
     .where("owner_type", "=", ownerType)
     .where("owner_id", "=", ownerId)
     .orderBy("uploaded_at")
@@ -65,6 +67,7 @@ export async function findOneByKind(ownerType: OwnerType, ownerId: number, kind:
   const row = await getDb()
     .selectFrom("attachments")
     .selectAll()
+    .where("shop_id", "=", currentShopId())
     .where("owner_type", "=", ownerType)
     .where("owner_id", "=", ownerId)
     .where("kind", "=", kind)
@@ -78,6 +81,7 @@ export async function findOneByKind(ownerType: OwnerType, ownerId: number, kind:
 export async function remove(id: number): Promise<void> {
   await getDb()
     .deleteFrom("attachments")
+    .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
 }
@@ -85,6 +89,7 @@ export async function remove(id: number): Promise<void> {
 export async function removeByOwner(ownerType: OwnerType, ownerId: number): Promise<void> {
   await getDb()
     .deleteFrom("attachments")
+    .where("shop_id", "=", currentShopId())
     .where("owner_type", "=", ownerType)
     .where("owner_id", "=", ownerId)
     .execute();
