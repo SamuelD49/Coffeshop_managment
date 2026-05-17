@@ -1,12 +1,23 @@
 import { Kysely, SqliteDialect, PostgresDialect } from "kysely";
-import Database from "better-sqlite3";
 import { Pool } from "pg";
 import { mkdirSync, existsSync } from "fs";
 import { resolve, join } from "path";
 import type { DB } from "./db-types";
 
+// better-sqlite3 is a native module. On serverless runtimes (Vercel,
+// Cloudflare, etc.) the prebuilt binary isn't shipped and importing it
+// at module load crashes the function. We only need it when DB_DRIVER=sqlite,
+// so use a typed `any` placeholder and `require()` it lazily inside getDb.
+// On a normal Node host with sqlite, this still resolves the same module.
+type SqliteDbHandle = {
+  pragma(pragma: string): unknown;
+  exec(sql: string): unknown;
+  backup(dest: string): Promise<unknown>;
+  close(): void;
+};
+
 let _db: Kysely<DB> | null = null;
-let _sqliteHandle: Database.Database | null = null;
+let _sqliteHandle: SqliteDbHandle | null = null;
 let _pgPool: Pool | null = null;
 
 export type Driver = "sqlite" | "supabase";
@@ -27,20 +38,27 @@ export function getDb(): Kysely<DB> {
     const dataDir = resolve(process.cwd(), "data");
     if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
     const dbPath = process.env.DB_PATH ?? join(dataDir, "shop.db");
-    _sqliteHandle = new Database(dbPath);
+    // Lazy require — see note at top.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Database = require("better-sqlite3");
+    _sqliteHandle = new Database(dbPath) as SqliteDbHandle;
     _sqliteHandle.pragma("journal_mode = WAL");
     _sqliteHandle.pragma("foreign_keys = ON");
-    _db = new Kysely<DB>({ dialect: new SqliteDialect({ database: _sqliteHandle }) });
+    _db = new Kysely<DB>({ dialect: new SqliteDialect({ database: _sqliteHandle as any }) });
   } else {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is required when DB_DRIVER=supabase");
-    _pgPool = new Pool({ connectionString: url, max: 10 });
+    // On serverless we want a small pool because each cold function creates
+    // a fresh one. Long-running hosts can use a bigger pool by setting
+    // PG_POOL_MAX. Default 4 is safe for either case.
+    const max = Number(process.env.PG_POOL_MAX ?? 4);
+    _pgPool = new Pool({ connectionString: url, max });
     _db = new Kysely<DB>({ dialect: new PostgresDialect({ pool: _pgPool }) });
   }
   return _db;
 }
 
-export function sqliteHandle(): Database.Database | null {
+export function sqliteHandle(): SqliteDbHandle | null {
   return _sqliteHandle;
 }
 
