@@ -269,8 +269,8 @@
         var elD = document.getElementById('totals-difference');
         if (elD) {
           elD.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
-          elD.classList.remove('text-leaf', 'text-crimson', 'text-smoke');
-          elD.classList.add(diff === 0 ? 'text-smoke' : (diff > 0 ? 'text-leaf' : 'text-crimson'));
+          elD.classList.remove('text-leaf', 'text-ember', 'text-crimson', 'text-smoke');
+          elD.classList.add(diff === 0 ? 'text-smoke' : (diff > 0 ? 'text-ember' : 'text-crimson'));
         }
       };
 

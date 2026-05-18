@@ -61,7 +61,7 @@
               <div class="list-card-secondary">
                 Counted <%= (s.total_amount / 100).toFixed(2) %>
                 <% if (s.difference !== 0) { %>
-                  · <span class="<%= s.difference > 0 ? 'text-leaf' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %></span>
+                  · <span class="<%= s.difference > 0 ? 'text-ember' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %></span>
                 <% } %>
                 · <%= s.status === 'open' ? 'open' : 'closed' %>
               </div>
@@ -105,7 +105,7 @@
                 <% } %>
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.subtotal / 100).toFixed(2) %></td>
                 <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.total_amount / 100).toFixed(2) %></td>
-                <td class="py-gutter-lg text-right font-mono text-[14px] <%= s.difference === 0 ? 'text-smoke' : (s.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
+                <td class="py-gutter-lg text-right font-mono text-[14px] <%= s.difference === 0 ? 'text-smoke' : (s.difference > 0 ? 'text-ember' : 'text-crimson') %>">
                   <%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %>
                 </td>
                 <% if (_showStatusCol) { %>
