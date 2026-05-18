@@ -11,7 +11,7 @@ INSERT INTO settings (key, value) VALUES
   ('pension_employer_default_pct', '11'),
   ('pension_employee_default_pct', '7'),
   ('standard_days_in_month', '30'),
-  ('require_complete_hr_before_payroll', 'true'),
+  ('require_complete_hr_before_payroll', 'false'),
   ('business_day_cutoff', '00:00'),
   ('timezone', 'Africa/Addis_Ababa'),
   ('backup_path', './data/backups/');

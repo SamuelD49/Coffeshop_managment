@@ -84,9 +84,10 @@ describe("Settings model", () => {
     await runInShop(shopId, async () => {
     expect(await Settings.getNumber("decimal_places")).toBe(2);
     expect(await Settings.getNumber("pension_employer_default_pct")).toBe(11);
-    expect(await Settings.getBool("require_complete_hr_before_payroll")).toBe(true);
-    await Settings.set("require_complete_hr_before_payroll", "false");
+    // Default is now `false` — owners opt in to strict HR-complete-before-payroll.
     expect(await Settings.getBool("require_complete_hr_before_payroll")).toBe(false);
+    await Settings.set("require_complete_hr_before_payroll", "true");
+    expect(await Settings.getBool("require_complete_hr_before_payroll")).toBe(true);
   
 
 
