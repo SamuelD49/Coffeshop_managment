@@ -155,7 +155,9 @@ export async function close(req: Request, res: Response) {
   await Sessions.close(id);
   await writeAudit({ actor_id: actor(req), action: "close_sales_session", entity: "sales_sessions", entity_id: id });
   pushFlash(req, "success", "Shift closed");
-  res.redirect(`/sales/${id}`);
+  // Owners typically close-and-move-on; landing back on the list shows
+  // the new closed status in context with the other entries.
+  res.redirect("/sales");
 }
 
 export async function reopen(req: Request, res: Response) {

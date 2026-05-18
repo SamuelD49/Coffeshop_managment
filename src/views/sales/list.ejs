@@ -29,16 +29,14 @@
           </select>
         </label>
       <% } %>
-      <% if (typeof hasCashiers !== 'undefined' && hasCashiers) { %>
-        <label class="block">
-          <span class="field-label">Status</span>
-          <select name="status" class="field-input">
-            <option value="">All</option>
-            <option value="open"   <%= filters.status === 'open'   ? 'selected' : '' %>>Open</option>
-            <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
-          </select>
-        </label>
-      <% } %>
+      <label class="block">
+        <span class="field-label">Status</span>
+        <select name="status" class="field-input">
+          <option value="">All</option>
+          <option value="open"   <%= filters.status === 'open'   ? 'selected' : '' %>>Open</option>
+          <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
+        </select>
+      </label>
       <button class="btn-secondary">Filter</button>
     </form>
 
@@ -65,9 +63,7 @@
                 <% if (s.difference !== 0) { %>
                   · <span class="<%= s.difference > 0 ? 'text-leaf' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %></span>
                 <% } %>
-                <% if ((typeof hasCashiers !== 'undefined') && hasCashiers) { %>
-                  · <%= s.status === 'open' ? 'open' : 'closed' %>
-                <% } %>
+                · <%= s.status === 'open' ? 'open' : 'closed' %>
               </div>
             </div>
             <div class="list-card-trailing">
@@ -82,7 +78,7 @@
       <div class="card hidden md:block">
         <table class="w-full">
           <% const _showCashierCol = (currentRole === 'owner' && (typeof hasCashiers !== 'undefined') && hasCashiers); %>
-          <% const _showStatusCol = (typeof hasCashiers !== 'undefined') && hasCashiers; %>
+          <% const _showStatusCol = true; /* Always visible — owners want to see open/closed even in solo-owner shops */ %>
           <thead>
             <tr class="border-b border-rule">
               <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>

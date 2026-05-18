@@ -1,4 +1,5 @@
 import { getDb, nowIso } from "../lib/kysely";
+import { memoize, invalidate } from "../lib/cache";
 import type { ShopsTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
 
@@ -19,12 +20,17 @@ export async function create(name: string): Promise<Shop> {
 }
 
 export async function findById(id: number): Promise<Shop | null> {
-  const r = await getDb()
-    .selectFrom("shops")
-    .selectAll()
-    .where("id", "=", id)
-    .executeTakeFirst();
-  return r ?? null;
+  // localsMiddleware reads this on every authenticated request to check
+  // is_active for the suspended-shop kick. 60s TTL means a superadmin
+  // deactivation takes at most 60s to log a user out — fine in practice.
+  return memoize(`shop:${id}`, 60_000, async () => {
+    const r = await getDb()
+      .selectFrom("shops")
+      .selectAll()
+      .where("id", "=", id)
+      .executeTakeFirst();
+    return r ?? null;
+  });
 }
 
 export async function findByEmployeeId(employeeId: number): Promise<Shop | null> {
@@ -43,6 +49,7 @@ export async function setActive(id: number, active: boolean): Promise<void> {
     .set({ is_active: active ? 1 : 0 })
     .where("id", "=", id)
     .execute();
+  invalidate(`shop:${id}`);
 }
 
 export async function listAll(): Promise<Shop[]> {

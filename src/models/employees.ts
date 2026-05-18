@@ -1,8 +1,16 @@
 import { getDb, nowIso } from "../lib/kysely";
 import { currentShopId } from "../lib/shopContext";
-import { invalidate } from "../lib/cache";
+import { memoize, invalidate } from "../lib/cache";
 import type { EmployeesTable } from "../lib/db-types";
 import type { Selectable } from "kysely";
+
+// localsMiddleware calls findById on the logged-in user on every page —
+// caching here saves one DB query per nav. Writes to the row (password,
+// active, profile, role) bust the per-shop cache prefix so the new state
+// is visible on the next render.
+function bustEmployeeCache(): void {
+  invalidate(`employee:shop:${currentShopId()}:`);
+}
 
 export type Employee = Selectable<EmployeesTable>;
 
@@ -73,13 +81,16 @@ export async function findByUsername(username: string): Promise<Employee | null>
 }
 
 export async function findById(id: number): Promise<Employee | null> {
-  const row = await getDb()
-    .selectFrom("employees")
-    .selectAll()
-    .where("shop_id", "=", currentShopId())
-    .where("id", "=", id)
-    .executeTakeFirst();
-  return row ?? null;
+  const shopId = currentShopId();
+  return memoize(`employee:shop:${shopId}:id:${id}`, 60_000, async () => {
+    const row = await getDb()
+      .selectFrom("employees")
+      .selectAll()
+      .where("shop_id", "=", shopId)
+      .where("id", "=", id)
+      .executeTakeFirst();
+    return row ?? null;
+  });
 }
 
 export async function updatePassword(id: number, password_hash: string): Promise<void> {
@@ -89,6 +100,7 @@ export async function updatePassword(id: number, password_hash: string): Promise
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustEmployeeCache();
 }
 
 export async function setActive(id: number, active: boolean): Promise<void> {
@@ -98,6 +110,7 @@ export async function setActive(id: number, active: boolean): Promise<void> {
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustEmployeeCache();
 }
 
 export type PersonalInput = {
@@ -141,6 +154,7 @@ export async function updatePersonal(id: number, input: PersonalInput): Promise<
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustEmployeeCache();
 }
 
 export async function updateEmployment(id: number, input: EmploymentInput): Promise<void> {
@@ -159,6 +173,7 @@ export async function updateEmployment(id: number, input: EmploymentInput): Prom
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustEmployeeCache();
 }
 
 export async function setOnboardingStatus(id: number, status: "incomplete" | "complete"): Promise<void> {
@@ -168,4 +183,5 @@ export async function setOnboardingStatus(id: number, status: "incomplete" | "co
     .where("shop_id", "=", currentShopId())
     .where("id", "=", id)
     .execute();
+  bustEmployeeCache();
 }

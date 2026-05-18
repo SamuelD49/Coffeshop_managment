@@ -13,12 +13,12 @@
         </h1>
         <%
           const _hasCashiers = (typeof hasCashiers !== 'undefined') ? hasCashiers : false;
-          // The close/reopen flow only matters when cashiers exist (the owner
-          // can edit any record anyway, so locking it for themselves is moot).
-          // We still show "Reopen" on closed records regardless, so the owner
-          // can clean up legacy closed entries.
+          // Close/reopen is available to any editor on an open entry —
+          // owners explicitly want this even in solo-owner shops so they
+          // can lock a day's sales once they're done with it. Reopen
+          // stays owner-only.
           const _showStatusPip = _hasCashiers || session.status === 'closed';
-          const _showCloseBtn  = session.status === 'open'   && editable && (currentRole === 'employee' || _hasCashiers);
+          const _showCloseBtn  = session.status === 'open'   && editable;
           const _showReopenBtn = session.status === 'closed' && currentRole === 'owner';
         %>
         <p class="font-sans text-[13px] text-smoke mt-gutter-tight">
