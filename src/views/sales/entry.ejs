@@ -270,7 +270,7 @@
         if (elD) {
           elD.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
           elD.classList.remove('text-leaf', 'text-ember', 'text-crimson', 'text-smoke');
-          elD.classList.add(diff === 0 ? 'text-smoke' : (diff > 0 ? 'text-ember' : 'text-crimson'));
+          elD.classList.add(diff === 0 ? 'text-smoke' : (diff > 0 ? 'text-leaf' : 'text-crimson'));
         }
       };
 
