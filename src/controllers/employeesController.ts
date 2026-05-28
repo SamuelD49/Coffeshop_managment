@@ -123,7 +123,7 @@ export async function toggleActive(req: Request, res: Response) {
     entity: "employees",
     entity_id: id,
   });
-  pushFlash(req, "success", res.locals.t(next ? "flash.employees.reactivated" : "flash.employees.deactivated", { name: current.full_name }));
+  pushFlash(req, "success", `${current.full_name} ${next ? "reactivated" : "deactivated"}`);
   res.redirect(`/employees/${id}`);
 }
 
