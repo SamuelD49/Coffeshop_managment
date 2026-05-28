@@ -103,8 +103,21 @@
     <%# By-day drilldown modal (sales tab) — populated via HTMX on row click %>
     <% if (tab === 'sales') { %>
       <dialog id="day-detail-modal" class="app-modal">
+        <%# Floating close button — lives on the dialog, not on the
+            scrolling body, so it stays anchored to the top-right corner
+            and is always available regardless of which fragment loaded. %>
+        <form method="dialog" class="app-modal-close-wrap">
+          <button type="submit" class="day-modal-close" aria-label="Close">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" class="w-4 h-4">
+              <path d="M5 5l10 10M15 5L5 15" />
+            </svg>
+          </button>
+        </form>
         <div id="day-detail-body">
-          <div class="day-modal-loading">Loading…</div>
+          <div class="day-modal-loading">
+            <span class="spinner spinner-ember" aria-hidden="true"></span>
+            <span class="day-modal-loading-label">Loading</span>
+          </div>
         </div>
       </dialog>
       <script>
@@ -116,7 +129,11 @@
           });
           dlg.addEventListener('close', function () {
             var body = document.getElementById('day-detail-body');
-            if (body) body.innerHTML = '<div class="day-modal-loading">Loading…</div>';
+            if (body) body.innerHTML =
+              '<div class="day-modal-loading">' +
+                '<span class="spinner spinner-ember" aria-hidden="true"></span>' +
+                '<span class="day-modal-loading-label">Loading</span>' +
+              '</div>';
           });
         })();
       </script>
