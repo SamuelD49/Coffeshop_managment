@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+<% const tabLabel = tab === 'petty-cash' ? 'Petty cash' : (tab.charAt(0).toUpperCase() + tab.slice(1)); %>
 <head>
   <meta charset="UTF-8" />
-  <title>Report · <%= (((tab === 'petty-cash' ? 'pettyCash' : tab) === 'pettyCash' ? 'Petty cash' : ((tab === 'petty-cash' ? 'pettyCash' : tab).charAt(0).toUpperCase() + ((tab === 'petty-cash' ? 'pettyCash' : tab).slice(1))) %> · <%= shopName %></title>
+  <title>Report · <%= tabLabel %> · <%= shopName %></title>
   <link rel="stylesheet" href="/css/app.css" />
   <style>
     @page { size: A4 portrait; margin: 14mm; }
@@ -12,7 +13,7 @@
 <body class="bg-cream text-ink font-sans antialiased">
   <div class="max-w-[900px] mx-auto p-air-lg">
     <header class="mb-air">
-      <p class="font-mono text-[11px] tracking-smallcaps uppercase text-smoke">Report · <%= (((tab === 'petty-cash' ? 'pettyCash' : tab) === 'pettyCash' ? 'Petty cash' : ((tab === 'petty-cash' ? 'pettyCash' : tab).charAt(0).toUpperCase() + ((tab === 'petty-cash' ? 'pettyCash' : tab).slice(1))) %></p>
+      <p class="font-mono text-[11px] tracking-smallcaps uppercase text-smoke">Report · <%= tabLabel %></p>
       <h1 class="wordmark text-[36px] leading-[40px] mt-gutter-tight"><%= shopName %></h1>
       <p class="font-display italic text-[16px] text-coal mt-gutter-tight" style="font-variation-settings:'opsz' 24,'SOFT' 50"><%= range.from %> – <%= range.to %></p>
     </header>
