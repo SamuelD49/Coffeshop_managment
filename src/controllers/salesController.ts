@@ -29,21 +29,39 @@ export async function list(req: Request, res: Response) {
   };
   
   const qDate = req.query.date;
+  const qFrom = req.query.from;
+  const qTo   = req.query.to;
+  const hasAnyDateFilter =
+    (typeof qDate === "string" && qDate.trim() !== "") ||
+    (typeof qFrom === "string" && qFrom.trim() !== "") ||
+    (typeof qTo   === "string" && qTo.trim()   !== "");
+
   if (typeof qDate === "string" && qDate.trim() !== "") {
     const d = qDate.trim();
     filters.date = d;
     filters.from = d;
     filters.to   = d;
-  } else {
-    const qFrom = req.query.from;
-    const qTo   = req.query.to;
+  } else if (hasAnyDateFilter) {
     if (typeof qFrom === "string" && qFrom.trim() !== "") filters.from = qFrom.trim();
     if (typeof qTo   === "string" && qTo.trim()   !== "") filters.to   = qTo.trim();
+  } else {
+    const today = todayBusinessDate(
+      (await Settings.get("business_day_cutoff")) ?? "00:00",
+      (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
+    );
+    filters.date = today;
+    filters.from = today;
+    filters.to   = today;
   }
 
   const qStatus = req.query.status;
-  if (typeof qStatus === "string" && qStatus.trim() !== "") {
+  if (typeof qStatus === "string") {
+    // Explicit param wins, even if empty (the dropdown's "All" submits "").
     filters.status = qStatus.trim();
+  } else {
+    // Default: hide open shifts from the past-shifts list — the user's own
+    // open shift is already rendered inline above the list.
+    filters.status = "closed";
   }
 
   const qEmployee = req.query.employee;
@@ -65,7 +83,46 @@ export async function list(req: Request, res: Response) {
 
   const employees = role(req) === "owner" ? await Employees.listAll({ activeOnly: false }) : [];
   const hasCashiers = await Employees.hasActiveCashiers();
-  res.render("sales/list", { sessions, employees, filters, hasCashiers });
+
+  // Inline entry data — the current user's own shift for today (or null draft).
+  // Independent of the filters above; the inline form is always "you, today".
+  const today = todayBusinessDate(
+    (await Settings.get("business_day_cutoff")) ?? "00:00",
+    (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
+  );
+  const myOpen = await Sessions.listAll({
+    from: today, to: today, employeeId: actor(req), status: "open",
+  });
+  let inlineSession: Sessions.SalesSession | null = myOpen[0] ?? null;
+  if (!inlineSession) {
+    const myClosed = await Sessions.listAll({
+      from: today, to: today, employeeId: actor(req), status: "closed",
+    });
+    if (myClosed.length > 0) inlineSession = myClosed[0];
+  }
+  const items = await Menu.listActiveByPopularity();
+  let inlineLines: Record<number, any> = {};
+  let inlineTotals: any = { subtotal: 0, total_amount: 0, difference: 0 };
+  if (inlineSession) {
+    const linesArr = await Lines.listForSession(inlineSession.id);
+    for (const l of linesArr) inlineLines[l.menu_item_id] = l;
+    inlineTotals = (await Sessions.withTotals(inlineSession.id))!;
+  }
+  const inlineEditable = !inlineSession || inlineSession.status === "open";
+
+  // Auto-open the past-shifts disclosure when any query param is set —
+  // so direct loads of a filtered URL (or HTMX hx-push-url reloads) don't
+  // hide the result that the user just asked for.
+  const pastShiftsOpen = !!(
+    req.query.date || req.query.from || req.query.to ||
+    req.query.status || req.query.employee
+  );
+
+  res.render("sales/list", {
+    sessions, employees, filters, hasCashiers,
+    inlineSession, inlineLines, inlineTotals, items, inlineEditable,
+    pastShiftsOpen,
+  });
 }
 
 export async function showNew(_req: Request, res: Response) {
@@ -86,6 +143,53 @@ export async function create(req: Request, res: Response) {
   const s = await Sessions.create({ employee_id: actor(req), business_date, shift });
   await writeAudit({ actor_id: actor(req), action: "create_sales_session", entity: "sales_sessions", entity_id: s.id });
   res.redirect(`/sales/${s.id}`);
+}
+
+async function resolveOrCreateTodaySession(req: Request): Promise<Sessions.SalesSession> {
+  const today = todayBusinessDate(
+    (await Settings.get("business_day_cutoff")) ?? "00:00",
+    (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
+  );
+  const open = await Sessions.listAll({
+    from: today, to: today, employeeId: actor(req), status: "open",
+  });
+  // TODO: this find-or-create has a small race window (two concurrent
+  // first-keystroke requests can both miss). Acceptable for now — a
+  // duplicate open shift is rare and recoverable. A unique index on
+  // (shop_id, employee_id, business_date) where status='open' would
+  // eliminate it cleanly.
+  if (open.length > 0) return open[0];
+  const s = await Sessions.create({ employee_id: actor(req), business_date: today, shift: null });
+  await writeAudit({ actor_id: actor(req), action: "create_sales_session", entity: "sales_sessions", entity_id: s.id });
+  return s;
+}
+
+export async function upsertLineToday(req: Request, res: Response) {
+  const session = await resolveOrCreateTodaySession(req);
+  req.params.id = String(session.id);
+  return upsertLine(req, res);
+}
+
+export async function updateHeaderToday(req: Request, res: Response) {
+  const session = await resolveOrCreateTodaySession(req);
+  req.params.id = String(session.id);
+  return updateHeader(req, res);
+}
+
+export async function closeToday(req: Request, res: Response) {
+  const today = todayBusinessDate(
+    (await Settings.get("business_day_cutoff")) ?? "00:00",
+    (await Settings.get("timezone")) ?? "Africa/Addis_Ababa",
+  );
+  const open = await Sessions.listAll({
+    from: today, to: today, employeeId: actor(req), status: "open",
+  });
+  if (open.length === 0) {
+    pushFlash(req, "info", "No open shift to close.");
+    return res.redirect("/sales");
+  }
+  req.params.id = String(open[0].id);
+  return close(req, res);
 }
 
 export async function entry(req: Request, res: Response) {

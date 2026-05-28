@@ -1,0 +1,141 @@
+<%
+  const fmt = (cents) => (cents / 100).toFixed(2);
+  const _diffClass = dayDifference === 0
+    ? 'text-smoke'
+    : (dayDifference > 0 ? 'text-leaf' : 'text-crimson');
+%>
+
+<header class="day-modal-header">
+  <div class="min-w-0 flex-1">
+    <p class="font-mono text-[11px] tracking-smallcaps uppercase text-smoke"><%= date %></p>
+    <h2 class="font-display text-[20px] md:text-[26px] leading-tight text-ink mt-1" style="font-variation-settings:'opsz' 24,'SOFT' 50">
+      Day details
+    </h2>
+  </div>
+  <form method="dialog" class="shrink-0">
+    <button type="submit" class="day-modal-close" aria-label="Close">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" class="w-4 h-4">
+        <path d="M5 5l10 10M15 5L5 15" />
+      </svg>
+    </button>
+  </form>
+</header>
+
+<div class="day-modal-body">
+
+  <%# ─── Day summary chips ─── %>
+  <div class="grid grid-cols-3 gap-gutter mb-air">
+    <div class="day-stat">
+      <p class="day-stat-label">Subtotal</p>
+      <p class="day-stat-value"><%= fmt(dayTotalSubtotal) %></p>
+    </div>
+    <div class="day-stat">
+      <p class="day-stat-label">Counted</p>
+      <p class="day-stat-value"><%= fmt(dayTotalCounted) %></p>
+    </div>
+    <div class="day-stat">
+      <p class="day-stat-label">Diff</p>
+      <p class="day-stat-value <%= _diffClass %>"><%= dayDifference >= 0 ? '+' : '' %><%= fmt(dayDifference) %></p>
+    </div>
+  </div>
+
+  <%# ─── Shifts breakdown ─── %>
+  <section class="mb-air">
+    <h3 class="day-section-title">Shifts <span class="text-smoke font-normal">· <%= shifts.length %></span></h3>
+    <% if (shifts.length === 0) { %>
+      <p class="font-sans italic text-[14px] text-smoke py-gutter-lg">No shifts on this day.</p>
+    <% } else { %>
+      <%# Desktop table %>
+      <div class="hidden md:block card overflow-hidden">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-rule">
+              <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Cashier</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Subtotal</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Counted</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Diff</th>
+              <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
+              <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Note</th>
+              <th class="px-gutter-lg"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% shifts.forEach(s => { %>
+              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+                <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink"><%= empById[s.employee_id] || ('#' + s.employee_id) %></td>
+                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= fmt(s.subtotal) %></td>
+                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= fmt(s.total_amount) %></td>
+                <td class="py-gutter text-right font-mono text-[13px] <%= s.difference === 0 ? 'text-smoke' : (s.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
+                  <%= s.difference >= 0 ? '+' : '' %><%= fmt(s.difference) %>
+                </td>
+                <td class="py-gutter pl-air">
+                  <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status %></span>
+                </td>
+                <td class="py-gutter pl-air font-sans text-[13px] text-coal italic max-w-[200px] truncate" title="<%= s.notes || '' %>"><%= s.notes || '—' %></td>
+                <td class="px-gutter-lg py-gutter text-right">
+                  <a href="/sales/<%= s.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Open →</a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <%# Mobile cards %>
+      <div class="md:hidden space-y-gutter">
+        <% shifts.forEach(s => { %>
+          <a href="/sales/<%= s.id %>" class="block card hover:bg-paper transition-colors">
+            <div class="card-body">
+              <div class="flex items-start justify-between gap-gutter">
+                <div class="min-w-0">
+                  <p class="font-sans text-[15px] text-ink truncate"><%= empById[s.employee_id] || ('#' + s.employee_id) %></p>
+                  <p class="font-mono text-[12px] text-smoke mt-1">
+                    <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status %></span>
+                    · Counted <%= fmt(s.total_amount) %>
+                    <% if (s.difference !== 0) { %>
+                      · <span class="<%= s.difference > 0 ? 'text-leaf' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= fmt(s.difference) %></span>
+                    <% } %>
+                  </p>
+                  <% if (s.notes) { %>
+                    <p class="font-sans text-[12px] text-smoke italic mt-1 truncate">“<%= s.notes %>”</p>
+                  <% } %>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="font-mono text-[15px] text-ink"><%= fmt(s.subtotal) %></p>
+                  <p class="font-sans text-[10px] tracking-smallcaps uppercase text-smoke mt-1">Subtotal</p>
+                </div>
+              </div>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <%# ─── Items sold ─── %>
+  <% if (topItems.length > 0) { %>
+    <section>
+      <h3 class="day-section-title">Items sold</h3>
+      <div class="card overflow-hidden">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-rule">
+              <th class="text-left  font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Qty</th>
+              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% topItems.forEach(r => { %>
+              <tr class="border-b border-rule last:border-0">
+                <td class="px-gutter-lg py-gutter font-sans text-[14px] text-ink truncate"><%= r.name %></td>
+                <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.qty %></td>
+                <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= fmt(r.revenue) %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% } %>
+</div>

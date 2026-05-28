@@ -51,14 +51,22 @@
           <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
           <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Shifts</th>
           <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Subtotal</th>
+          <th class="px-gutter-lg"></th>
         </tr>
       </thead>
       <tbody>
         <% data.byDay.forEach(r => { %>
-          <tr class="border-b border-rule last:border-0">
+          <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors cursor-pointer"
+              hx-get="/reports/day/<%= r.business_date %>"
+              hx-target="#day-detail-body"
+              hx-swap="innerHTML"
+              onclick="document.getElementById('day-detail-modal').showModal();">
             <td class="px-gutter-lg py-gutter font-mono text-[13px] text-coal"><%= r.business_date %></td>
             <td class="py-gutter text-right font-mono text-[13px] text-coal"><%= r.session_count %></td>
             <td class="px-gutter-lg py-gutter text-right font-mono text-[14px] text-ink"><%= (r.subtotal / 100).toFixed(2) %></td>
+            <td class="px-gutter-lg py-gutter text-right">
+              <span class="font-sans text-[12px] tracking-smallcaps uppercase text-ember">Details →</span>
+            </td>
           </tr>
         <% }) %>
       </tbody>

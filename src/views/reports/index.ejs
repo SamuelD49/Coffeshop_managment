@@ -99,6 +99,28 @@
     <% if (tab === 'purchases')  { %><%- include('_purchases', { data, range, csrfToken }) %><% } %>
     <% if (tab === 'petty-cash') { %><%- include('_pettyCash', { data, range, csrfToken }) %><% } %>
     <% if (tab === 'payroll')    { %><%- include('_payroll',   { data, range, csrfToken }) %><% } %>
+
+    <%# By-day drilldown modal (sales tab) — populated via HTMX on row click %>
+    <% if (tab === 'sales') { %>
+      <dialog id="day-detail-modal" class="app-modal">
+        <div id="day-detail-body">
+          <div class="day-modal-loading">Loading…</div>
+        </div>
+      </dialog>
+      <script>
+        (function () {
+          var dlg = document.getElementById('day-detail-modal');
+          if (!dlg) return;
+          dlg.addEventListener('click', function (e) {
+            if (e.target === dlg) dlg.close();  // backdrop click closes
+          });
+          dlg.addEventListener('close', function () {
+            var body = document.getElementById('day-detail-body');
+            if (body) body.innerHTML = '<div class="day-modal-loading">Loading…</div>';
+          });
+        })();
+      </script>
+    <% } %>
   </main>
 </body>
 </html>

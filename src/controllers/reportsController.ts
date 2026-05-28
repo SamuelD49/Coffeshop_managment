@@ -4,6 +4,8 @@ import * as Runs from "../models/payrollRuns";
 import * as Entries from "../models/payrollEntries";
 import * as Settings from "../models/settings";
 import * as Purchases from "../models/purchases";
+import * as Sessions from "../models/salesSessions";
+import * as Employees from "../models/employees";
 import { toCsv } from "../lib/csv";
 import { todayBusinessDate } from "../lib/dates";
 
@@ -70,6 +72,36 @@ export async function show(req: Request, res: Response) {
   const range = await rangeFromReq(req);
   const data = await loadTabData(tab, range);
   res.render("reports/index", { tab, range, data });
+}
+
+// Fragment endpoint for the "By day" drilldown modal on the Sales reports tab.
+// Renders the day's shift breakdown + top items without a page layout.
+export async function dayDetail(req: Request, res: Response) {
+  const date = String(req.params.date || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).send("Bad date");
+
+  const rawShifts = await Sessions.listAll({ from: date, to: date });
+  const shifts = await Promise.all(rawShifts.map(s => Sessions.withTotals(s.id).then(t => t!)));
+  const employeeIds = Array.from(new Set(shifts.map(s => s.employee_id)));
+  const allEmployees = await Employees.listAll({ activeOnly: false });
+  const empById: Record<number, string> = {};
+  for (const e of allEmployees) empById[e.id] = e.full_name;
+
+  const byItem = await Reports.salesByItem({ from: date, to: date });
+  const topItems = byItem.slice(0, 10);
+
+  const dayTotalSubtotal = shifts.reduce((s, x) => s + x.subtotal, 0);
+  const dayTotalCounted  = shifts.reduce((s, x) => s + x.total_amount, 0);
+  const dayDifference    = dayTotalCounted - dayTotalSubtotal;
+
+  res.render("reports/_day_detail", {
+    date, shifts, empById, topItems,
+    dayTotalSubtotal, dayTotalCounted, dayDifference,
+    layout: false,
+  }, (err, html) => {
+    if (err) return res.status(500).send("render error");
+    res.send(html);
+  });
 }
 
 export async function exportCsv(req: Request, res: Response) {

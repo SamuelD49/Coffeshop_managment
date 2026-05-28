@@ -7,5 +7,6 @@ export const reportsRouter = Router();
 reportsRouter.use(requireAuth, requireOwner);
 
 reportsRouter.get("/",          Ctrl.show);
+reportsRouter.get("/day/:date", Ctrl.dayDetail);
 reportsRouter.get("/export",    Ctrl.exportCsv);
 reportsRouter.get("/print",     Ctrl.print);

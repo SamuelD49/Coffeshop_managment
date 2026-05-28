@@ -9,7 +9,9 @@
           <a href="/sales" class="hover:text-ink transition-colors">Sales</a>
         </p>
         <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">
-          <%= session.business_date %><% if (session.shift) { %> · <span class="italic"><%= session.shift %></span><% } %>
+          <%= session.business_date %>
+          <% /* Shift label intentionally disabled — feature paused. */ %>
+          <% if (false) { %> · <span class="italic"><%= session.shift %></span><% } %>
         </h1>
         <%
           const _hasCashiers = (typeof hasCashiers !== 'undefined') ? hasCashiers : false;
@@ -60,74 +62,17 @@
 
     <%- include('../partials/flash', { flash }) %>
 
-    <div class="reveal reveal-3 card overflow-hidden">
-      <table class="w-full table-fixed sales-entry-table">
-        <colgroup>
-          <col class="col-item"  style="width: 32%" />
-          <col class="col-unit"  style="width: 12%" />
-          <col class="col-qty"   style="width: 12%" />
-          <col class="col-total" style="width: 14%" />
-          <col class="col-tally" style="width: 30%" />
-        </colgroup>
-        <thead>
-          <tr class="border-b border-rule-strong">
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
-            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
-            <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Qty</th>
-            <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
-            <th class="col-tally text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg border-l-2 border-rule-strong bg-paper">Tally</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% items.forEach(item => {
-               const line = lines[item.id] || null;
-          %>
-            <%- include('_row', { item, line, session, csrfToken, totals }) %>
-          <% }) %>
-        </tbody>
-      </table>
-
-      <%- include('_totals', { totals }) %>
-
-      <% if (editable) { %>
-        <form
-          class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-1 md:grid-cols-3 gap-gutter-lg md:gap-air items-end"
-          hx-post="/sales/<%= session.id %>/header"
-          hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
-          hx-target="#totals"
-          hx-swap="outerHTML"
-          hx-trigger="input changed delay:300ms from:input[name='cash_amount'], input changed delay:300ms from:input[name='bank_transfer_amount'], change from:input[name='notes']"
-        >
-          <label class="block">
-            <span class="field-label">Cash collected</span>
-            <input name="cash_amount" value="<%= (session.cash_amount / 100).toFixed(2) %>" inputmode="decimal" oninput="window.recalcSales && window.recalcSales(this)" class="field-input field-mono" />
-          </label>
-          <label class="block">
-            <span class="field-label">Bank transfer</span>
-            <input name="bank_transfer_amount" value="<%= (session.bank_transfer_amount / 100).toFixed(2) %>" inputmode="decimal" oninput="window.recalcSales && window.recalcSales(this)" class="field-input field-mono" />
-          </label>
-          <label class="block">
-            <span class="field-label">Notes</span>
-            <input name="notes" value="<%= session.notes || '' %>" class="field-input" />
-          </label>
-        </form>
-      <% } else { %>
-        <div class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-1 md:grid-cols-3 gap-gutter md:gap-air">
-          <div>
-            <p class="field-label">Cash collected</p>
-            <p class="font-mono text-[16px] text-ink"><%= (session.cash_amount / 100).toFixed(2) %></p>
-          </div>
-          <div>
-            <p class="field-label">Bank transfer</p>
-            <p class="font-mono text-[16px] text-ink"><%= (session.bank_transfer_amount / 100).toFixed(2) %></p>
-          </div>
-          <div>
-            <p class="field-label">Notes</p>
-            <p class="font-sans text-[14px] text-coal"><%= session.notes || '—' %></p>
-          </div>
-        </div>
-      <% } %>
-    </div>
+    <%- include('_entry_form', {
+      session,
+      formBase: '/sales/' + session.id,
+      items,
+      lines,
+      totals,
+      editable,
+      showActions: false,
+      currentRole,
+      csrfToken,
+    }) %>
   </main>
 
   <script>

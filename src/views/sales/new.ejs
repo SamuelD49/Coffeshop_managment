@@ -7,7 +7,7 @@
         <a href="/sales" class="hover:text-ink transition-colors">Sales</a> · New
       </p>
       <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">New sales entry</h1>
-      <p class="font-sans text-coal mt-gutter">A blank Daily Sales Income sheet. Shift is optional — leave it blank for a whole-day entry.</p>
+      <p class="font-sans text-coal mt-gutter">A blank Daily Sales Income sheet.</p>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
@@ -21,11 +21,14 @@
           <span class="field-label">Date</span>
           <input type="date" name="business_date" value="<%= today %>" required class="field-input field-mono" />
         </label>
+        <% /* Shift field intentionally disabled — feature paused. */ %>
+        <% if (false) { %>
         <label class="block">
           <span class="field-label">Shift <span class="text-mist normal-case">(optional)</span></span>
           <input name="shift" class="field-input" placeholder="leave blank for whole-day · or type morning, evening, etc." />
           <span class="field-hint">Use this only if you split a day into multiple shifts. Most shops leave it empty.</span>
         </label>
+        <% } %>
       </div>
       <div class="px-gutter-lg pb-gutter-lg sticky-actions">
         <a href="/sales" class="btn-secondary">Cancel</a>

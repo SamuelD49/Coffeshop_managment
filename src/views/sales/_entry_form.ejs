@@ -1,0 +1,115 @@
+<%
+  // Required locals:
+  //   formBase    — e.g. "/sales/today" or "/sales/123"
+  //   session     — nullable; null = draft (lazy create on first input)
+  //   items, lines, totals
+  //   editable    — true if line/header HTMX should be wired
+  //   showActions — render Close/Reopen below the form
+  //   currentRole — for owner-only Reopen visibility
+  //   csrfToken
+  const _cash  = session ? (session.cash_amount / 100).toFixed(2) : '0.00';
+  const _bank  = session ? (session.bank_transfer_amount / 100).toFixed(2) : '0.00';
+  const _notes = session ? (session.notes || '') : '';
+  const _isClosed = session && session.status === 'closed';
+%>
+<% if (!items || items.length === 0) { %>
+  <div class="reveal reveal-3 card">
+    <div class="card-body text-center py-air space-y-gutter">
+      <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No menu items yet.</p>
+      <p class="font-sans text-[14px] text-smoke">You need at least one menu item before you can record sales.</p>
+      <% if (currentRole === 'owner') { %>
+        <a href="/menu/new" class="btn-primary inline-block mt-gutter">Add a menu item →</a>
+      <% } else { %>
+        <p class="font-sans text-[13px] text-smoke italic">Ask the owner to add menu items.</p>
+      <% } %>
+    </div>
+  </div>
+<% } else { %>
+<div class="reveal reveal-3 card overflow-hidden">
+  <table class="w-full table-fixed sales-entry-table">
+    <colgroup>
+      <col class="col-item"  style="width: 32%" />
+      <col class="col-unit"  style="width: 12%" />
+      <col class="col-qty"   style="width: 12%" />
+      <col class="col-total" style="width: 14%" />
+      <col class="col-tally" style="width: 30%" />
+    </colgroup>
+    <thead>
+      <tr class="border-b border-rule-strong">
+        <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Item</th>
+        <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Unit</th>
+        <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg">Qty</th>
+        <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Total</th>
+        <th class="col-tally text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-gutter-lg border-l-2 border-rule-strong bg-paper">Tally</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach(item => {
+           const line = lines[item.id] || null;
+      %>
+        <%- include('_row', { item, line, formBase, editable, csrfToken, totals }) %>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <%- include('_totals', { totals }) %>
+
+  <% if (editable) { %>
+    <form
+      class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-1 md:grid-cols-3 gap-gutter-lg md:gap-air items-end"
+      hx-post="<%= formBase %>/header"
+      hx-headers='{"x-csrf-token": "<%= csrfToken %>"}'
+      hx-target="#totals"
+      hx-swap="outerHTML"
+      hx-trigger="input changed delay:300ms from:input[name='cash_amount'], input changed delay:300ms from:input[name='bank_transfer_amount'], change from:input[name='notes']"
+    >
+      <label class="block">
+        <span class="field-label">Cash collected</span>
+        <input name="cash_amount" value="<%= _cash %>" inputmode="decimal" oninput="window.recalcSales && window.recalcSales(this)" class="field-input field-mono" />
+      </label>
+      <label class="block">
+        <span class="field-label">Bank transfer</span>
+        <input name="bank_transfer_amount" value="<%= _bank %>" inputmode="decimal" oninput="window.recalcSales && window.recalcSales(this)" class="field-input field-mono" />
+      </label>
+      <label class="block">
+        <span class="field-label">Notes</span>
+        <input name="notes" value="<%= _notes %>" class="field-input" />
+      </label>
+    </form>
+  <% } else { %>
+    <div class="px-gutter-lg py-gutter-lg border-t border-rule grid grid-cols-1 md:grid-cols-3 gap-gutter md:gap-air">
+      <div>
+        <p class="field-label">Cash collected</p>
+        <p class="font-mono text-[16px] text-ink"><%= _cash %></p>
+      </div>
+      <div>
+        <p class="field-label">Bank transfer</p>
+        <p class="font-mono text-[16px] text-ink"><%= _bank %></p>
+      </div>
+      <div>
+        <p class="field-label">Notes</p>
+        <p class="font-sans text-[14px] text-coal"><%= _notes || '—' %></p>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (showActions) { %>
+    <div class="px-gutter-lg py-gutter-lg border-t border-rule flex items-center justify-end gap-gutter">
+      <% if (session && session.status === 'open') { %>
+        <form method="POST" action="<%= formBase %>/close"
+              data-confirm="Close this entry? You will not be able to edit it after."
+              data-confirm-title="Close entry?"
+              data-confirm-label="Close entry">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="btn-primary">Close entry →</button>
+        </form>
+      <% } else if (_isClosed && currentRole === 'owner') { %>
+        <form method="POST" action="/sales/<%= session.id %>/reopen">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button class="btn-secondary">Reopen entry</button>
+        </form>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+<% } %>

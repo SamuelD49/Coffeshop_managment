@@ -8,120 +8,297 @@
         <p class="font-mono text-[12px] tracking-smallcaps uppercase text-smoke">Daily sales</p>
         <h1 class="font-display text-[36px] leading-[42px] text-ink mt-gutter-tight" style="font-variation-settings:'opsz' 72,'SOFT' 50">Sales</h1>
       </div>
-      <a href="/sales/new" class="btn-primary">New sales entry</a>
     </header>
 
     <div class="reveal reveal-2"><%- include('../partials/ornament') %></div>
 
-    <form method="GET" class="reveal reveal-3 flex items-end gap-gutter mb-air flex-wrap">
-      <label class="block">
-        <span class="field-label">Date</span>
-        <input type="date" name="date" value="<%= filters.date %>" class="field-input field-mono" />
-      </label>
-      <% if (currentRole === 'owner' && (typeof hasCashiers !== 'undefined' && hasCashiers)) { %>
-        <label class="block">
-          <span class="field-label">Employee</span>
-          <select name="employee" class="field-input">
-            <option value="">All</option>
-            <% employees.forEach(e => { %>
-              <option value="<%= e.id %>" <%= String(filters.employeeId) === String(e.id) ? 'selected' : '' %>><%= e.full_name %></option>
-            <% }) %>
-          </select>
-        </label>
-      <% } %>
-      <label class="block">
-        <span class="field-label">Status</span>
-        <select name="status" class="field-input">
-          <option value="">All</option>
-          <option value="open"   <%= filters.status === 'open'   ? 'selected' : '' %>>Open</option>
-          <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
-        </select>
-      </label>
-      <button class="btn-secondary">Filter</button>
-    </form>
-
     <%- include('../partials/flash', { flash }) %>
 
-    <% if (sessions.length === 0) { %>
-      <div class="card">
-        <div class="card-body text-center py-air">
-          <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No shifts match.</p>
-        </div>
-      </div>
-    <% } else { %>
-      <%# ─── Mobile (md:hidden): tappable cards ─── %>
-      <div class="md:hidden">
-        <% sessions.forEach(s => { %>
-          <a href="/sales/<%= s.id %>" class="list-card">
-            <div class="min-w-0 flex-1">
-              <div class="list-card-primary">
-                <span class="font-mono"><%= s.business_date %></span>
-                <% if (s.shift) { %><span class="text-smoke"> · <%= s.shift %></span><% } %>
-              </div>
-              <div class="list-card-secondary">
-                Counted <%= (s.total_amount / 100).toFixed(2) %>
-                <% if (s.difference !== 0) { %>
-                  · <span class="<%= s.difference > 0 ? 'text-leaf' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %></span>
-                <% } %>
-                · <%= s.status === 'open' ? 'open' : 'closed' %>
-              </div>
-            </div>
-            <div class="list-card-trailing">
-              <%= (s.subtotal / 100).toFixed(2) %>
-              <span class="sub">Subtotal</span>
-            </div>
-          </a>
-        <% }) %>
-      </div>
+    <%# ─── Inline entry form — your shift, today ─── %>
+    <%- include('_entry_form', {
+      session: inlineSession,
+      formBase: '/sales/today',
+      items,
+      lines: inlineLines,
+      totals: inlineTotals,
+      editable: inlineEditable,
+      showActions: true,
+      currentRole,
+      csrfToken,
+    }) %>
 
-      <%# ─── Desktop (hidden md:block): the existing table ─── %>
-      <div class="card hidden md:block">
-        <table class="w-full">
-          <% const _showCashierCol = (currentRole === 'owner' && (typeof hasCashiers !== 'undefined') && hasCashiers); %>
-          <% const _showStatusCol = true; /* Always visible — owners want to see open/closed even in solo-owner shops */ %>
-          <thead>
-            <tr class="border-b border-rule">
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
-              <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Shift</th>
-              <% if (_showCashierCol) { %>
-                <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Cashier</th>
-              <% } %>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Subtotal</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Counted</th>
-              <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Diff</th>
-              <% if (_showStatusCol) { %>
-                <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
-              <% } %>
-              <th class="px-gutter-lg"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% sessions.forEach(s => { %>
-              <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
-                <td class="px-gutter-lg py-gutter-lg font-mono text-[14px] text-coal"><%= s.business_date %></td>
-                <td class="py-gutter-lg font-sans text-[14px] text-coal"><%= s.shift || '—' %></td>
-                <% if (_showCashierCol) { %>
-                  <td class="py-gutter-lg font-sans text-[14px] text-coal">#<%= s.employee_id %></td>
+    <%# ─── Past shifts (collapsed) ─── %>
+    <details class="reveal reveal-3 mt-air group" <%= (typeof pastShiftsOpen !== 'undefined' && pastShiftsOpen) ? 'open' : '' %>>
+      <summary class="cursor-pointer select-none flex items-center gap-gutter py-gutter-lg font-sans text-[13px] tracking-smallcaps uppercase text-smoke hover:text-coal transition-colors">
+        <span class="inline-block transition-transform group-open:rotate-90">›</span>
+        Past shifts
+        <span class="text-smoke">· <%= sessions.length %></span>
+      </summary>
+
+      <form method="GET" action="/sales" class="flex items-end gap-gutter mb-air flex-wrap pt-gutter"
+            hx-get="/sales"
+            hx-select="#past-shifts-container"
+            hx-target="#past-shifts-container"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-indicator="#filter-spinner">
+        <label class="block">
+          <span class="field-label">Date</span>
+          <input type="date" name="date" value="<%= filters.date %>" class="field-input field-mono" />
+        </label>
+        <% if (currentRole === 'owner' && (typeof hasCashiers !== 'undefined' && hasCashiers)) { %>
+          <label class="block">
+            <span class="field-label">Employee</span>
+            <select name="employee" class="field-input">
+              <option value="">All</option>
+              <% employees.forEach(e => { %>
+                <option value="<%= e.id %>" <%= String(filters.employeeId) === String(e.id) ? 'selected' : '' %>><%= e.full_name %></option>
+              <% }) %>
+            </select>
+          </label>
+        <% } %>
+        <label class="block">
+          <span class="field-label">Status</span>
+          <select name="status" class="field-input">
+            <option value="">All</option>
+            <option value="open"   <%= filters.status === 'open'   ? 'selected' : '' %>>Open</option>
+            <option value="closed" <%= filters.status === 'closed' ? 'selected' : '' %>>Closed</option>
+          </select>
+        </label>
+        <button class="btn-secondary">
+          Filter
+          <span id="filter-spinner" class="htmx-indicator inline-block ml-1 text-smoke">…</span>
+        </button>
+      </form>
+
+      <div id="past-shifts-container">
+      <% if (sessions.length === 0) { %>
+        <div class="card">
+          <div class="card-body text-center py-air">
+            <p class="font-display italic text-[20px] text-coal" style="font-variation-settings:'opsz' 24,'SOFT' 50">No shifts match.</p>
+          </div>
+        </div>
+      <% } else { %>
+        <%# Map employee_id → full_name so we can show cashier names instead of #ids %>
+        <% const _empName = {}; %>
+        <% (employees || []).forEach(e => { _empName[e.id] = e.full_name; }); %>
+
+        <%# ─── Mobile (md:hidden): tappable cards ─── %>
+        <div class="md:hidden">
+          <% sessions.forEach(s => { %>
+            <a href="/sales/<%= s.id %>" class="list-card">
+              <div class="min-w-0 flex-1">
+                <div class="list-card-primary">
+                  <span class="font-mono"><%= s.business_date %></span>
+                  <% /* Shift display intentionally disabled — feature paused. */ %>
+                  <% if (false) { %><span class="text-smoke"> · <%= s.shift %></span><% } %>
+                </div>
+                <div class="list-card-secondary">
+                  Counted <%= (s.total_amount / 100).toFixed(2) %>
+                  <% if (s.difference !== 0) { %>
+                    · <span class="<%= s.difference > 0 ? 'text-leaf' : 'text-crimson' %>"><%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %></span>
+                  <% } %>
+                  · <%= s.status === 'open' ? 'open' : 'closed' %>
+                </div>
+                <% if (s.notes) { %>
+                  <div class="font-sans text-[12px] text-smoke mt-1 italic truncate">“<%= s.notes %>”</div>
                 <% } %>
-                <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.subtotal / 100).toFixed(2) %></td>
-                <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.total_amount / 100).toFixed(2) %></td>
-                <td class="py-gutter-lg text-right font-mono text-[14px] <%= s.difference === 0 ? 'text-smoke' : (s.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
-                  <%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %>
-                </td>
-                <% if (_showStatusCol) { %>
+              </div>
+              <div class="list-card-trailing">
+                <%= (s.subtotal / 100).toFixed(2) %>
+                <span class="sub">Subtotal</span>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+
+        <%# ─── Desktop (hidden md:block): table ─── %>
+        <div class="card hidden md:block">
+          <table class="w-full">
+            <% const _showCashierCol = (currentRole === 'owner' && (typeof hasCashiers !== 'undefined') && hasCashiers); %>
+            <thead>
+              <tr class="border-b border-rule">
+                <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke px-gutter-lg py-gutter">Date</th>
+                <% /* Shift column intentionally disabled — feature paused. */ %>
+                <% if (false) { %>
+                  <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Shift</th>
+                <% } %>
+                <% if (_showCashierCol) { %>
+                  <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Cashier</th>
+                <% } %>
+                <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Subtotal</th>
+                <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Counted</th>
+                <th class="text-right font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter">Diff</th>
+                <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Status</th>
+                <% if (currentRole === 'owner') { %>
+                  <th class="text-left font-sans font-medium text-[11px] tracking-smallcaps uppercase text-smoke py-gutter pl-air">Note</th>
+                <% } %>
+                <th class="px-gutter-lg"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% sessions.forEach(s => { %>
+                <tr class="border-b border-rule last:border-0 hover:bg-paper transition-colors">
+                  <td class="px-gutter-lg py-gutter-lg font-mono text-[14px] text-coal"><%= s.business_date %></td>
+                  <% /* Shift cell intentionally disabled — feature paused. */ %>
+                  <% if (false) { %>
+                    <td class="py-gutter-lg font-sans text-[14px] text-coal"><%= s.shift || '—' %></td>
+                  <% } %>
+                  <% if (_showCashierCol) { %>
+                    <td class="py-gutter-lg font-sans text-[14px] text-coal"><%= _empName[s.employee_id] || ('#' + s.employee_id) %></td>
+                  <% } %>
+                  <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.subtotal / 100).toFixed(2) %></td>
+                  <td class="py-gutter-lg text-right font-mono text-[14px] text-ink"><%= (s.total_amount / 100).toFixed(2) %></td>
+                  <td class="py-gutter-lg text-right font-mono text-[14px] <%= s.difference === 0 ? 'text-smoke' : (s.difference > 0 ? 'text-leaf' : 'text-crimson') %>">
+                    <%= s.difference >= 0 ? '+' : '' %><%= (s.difference / 100).toFixed(2) %>
+                  </td>
                   <td class="py-gutter-lg pl-air">
                     <span class="pip pip-<%= s.status === 'open' ? 'open' : 'closed' %>"><%= s.status === 'open' ? 'open' : 'closed' %></span>
                   </td>
-                <% } %>
-                <td class="px-gutter-lg py-gutter-lg text-right">
-                  <a href="/sales/<%= s.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Open →</a>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+                  <% if (currentRole === 'owner') { %>
+                    <td class="py-gutter-lg pl-air font-sans text-[13px] text-coal italic max-w-[220px] truncate" title="<%= s.notes || '' %>">
+                      <%= s.notes || '—' %>
+                    </td>
+                  <% } %>
+                  <td class="px-gutter-lg py-gutter-lg text-right">
+                    <a href="/sales/<%= s.id %>" class="font-sans text-[12px] tracking-smallcaps uppercase text-ember hover:text-ember-deep transition-colors">Open →</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
       </div>
-    <% } %>
+    </details>
   </main>
+
+  <%# Re-use the entry page's recalc/animation JS so the inline form behaves the same. %>
+  <script>
+    (function () {
+      function asMoneyCents(value) {
+        var n = Number(String(value || '').replace(/[, ]/g, ''));
+        return Number.isFinite(n) ? Math.round(n * 100) : 0;
+      }
+      function asQty(value) {
+        var n = Math.floor(Number(value || 0));
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      }
+      function fmt(cents) { return (cents / 100).toFixed(2); }
+      function prefersReducedMotion() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      }
+      function renderJar(row, popLastN) {
+        var jar = row.querySelector('[data-jar]');
+        if (!jar) return;
+        var qty = asQty(row.querySelector('input[name="qty"]').value);
+        var color = row.dataset.tokenColor || '#C75D34';
+        var maxVisible = 36;
+        var visible = Math.min(qty, maxVisible);
+        var pop = popLastN || 0;
+        var html = '';
+        for (var i = 0; i < visible; i++) {
+          var isPop = (i >= visible - pop) ? ' token-pop' : '';
+          html += '<span class="token-disk-small' + isPop + '" style="background-color:' + color + '" aria-hidden="true"></span>';
+        }
+        if (qty > maxVisible) {
+          html += '<span class="font-mono text-[10px] text-smoke self-end mb-[2px] ml-1">+' + (qty - maxVisible) + '</span>';
+        }
+        jar.innerHTML = html;
+      }
+      function flyToken(fromEl, toEl, color) {
+        if (prefersReducedMotion()) return;
+        var fr = fromEl.getBoundingClientRect();
+        var tr = toEl.getBoundingClientRect();
+        var size = 12;
+        var startX = fr.left + fr.width / 2 - size / 2;
+        var startY = fr.top + fr.height / 2 - size / 2;
+        var endX = tr.left + tr.width / 2 - size / 2;
+        var endY = tr.top + 6;
+        var dx = endX - startX, dy = endY - startY;
+        var apexX = dx * 0.5;
+        var apexY = Math.min(0, dy) - 50;
+        var flyer = document.createElement('span');
+        flyer.className = 'token-flyer';
+        flyer.style.backgroundColor = color;
+        flyer.style.left = startX + 'px';
+        flyer.style.top = startY + 'px';
+        document.body.appendChild(flyer);
+        var anim = flyer.animate(
+          [
+            { transform: 'translate(0, 0) scale(1.4)', opacity: 1 },
+            { transform: 'translate(' + apexX + 'px, ' + apexY + 'px) scale(1.2)', opacity: 1, offset: 0.55 },
+            { transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0.85)', opacity: 0.9 }
+          ],
+          { duration: 420, easing: 'cubic-bezier(0.35, 0, 0.55, 1.05)', fill: 'forwards' }
+        );
+        anim.onfinish = function () { flyer.remove(); };
+      }
+      window.dropToken = function (btn) {
+        var row = btn.closest('tr[data-unit-price]');
+        if (!row) return;
+        var jar = row.querySelector('[data-jar]');
+        var color = row.dataset.tokenColor || '#C75D34';
+        var commit = function () {
+          var input = row.querySelector('input[name="qty"]');
+          var current = asQty(input.value);
+          input.value = String(current + 1);
+          renderJar(row, 1);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        if (jar && !prefersReducedMotion()) {
+          flyToken(btn, jar, color);
+          setTimeout(commit, 340);
+        } else {
+          commit();
+        }
+      };
+      document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.classList || !t.classList.contains('token-disk-small')) return;
+        var row = t.closest('tr[data-unit-price]');
+        if (!row) return;
+        var input = row.querySelector('input[name="qty"]');
+        var current = asQty(input.value);
+        if (current <= 0) return;
+        input.value = String(current - 1);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      window.recalcSales = function () {
+        var subtotal = 0;
+        var items = 0;
+        document.querySelectorAll('tr[data-unit-price]').forEach(function (row) {
+          var unit = Number(row.dataset.unitPrice) || 0;
+          var qty = asQty(row.querySelector('input[name="qty"]').value);
+          var lineTotal = unit * qty;
+          subtotal += lineTotal;
+          items += qty;
+          var rt = row.querySelector('[id^="row-total-"]');
+          if (rt) rt.textContent = fmt(lineTotal);
+          renderJar(row, 0);
+        });
+        var cashInput = document.querySelector('input[name="cash_amount"]');
+        var bankInput = document.querySelector('input[name="bank_transfer_amount"]');
+        var cash = cashInput ? asMoneyCents(cashInput.value) : 0;
+        var bank = bankInput ? asMoneyCents(bankInput.value) : 0;
+        var counted = cash + bank;
+        var diff = counted - subtotal;
+        var elS = document.getElementById('totals-subtotal');
+        if (elS) elS.textContent = fmt(subtotal);
+        var elC = document.getElementById('totals-counted');
+        if (elC) elC.textContent = fmt(counted);
+        var elI = document.getElementById('totals-items');
+        if (elI) elI.textContent = String(items);
+        var elD = document.getElementById('totals-difference');
+        if (elD) {
+          elD.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
+          elD.classList.remove('text-leaf', 'text-ember', 'text-crimson', 'text-smoke');
+          elD.classList.add(diff === 0 ? 'text-smoke' : (diff > 0 ? 'text-leaf' : 'text-crimson'));
+        }
+      };
+      document.addEventListener('DOMContentLoaded', window.recalcSales);
+      document.body.addEventListener('htmx:afterSwap', window.recalcSales);
+    })();
+  </script>
 </body>
 </html>
